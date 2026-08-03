@@ -9,6 +9,7 @@ It records cursor movement, touch movement, clicks, scrolling, pauses, page visi
 - cursor, touch, click, scroll, pause, and page tracking
 - desktop and mobile session analysis
 - page tabs for every tracked URL on a website
+- client-side route tracking for React, Vue, Angular, Next.js, and other SPA routers
 - visitor journeys and recent sessions
 - attention and interaction summaries
 - multiple website keys per account
@@ -53,6 +54,8 @@ Add the tracker to each page you want to track:
 ```
 
 Use the same key on every page and subdomain of one website.
+
+Client-side route changes are detected automatically. History API navigation, browser back and forward actions, and route-style hashes such as `#/settings` start separate page sessions without reloading the tracker.
 
 ## Refresh limits
 
