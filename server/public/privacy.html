@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="TraceTray privacy policy covering accounts, behavioural website analytics, data storage, third-party providers, and user choices.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://tracetray.com/privacy.html">
+<title>Privacy Policy | TraceTray</title>
+
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#5b5bd6">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+
+<style>
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --ink: #0d0d0f;
+    --ink-2: #2e2e35;
+    --muted: #6b6b78;
+    --muted-2: #a8a8b3;
+    --surface: #f6f6f8;
+    --surface-2: #eeeef2;
+    --border: #e2e2e8;
+    --indigo: #5b5bd6;
+    --indigo-bg: #f0f0fb;
+    --white: #ffffff;
+    --font: 'Inter', system-ui, sans-serif;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    background: var(--white);
+    color: var(--ink);
+    font-family: var(--font);
+    font-weight: 300;
+    line-height: 1.7;
+}
+
+body.dark {
+    --ink: #e8e8f0;
+    --ink-2: #c7c7d2;
+    --muted: #9898aa;
+    --muted-2: #737386;
+    --surface: #161619;
+    --surface-2: #1e1e23;
+    --border: rgba(255, 255, 255, 0.09);
+    --indigo: #7b7be6;
+    --indigo-bg: rgba(91, 91, 214, 0.13);
+    --white: #0f0f13;
+}
+
+a {
+    color: inherit;
+}
+
+nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: 58px;
+    padding: 0 32px;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--white) 94%, transparent);
+    backdrop-filter: blur(16px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.nav-logo {
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.nav-logo span {
+    color: var(--indigo);
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.nav-actions a,
+.theme-button {
+    color: var(--muted);
+    background: none;
+    border: 0;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.nav-actions a:hover,
+.theme-button:hover {
+    color: var(--ink);
+}
+
+main {
+    width: min(100% - 40px, 920px);
+    margin: 0 auto;
+    padding: 80px 0 96px;
+}
+
+.hero {
+    padding-bottom: 44px;
+    border-bottom: 1px solid var(--border);
+}
+
+.kicker {
+    margin-bottom: 14px;
+    color: var(--indigo);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+}
+
+h1 {
+    color: var(--ink);
+    font-size: clamp(38px, 6vw, 64px);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.045em;
+}
+
+.updated {
+    margin-top: 18px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.intro {
+    max-width: 720px;
+    margin-top: 24px;
+    color: var(--ink-2);
+    font-size: 18px;
+    line-height: 1.7;
+}
+
+.legal-content {
+    padding-top: 22px;
+}
+
+.legal-section {
+    padding: 34px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.legal-section:last-child {
+    border-bottom: 0;
+}
+
+h2 {
+    margin-bottom: 14px;
+    color: var(--ink);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+p + p,
+p + ul,
+ul + p {
+    margin-top: 14px;
+}
+
+p,
+li {
+    color: var(--ink-2);
+    font-size: 15px;
+}
+
+ul {
+    padding-left: 22px;
+}
+
+li + li {
+    margin-top: 8px;
+}
+
+.legal-section a {
+    color: var(--indigo);
+    font-weight: 500;
+}
+
+.notice {
+    margin-top: 28px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 13px;
+}
+
+footer {
+    padding: 32px;
+    background: #0a0a0d;
+    color: #ffffff;
+}
+
+.footer-inner {
+    width: min(100%, 1120px);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.footer-name {
+    color: #a8a8b3;
+    font-size: 13px;
+}
+
+.footer-links {
+    display: flex;
+    gap: 22px;
+}
+
+.footer-links a {
+    color: #d8d8e2;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.footer-links a:hover {
+    color: #ffffff;
+}
+
+@media (max-width: 640px) {
+    nav {
+        padding: 0 20px;
+    }
+
+    .nav-actions {
+        gap: 14px;
+    }
+
+    .nav-actions a {
+        display: none;
+    }
+
+    main {
+        width: min(100% - 40px, 920px);
+        padding: 56px 0 72px;
+    }
+
+    .intro {
+        font-size: 16px;
+    }
+
+    footer {
+        padding: 30px 20px;
+    }
+
+    .footer-inner {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .footer-links {
+        flex-wrap: wrap;
+    }
+}
+</style>
+
+</head>
+<body>
+
+<nav>
+    <a href="/" class="nav-logo">Trace<span>Tray</span></a>
+    <div class="nav-actions">
+        <a href="/terms.html">Terms</a>
+        <a href="/sign-in.html">Sign in</a>
+        <button type="button" class="theme-button" id="theme-button">Dark mode</button>
+    </div>
+</nav>
+
+<main>
+    <section class="hero">
+        <p class="kicker">PRIVACY POLICY</p>
+        <h1>Privacy Policy</h1>
+        <p class="updated">Last updated: August 2, 2026</p>
+        <p class="intro">This policy explains what TraceTray collects, how behavioural website data is used, how account information is handled, and where third-party services fit in.</p>
+    </section>
+
+    <div class="legal-content">
+        <section class="legal-section">
+            <h2>1. Information TraceTray collects</h2>
+            <p>TraceTray may collect the following types of information:</p>
+            <ul>
+                <li>account information from Clerk or a connected sign-in provider, such as your Clerk user ID, email address, name, profile image, account timestamps, and authentication status;</li>
+                <li>account settings, including your generated TraceTray site key, website URL, selected plan, and account creation date;</li>
+                <li>website interaction data sent through the TraceTray tracker, including cursor coordinates, cursor movement timing, pauses, clicks, taps, scrolling, page URLs, referrer URLs, session timing, device category, and randomly generated visitor and session identifiers;</li>
+                <li>limited information about clicked or tapped page elements, such as the element tag, ID, CSS classes, and up to 50 characters of visible element text;</li>
+                <li>analysis data, including calculated interaction features, browsing-pattern groups, statistical results, summaries, suggestions, and historical analysis results;</li>
+                <li>bug reports, including the category, description, dashboard section, page URL, browser user agent, account identifiers, and submission time;</li>
+                <li>subscription status and billing identifiers if paid plans are introduced, such as Stripe customer and subscription IDs;</li>
+                <li>basic technical information that may appear in server or hosting logs, such as IP address, request path, browser information, timestamps, errors, and security events.</li>
+            </ul>
+        </section>
+
+        <section class="legal-section">
+            <h2>2. Account information and Google sign-in</h2>
+            <p>TraceTray uses Clerk for sign-in, account sessions, and account management. When you use Google or another connected sign-in method, TraceTray receives only the account information made available through Clerk for authentication and account setup, generally an account identifier, email address, name, and profile image.</p>
+            <p>Google account information is used only to provide sign-in, identify your TraceTray account, and operate account-linked features. TraceTray does not use Google account information for advertising, does not sell it, and does not request access to Gmail, Google Drive, Google Calendar, or other unrelated Google services.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>3. Behavioural website analytics</h2>
+            <p>TraceTray customers add a JavaScript tracker to pages they choose to analyze. The tracker records interaction events needed to describe how visitors browse those pages. This can include movement coordinates, scroll positions, pauses, clicks, taps, page transitions, and session duration.</p>
+            <p>The tracker is not designed to record keystrokes, passwords, form-field values, payment details, or full session video. However, click and tap events may include a short excerpt of visible text from the selected page element. Website owners should avoid placing sensitive personal information directly inside clickable labels or elements that they choose to track.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>4. Site owner responsibilities</h2>
+            <p>Website owners using TraceTray are responsible for deciding whether the tracker is appropriate for their website and for providing any privacy notice, consent mechanism, cookie banner, opt-out, or other disclosure required by the laws that apply to them and their visitors.</p>
+            <p>Do not use TraceTray on pages intended to collect highly sensitive information, and do not configure it in a way that intentionally sends passwords, payment information, health information, government identifiers, or other sensitive personal data.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>5. How information is used</h2>
+            <p>TraceTray uses information to:</p>
+            <ul>
+                <li>create and manage accounts and site keys;</li>
+                <li>receive, organize, and display website interaction sessions;</li>
+                <li>calculate behavioural features and group similar browsing patterns;</li>
+                <li>produce dashboard summaries, trends, journeys, comparisons, and areas to review;</li>
+                <li>respond to bug reports, support requests, misuse, and security issues;</li>
+                <li>operate future subscriptions and confirm plan access;</li>
+                <li>maintain, debug, secure, and improve TraceTray.</li>
+            </ul>
+        </section>
+
+        <section class="legal-section">
+            <h2>6. Automated summaries</h2>
+            <p>TraceTray may send summarized analysis information to Anthropic's API to produce readable explanations and suggested areas to review. The prompt may include aggregate cluster statistics, click summaries, page URLs, device comparisons, and calculated behavioural patterns. TraceTray does not intentionally send raw passwords, form entries, or full account credentials to Anthropic.</p>
+            <p>Automated summaries may be incomplete or incorrect. They are intended to help interpret the measured data, not to make legal, employment, medical, financial, or other high-impact decisions about individual visitors.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>7. Third-party providers</h2>
+            <p>TraceTray relies on third-party providers to operate the service. This currently includes Clerk for authentication, Google as an optional sign-in provider, Anthropic for automated analysis summaries, MongoDB for data storage, and hosting or server infrastructure for running the website and API. Stripe may be used for payments and subscriptions when paid plans are launched.</p>
+            <p>These providers may process information under their own terms and privacy policies. TraceTray does not control their systems, availability, security practices, or independent retention requirements.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>8. Cookies, local storage, and session identifiers</h2>
+            <p>Clerk may use cookies or similar browser storage needed for authentication, sessions, and security. The TraceTray tracker stores a randomly generated visitor identifier in local storage so separate page visits can be grouped into a browsing journey. TraceTray also uses browser storage for preferences such as light or dark mode.</p>
+            <p>TraceTray does not currently use behavioural tracking data for advertising.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>9. Data sharing</h2>
+            <p>TraceTray does not sell personal information. Information may be shared with service providers when needed to operate TraceTray, comply with law, investigate misuse, protect users or the service, or complete a business transfer such as a merger or sale.</p>
+            <p>Account holders can view analytics connected to their own TraceTray site key. TraceTray does not make individual visitor sessions public.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>10. Data retention</h2>
+            <p>TraceTray keeps account information, website sessions, analysis results, bug reports, and operational logs for as long as they are reasonably useful for providing the service, showing account history, handling support, investigating misuse, maintaining backups, or meeting legal and security needs.</p>
+            <p>Retention periods may vary by data type and may change as TraceTray develops. Some information may remain temporarily in backups or logs after deletion from the active database.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>11. Your choices and deletion requests</h2>
+            <p>You may stop future tracking on a website by removing the TraceTray tracker from that site. Account holders may reset stored page history from the dashboard where available.</p>
+            <p>For account deletion, access, correction, or other data requests, contact <a href="mailto:hello@tracetray.com">hello@tracetray.com</a>. TraceTray may need to verify the request before changing or deleting account-linked information.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>12. Children</h2>
+            <p>TraceTray is not intended for children. Account holders should not knowingly use TraceTray to collect behavioural data from children where doing so would require parental consent or additional legal safeguards that have not been obtained.</p>
+            <p>If you believe a child has provided personal information to TraceTray in a way that should be reviewed or removed, contact <a href="mailto:hello@tracetray.com">hello@tracetray.com</a>.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>13. Security</h2>
+            <p>TraceTray uses service providers and reasonable technical practices to protect accounts and stored data. No online service can guarantee perfect security. Account holders are responsible for keeping their sign-in method and site key secure.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>14. International processing</h2>
+            <p>TraceTray and its providers may process information in countries other than the country where an account holder or website visitor is located. Those countries may have different data-protection laws.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>15. Changes to this policy</h2>
+            <p>TraceTray may update this policy as the service, providers, or data practices change. The latest version will be posted on this page with an updated date.</p>
+        </section>
+
+        <section class="legal-section">
+            <h2>16. Contact</h2>
+            <p>Questions or requests about privacy can be sent to <a href="mailto:hello@tracetray.com">hello@tracetray.com</a>.</p>
+        </section>
+    </div>
+
+    <p class="notice">This policy is a practical description of TraceTray's current data practices and is not legal advice.</p>
+</main>
+
+<footer>
+    <div class="footer-inner">
+        <span class="footer-name">TraceTray privacy</span>
+        <div class="footer-links">
+            <a href="/terms.html">Terms of Service</a>
+            <a href="/">Home</a>
+        </div>
+    </div>
+</footer>
+
+
+<script>
+const themeKey = "tracetray-theme";
+
+function applyTheme(theme) {
+    document.body.classList.toggle("dark", theme === "dark");
+    document.getElementById("theme-button").textContent =
+        theme === "dark" ? "Light mode" : "Dark mode";
+}
+
+function toggleTheme() {
+    const next = document.body.classList.contains("dark") ? "light" : "dark";
+    localStorage.setItem(themeKey, next);
+    applyTheme(next);
+}
+
+const savedTheme = localStorage.getItem(themeKey);
+const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+applyTheme(savedTheme || preferredTheme);
+document.getElementById("theme-button").addEventListener("click", toggleTheme);
+</script>
+
+</body>
+</html>

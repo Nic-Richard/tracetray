@@ -1,0 +1,20 @@
+{
+  "name": "tracetray-server",
+  "version": "2.0.0",
+  "description": "TraceTray collection and dashboard server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "mongoose": "^9.2.3",
+    "stripe": "^22.2.1",
+    "@clerk/express": "^2.1.29",
+    "dotenv": "^16.4.0"
+  },
+  "type": "commonjs",
+  "license": "MIT"
+}

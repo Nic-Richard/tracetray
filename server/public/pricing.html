@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Try TraceTray free during the beta and explore behavioural web analytics for cursor movement, clicks, scrolling, pauses, and touch activity.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://tracetray.com/pricing.html">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#5b5bd6">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TraceTray">
+<meta property="og:title" content="TraceTray Beta and Pricing">
+<meta property="og:description" content="Try TraceTray free during the beta and explore behavioural web analytics for cursor movement, clicks, scrolling, pauses, and touch activity.">
+<meta property="og:url" content="https://tracetray.com/pricing.html">
+<meta property="og:image" content="https://tracetray.com/social-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TraceTray behavioural web analytics">
+<meta property="og:locale" content="en_CA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TraceTray Beta and Pricing">
+<meta name="twitter:description" content="Try TraceTray free during the beta and explore behavioural web analytics for cursor movement, clicks, scrolling, pauses, and touch activity.">
+<meta name="twitter:image" content="https://tracetray.com/social-preview.png">
+<meta name="twitter:image:alt" content="TraceTray behavioural web analytics">
+<title>TraceTray Beta and Pricing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:     #0d0d0f;
+  --ink-2:   #2e2e35;
+  --muted:   #6b6b78;
+  --muted-2: #a8a8b3;
+  --surface: #f6f6f8;
+  --border:  #e2e2e8;
+  --indigo:  #5b5bd6;
+  --white:   #ffffff;
+  --font:    'Inter', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 300;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 40px;
+}
+
+.header { text-align: center; display: flex; flex-direction: column; gap: 12px; }
+.logo { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); text-decoration: none; }
+.logo span { color: var(--indigo); }
+.header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); }
+.header p { font-size: 15px; color: var(--muted); }
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 680px;
+}
+
+.plan-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.plan-card.featured { border-color: var(--indigo); border-width: 2px; }
+
+.plan-badge {
+  position: absolute;
+  top: -11px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--indigo);
+  color: var(--white);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 3px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.plan-name { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.plan-price { font-size: 40px; font-weight: 700; letter-spacing: -0.04em; color: var(--ink); line-height: 1; margin-bottom: 3px; }
+.plan-price sup { font-size: 18px; vertical-align: super; font-weight: 500; }
+.plan-price span { font-size: 14px; font-weight: 300; color: var(--muted); }
+.plan-desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin: 14px 0 20px; padding-top: 14px; border-top: 1px solid var(--border); }
+.plan-features { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; flex: 1; }
+.plan-features li { font-size: 13px; color: var(--ink-2); display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; }
+.plan-features li::before { content: "✓"; color: var(--indigo); font-weight: 700; flex-shrink: 0; }
+
+.plan-btn {
+  display: block;
+  text-align: center;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+  width: 100%;
+}
+.plan-btn.filled { background: var(--indigo); color: var(--white); }
+.plan-btn.outline { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+.plan-btn:hover { opacity: 0.85; }
+.plan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.trial-note { font-size: 12px; color: var(--muted-2); text-align: center; }
+
+#error-msg {
+  color: #dc2626;
+  font-size: 13px;
+  text-align: center;
+  display: none;
+  background: rgba(220,38,38,0.06);
+  border: 1px solid rgba(220,38,38,0.2);
+  border-radius: 6px;
+  padding: 10px 14px;
+  max-width: 680px;
+  width: 100%;
+}
+
+@media (max-width: 560px) {
+  .pricing-grid { grid-template-columns: 1fr; }
+}
+.dark { --ink: #e8e8f0; --ink-2: #b8b8c8; --muted: #6b6b80; --muted-2: #9898b0; --surface: #161619; --border: rgba(255,255,255,0.08); --indigo: #7b7be6; --indigo-bg: rgba(91,91,214,0.12); --white: #0f0f13; }
+</style>
+
+<script>
+(function() {
+  if (localStorage.getItem("tt-dark") === "1") document.documentElement.classList.add("dark");
+})();
+</script>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png">
+</head>
+<body>
+
+<div class="header">
+  <a href="/" class="logo">Trace<span>Tray</span></a>
+  <h1 id="pricing-title">Try the TraceTray beta</h1>
+  <p id="pricing-intro">Create an account and use TraceTray free while pricing and billing are finalized.</p>
+</div>
+
+<div class="pricing-grid" id="pricing-grid">
+  <div class="plan-card">
+    <div class="plan-name" id="starter-name">Beta access</div>
+    <div class="plan-price" id="starter-price">Free</div>
+    <p class="plan-desc" id="starter-desc">Use the working tracker, dashboard, and analysis tools while TraceTray is still being built.</p>
+    <ul class="plan-features" id="starter-features">
+      <li>Session tracking on desktop and mobile</li>
+      <li>Visitor pattern breakdowns</li>
+      <li>Click and scroll analysis</li>
+      <li>Analysis summaries</li>
+    </ul>
+    <button class="plan-btn outline" id="btn-starter" type="button">Try the beta</button>
+  </div>
+
+  <div class="plan-card featured" id="pro-card">
+    <div class="plan-badge" id="plan-badge">Planned</div>
+    <div class="plan-name">Pro</div>
+    <div class="plan-price" id="pro-price">Coming soon</div>
+    <p class="plan-desc" id="pro-desc">Paid plans will be introduced after the beta and will include unlimited sessions.</p>
+    <ul class="plan-features" id="pro-features">
+      <li>Unlimited sessions</li>
+      <li>Full dashboard access</li>
+      <li>Click and scroll breakdowns</li>
+      <li>Analysis history</li>
+    </ul>
+    <button class="plan-btn filled" id="btn-pro" type="button" disabled>Not available yet</button>
+  </div>
+</div>
+
+<div id="error-msg"></div>
+<p class="trial-note" id="pricing-note">No card is required during the beta.</p>
+
+<script>
+let appMode = "beta";
+
+async function subscribe(plan) {
+  const btnStarter = document.getElementById("btn-starter");
+  const btnPro = document.getElementById("btn-pro");
+  const errEl = document.getElementById("error-msg");
+
+  btnStarter.disabled = true;
+  btnPro.disabled = true;
+  errEl.style.display = "none";
+
+  const btn = plan === "pro" ? btnPro : btnStarter;
+  const originalLabel = btn.textContent;
+  btn.textContent = "Redirecting to checkout...";
+
+  try {
+    const token = await window.Clerk.session.getToken();
+    const res = await fetch("/api/create-checkout-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ plan })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Checkout failed");
+    window.location.href = data.url;
+  } catch (e) {
+    errEl.textContent = e.message || "Something went wrong. Please try again.";
+    errEl.style.display = "block";
+    btn.textContent = originalLabel;
+    btnStarter.disabled = false;
+    btnPro.disabled = false;
+  }
+}
+
+function applyProductionPricing() {
+  document.getElementById("pricing-title").textContent = "Choose your plan";
+  document.getElementById("pricing-intro").textContent = "Choose a plan to start using TraceTray.";
+  document.getElementById("starter-name").textContent = "Starter";
+  document.getElementById("starter-price").innerHTML = "<sup>$</sup>19<span>/mo</span>";
+  document.getElementById("starter-desc").textContent = "For smaller sites getting started with behavioural analytics.";
+  document.getElementById("starter-features").innerHTML = `
+    <li>Up to 5,000 sessions per month</li>
+    <li>Visitor pattern breakdowns</li>
+    <li>Analysis summaries</li>
+    <li>Two-line tracker install</li>`;
+  document.getElementById("plan-badge").textContent = "Most popular";
+  document.getElementById("pro-price").innerHTML = "<sup>$</sup>49<span>/mo</span>";
+  document.getElementById("pro-desc").textContent = "For sites that want to analyze every session without a monthly cap.";
+  document.getElementById("pro-features").innerHTML = `
+    <li>Unlimited sessions</li>
+    <li>Everything in Starter</li>
+    <li>Click and scroll breakdowns</li>
+    <li>Analysis history</li>`;
+  document.getElementById("btn-starter").textContent = "Subscribe";
+  document.getElementById("btn-pro").textContent = "Subscribe";
+  document.getElementById("btn-pro").disabled = false;
+  document.getElementById("pricing-note").textContent = "Subscriptions can be managed from your account.";
+}
+
+async function loadClerk(pubKey) {
+  const clerkDomain = atob(pubKey.split("_")[2]).slice(0, -1);
+
+  await new Promise((resolve, reject) => {
+    const ui = document.createElement("script");
+    ui.src = `https://${clerkDomain}/npm/@clerk/ui@1/dist/ui.browser.js`;
+    ui.async = true;
+    ui.crossOrigin = "anonymous";
+    ui.onload = resolve;
+    ui.onerror = reject;
+    document.head.appendChild(ui);
+  });
+
+  await new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = `https://${clerkDomain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`;
+    script.setAttribute("data-clerk-publishable-key", pubKey);
+    script.async = true;
+    script.crossOrigin = "anonymous";
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+
+  await window.Clerk.load();
+}
+
+async function init() {
+  try {
+    const config = await fetch("/api/config").then(r => r.json());
+    appMode = config.mode || "beta";
+
+    if (appMode === "production") applyProductionPricing();
+
+    await loadClerk(config.clerk_publishable_key);
+
+    document.getElementById("btn-starter").addEventListener("click", async () => {
+      if (!window.Clerk.user) {
+        window.location.href = "/sign-in.html";
+        return;
+      }
+      if (appMode === "beta") {
+        window.location.href = "/dashboard.html";
+        return;
+      }
+      await subscribe("starter");
+    });
+
+    document.getElementById("btn-pro").addEventListener("click", async () => {
+      if (appMode !== "production") return;
+      if (!window.Clerk.user) {
+        window.location.href = "/sign-in.html";
+        return;
+      }
+      await subscribe("pro");
+    });
+  } catch (e) {
+    const errEl = document.getElementById("error-msg");
+    errEl.textContent = "Could not load pricing right now.";
+    errEl.style.display = "block";
+  }
+}
+
+init();
+</script>
+</body>
+</html>

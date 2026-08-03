@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Sign in to your TraceTray account.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="canonical" href="https://tracetray.com/sign-in.html">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#5b5bd6">
+<title>Sign In | TraceTray</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #f6f6f8;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .logo {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #0d0d0f;
+  }
+  .logo span { color: #5b5bd6; }
+  #clerk-mount { width: 100%; max-width: 420px; }
+.dark { --ink: #e8e8f0; --ink-2: #b8b8c8; --muted: #6b6b80; --muted-2: #9898b0; --surface: #161619; --border: rgba(255,255,255,0.08); --indigo: #7b7be6; --indigo-bg: rgba(91,91,214,0.12); --white: #0f0f13; }
+</style>
+
+<script>
+(function() {
+  if (localStorage.getItem("tt-dark") === "1") document.documentElement.classList.add("dark");
+})();
+</script>
+</head>
+<body>
+  <div class="logo">Trace<span>Tray</span></div>
+  <div id="clerk-mount"></div>
+
+  <script>
+    async function loadScript(src, attributes = {}) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = true;
+        script.crossOrigin = "anonymous";
+
+        Object.entries(attributes).forEach(([name, value]) => {
+          script.setAttribute(name, value);
+        });
+
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`Failed to load ${src}`));
+        document.head.appendChild(script);
+      });
+    }
+
+    async function initClerk() {
+      const response = await fetch("/api/config");
+
+      if (!response.ok) {
+        throw new Error("Could not load TraceTray authentication settings.");
+      }
+
+      const config = await response.json();
+      const publishableKey = config.clerk_publishable_key;
+
+      if (!publishableKey) {
+        throw new Error("Clerk publishable key is missing.");
+      }
+
+      const clerkDomain = atob(publishableKey.split("_")[2]).slice(0, -1);
+
+      await loadScript(`https://${clerkDomain}/npm/@clerk/ui@1/dist/ui.browser.js`);
+      await loadScript(
+        `https://${clerkDomain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`,
+        { "data-clerk-publishable-key": publishableKey }
+      );
+
+      await window.Clerk.load({
+        ui: { ClerkUI: window.__internal_ClerkUICtor }
+      });
+
+      if (window.Clerk.isSignedIn) {
+        window.location.replace("/dashboard.html");
+        return;
+      }
+
+      window.Clerk.mountSignIn(document.getElementById("clerk-mount"), {
+        routing: "hash",
+        fallbackRedirectUrl: "/dashboard.html",
+        signUpFallbackRedirectUrl: "/dashboard.html"
+      });
+    }
+
+    initClerk().catch(error => {
+      console.error("Clerk initialization failed:", error);
+      document.getElementById("clerk-mount").innerHTML =
+        '<p style="padding:24px;text-align:center;color:#6b6b78;font-size:14px;">Sign-in could not be loaded. Please refresh and try again.</p>';
+    });
+  </script>
+</body>
+</html>

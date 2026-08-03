@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Behavioural web analytics that uses cursor movement, clicks, scrolling, pauses, and touch activity to show how visitors browse your website.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://tracetray.com/">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#5b5bd6">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TraceTray">
+<meta property="og:title" content="TraceTray | Behavioural Web Analytics">
+<meta property="og:description" content="Behavioural web analytics that uses cursor movement, clicks, scrolling, pauses, and touch activity to show how visitors browse your website.">
+<meta property="og:url" content="https://tracetray.com/">
+<meta property="og:image" content="https://tracetray.com/social-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TraceTray behavioural web analytics">
+<meta property="og:locale" content="en_CA">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TraceTray | Behavioural Web Analytics">
+<meta name="twitter:description" content="Behavioural web analytics that uses cursor movement, clicks, scrolling, pauses, and touch activity to show how visitors browse your website.">
+<meta name="twitter:image" content="https://tracetray.com/social-preview.png">
+<meta name="twitter:image:alt" content="TraceTray behavioural web analytics">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraceTray","url":"https://tracetray.com/","description":"Behavioural web analytics that uses cursor movement, clicks, scrolling, pauses, and touch activity to show how visitors browse your website.","applicationCategory":"BusinessApplication","operatingSystem":"Web","browserRequirements":"Requires JavaScript and a modern web browser.","isAccessibleForFree":true,"featureList":["Cursor and touch movement tracking","Click, tap, scroll, and pause analysis","Visitor browsing pattern clustering","Page-level behavioural summaries"],"publisher":{"@type":"Organization","name":"TraceTray","url":"https://tracetray.com/"}}</script>
+<title>TraceTray | Behavioural Web Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --ink:       #0d0d0f;
+    --ink-2:     #2e2e35;
+    --muted:     #6b6b78;
+    --muted-2:   #a8a8b3;
+    --surface:   #f6f6f8;
+    --surface-2: #eeeeF2;
+    --border:    #e2e2e8;
+    --indigo:    #5b5bd6;
+    --indigo-dim:#8b8bdf;
+    --indigo-bg: #f0f0fb;
+    --white:     #ffffff;
+    --font:      'Inter', system-ui, sans-serif;
+}
+.dark {
+    --ink:       #e8e8f0;
+    --ink-2:     #b8b8c8;
+    --muted:     #6b6b80;
+    --muted-2:   #9898b0;
+    --surface:   #161619;
+    --surface-2: #1e1e24;
+    --border:    rgba(255,255,255,0.08);
+    --white:     #0f0f13;
+    --indigo:    #7b7be6;
+    --indigo-dim:#9898e8;
+    --indigo-bg: rgba(91,91,214,0.12);
+}
+
+.dark nav { background: rgba(15,15,19,0.94); }
+.dark .dark-band { background: #1e1e24; border-top:1px solid rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.06); }
+.dark .dark-band p { color: #e8e8f0; }
+.dark .dark-band p span { color: var(--indigo-dim); }
+.dark .surface-wrap { background: #161619; border-color: rgba(255,255,255,0.06); }
+.dark .step { background: #0f0f13; }
+.dark .output-card { background: #0f0f13; }
+.dark .demo-card { background: #0f0f13; }
+.dark .monitor-metric { background: #1e1e24; }
+.dark .plan-card { background: #0f0f13; }
+.dark .plan-card.featured { border-color: var(--indigo); }
+.dark .faq-item { border-color: rgba(255,255,255,0.08); }
+.dark footer { background: #0a0a0d; }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+    background: var(--white);
+    color: var(--ink);
+    font-family: var(--font);
+    font-weight: 300;
+    line-height: 1.65;
+    overflow-x: hidden;
+}
+nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 48px;
+    height: 58px;
+    background: rgba(255,255,255,0.94);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.nav-logo span { color: var(--indigo); }
+
+.nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+}
+
+.nav-links a {
+    font-size: 13.5px;
+    font-weight: 400;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.nav-links a:hover { color: var(--ink); }
+
+.nav-cta {
+    background: var(--indigo);
+    color: var(--white);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-family: var(--font);
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: opacity 0.15s;
+}
+.nav-cta:hover { opacity: 0.88; }
+#hero {
+    padding: 140px 10vw 96px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.hero-eyebrow {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--indigo);
+    background: var(--indigo-bg);
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 28px;
+}
+
+#hero h1 {
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+    color: var(--ink);
+    max-width: 720px;
+    margin-bottom: 24px;
+}
+
+.hero-sub {
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--muted);
+    max-width: 520px;
+    line-height: 1.7;
+    margin-bottom: 40px;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 72px;
+}
+
+.btn-primary {
+    background: var(--indigo);
+    color: var(--white);
+    border: none;
+    padding: 13px 26px;
+    border-radius: 6px;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.88; }
+
+.btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1.5px solid var(--border);
+    padding: 12px 22px;
+    border-radius: 6px;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.btn-ghost:hover { border-color: var(--muted); color: var(--ink); }
+.hero-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--white);
+}
+
+.stat-item {
+    padding: 24px 28px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.stat-item:last-child { border-right: none; }
+
+.stat-value {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted-2);
+}
+.dark-band {
+    background: var(--ink);
+    padding: 64px 10vw;
+}
+
+.dark-band-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.dark-band p {
+    font-size: clamp(18px, 2.2vw, 26px);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--white);
+    max-width: 580px;
+    line-height: 1.4;
+}
+
+.dark-band p span { color: var(--indigo-dim); }
+
+.btn-light {
+    background: var(--white);
+    color: var(--ink);
+    border: none;
+    padding: 13px 26px;
+    border-radius: 6px;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+}
+.btn-light:hover { opacity: 0.88; }
+.section {
+    padding: 104px 10vw;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.surface-wrap {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+
+.surface-wrap .section {
+    background: transparent;
+}
+
+.eyebrow {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--indigo);
+    margin-bottom: 14px;
+    display: block;
+}
+
+.section h2 {
+    font-size: clamp(26px, 3vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: var(--ink);
+    max-width: 580px;
+    margin-bottom: 14px;
+}
+
+.section-intro {
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--muted);
+    max-width: 480px;
+    line-height: 1.7;
+    margin-bottom: 52px;
+}
+.steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--white);
+}
+
+.step {
+    padding: 32px 28px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.step:last-child { border-right: none; }
+
+.step-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--indigo);
+}
+
+.step h3 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    line-height: 1.3;
+}
+
+.step p {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.65;
+}
+.output-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.output-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.output-icon {
+    font-size: 22px;
+    margin-bottom: 2px;
+}
+
+.output-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    line-height: 1.3;
+}
+
+.output-card p {
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.65;
+}
+.demo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.demo-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 30px;
+}
+
+.demo-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+}
+
+.demo-card > p {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-bottom: 22px;
+    line-height: 1.6;
+}
+
+.monitor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.monitor-metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 13px 14px;
+}
+
+.m-label {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    margin-bottom: 4px;
+}
+
+.m-value {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.monitor-note {
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--muted-2);
+    line-height: 1.6;
+}
+.visitor-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.visitor-row {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.visitor-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.visitor-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-2);
+}
+
+.visitor-pct {
+    font-size: 12px;
+    color: var(--muted-2);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+.visitor-bar-track {
+    height: 5px;
+    background: var(--surface-2);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.visitor-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+}
+
+.visitor-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.55;
+}
+.pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.plan-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.plan-card.featured {
+    border-color: var(--indigo);
+    border-width: 2px;
+}
+
+.plan-badge {
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--indigo);
+    color: var(--white);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 3px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.plan-name {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+}
+
+.plan-price {
+    font-size: 44px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 3px;
+}
+
+.plan-price sup {
+    font-size: 20px;
+    vertical-align: super;
+    font-weight: 500;
+}
+
+.plan-price span {
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--muted);
+}
+
+.plan-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 14px 0 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.plan-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-bottom: 28px;
+    flex: 1;
+}
+
+.plan-features li {
+    font-size: 13.5px;
+    color: var(--ink-2);
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    line-height: 1.4;
+}
+
+.plan-features li::before {
+    content: "✓";
+    color: var(--indigo);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.plan-btn {
+    width: 100%;
+    justify-content: center;
+    font-family: var(--font);
+    display: block;
+    text-align: center;
+    padding: 12px;
+    border-radius: 6px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+    border: none;
+}
+
+.plan-btn.filled { background: var(--indigo); color: var(--white); }
+.plan-btn.filled:hover { opacity: 0.88; }
+.plan-btn.outline { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+.plan-btn.outline:hover { border-color: var(--muted); }
+.plan-btn.contact { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+.plan-btn.contact:hover { color: var(--ink); border-color: var(--muted); }
+.plan-btn.disabled {
+    background: var(--surface);
+    color: var(--muted);
+    border: 1.5px solid var(--border);
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+.plan-btn.disabled:hover { opacity: 0.75; }
+.faq-list { margin-top: 48px; max-width: 720px; }
+
+.faq-item {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 0;
+    cursor: pointer;
+}
+
+.faq-question {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--ink);
+    user-select: none;
+}
+
+.faq-chevron {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    color: var(--muted-2);
+    transition: transform 0.2s;
+}
+
+.faq-item.open .faq-chevron { transform: rotate(180deg); }
+
+.faq-answer {
+    font-size: 14px;
+    color: var(--muted);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.2s;
+    line-height: 1.75;
+}
+
+.faq-item.open .faq-answer { max-height: 280px; padding-top: 13px; }
+footer {
+    background: var(--ink);
+    padding: 44px 10vw;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.footer-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.footer-logo {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+}
+
+.footer-logo span { color: var(--indigo-dim); }
+
+.footer-links {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+}
+
+.footer-links a {
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.footer-links a:hover { color: rgba(255,255,255,0.75); }
+
+.footer-copy {
+    font-size: 12px;
+    color: rgba(255,255,255,0.25);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding-top: 20px;
+}
+.reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.reveal.visible { opacity: 1; transform: none; }
+.mobile-banner {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 200;
+    background: var(--ink);
+    padding: 14px 24px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+.mobile-banner.visible { display: flex; }
+.mobile-banner p { font-size: 13px; color: rgba(255,255,255,0.55); line-height: 1.4; margin: 0; }
+.mobile-banner p strong { color: var(--white); }
+.mobile-banner-close {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.nav-hamburger { display: none; background: transparent; border: none; cursor: pointer; color: var(--muted); padding: 4px; }
+
+@media (max-width: 900px) {
+    .steps { grid-template-columns: 1fr 1fr; }
+    .step:nth-child(2) { border-right: none; }
+    .step:nth-child(1),
+    .step:nth-child(2) { border-bottom: 1px solid var(--border); }
+    .pricing-grid { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+}
+
+@media (max-width: 680px) {
+    nav { padding: 0 20px; }
+    .nav-links { display: none; flex-direction: column; position: fixed; top: 58px; left: 0; right: 0; background: var(--white); border-bottom: 1px solid var(--border); padding: 16px 20px; gap: 4px; z-index: 99; }
+    .nav-links.open { display: flex; }
+    .nav-links a { padding: 10px 0; font-size: 15px; border-bottom: 1px solid var(--border); }
+    .nav-links li:last-child a { border-bottom: none; }
+    .nav-hamburger { display: flex; }
+    #hero { padding: 100px 20px 60px; }
+    .hero-sub { font-size: 16px; }
+    .section { padding: 64px 20px; }
+    .surface-wrap .section { padding: 64px 20px; }
+    .dark-band { padding: 40px 20px; }
+    .dark-band-inner { flex-direction: column; gap: 20px; }
+    .hero-stats { grid-template-columns: repeat(2, 1fr); }
+    .stat-item:nth-child(2) { border-right: none; }
+    .stat-item:nth-child(1),
+    .stat-item:nth-child(2) { border-bottom: 1px solid var(--border); }
+    .steps { grid-template-columns: 1fr; }
+    .step { border-right: none; border-bottom: 1px solid var(--border); }
+    .step:last-child { border-bottom: none; }
+    .output-grid { grid-template-columns: 1fr; }
+    .demo-grid { grid-template-columns: 1fr; }
+    .monitor-grid { grid-template-columns: repeat(2, 1fr); }
+    .faq-list { max-width: 100%; }
+    footer { padding: 40px 20px; }
+    .footer-links { flex-wrap: wrap; gap: 16px; }
+    #hero h1 { font-size: clamp(30px, 8vw, 48px); }
+    .section h2 { font-size: clamp(22px, 5vw, 36px); }
+}
+
+.footer-logo .footer-trace {
+    color: #ffffff;
+}
+
+</style>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png">
+</head>
+
+<body>
+
+<nav>
+    <a href="#" class="nav-logo">Trace<span>Tray</span></a>
+    <ul class="nav-links" id="nav-links">
+        <li><a href="#how" onclick="closeMenu()">How it works</a></li>
+        <li><a href="#demo" onclick="closeMenu()">Live demo</a></li>
+        <li><a href="#pricing" onclick="closeMenu()">Pricing</a></li>
+        <li><a href="#faq" onclick="closeMenu()">FAQ</a></li>
+    </ul>
+    <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMenu()" aria-label="Menu">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="toggleDark()" title="Toggle dark mode" id="dark-btn" style="background:transparent;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;cursor:pointer;color:var(--muted);display:flex;align-items:center;transition:all 0.15s;">
+            <svg id="dark-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        </button>
+        <a href="/sign-in.html" class="nav-cta" id="nav-cta" data-auth-cta="nav">Try the beta</a>
+    </div>
+</nav>
+
+<div class="mobile-banner" id="mobile-banner">
+    <p><strong>TraceTray works on desktop and mobile.</strong> Move, scroll, tap, and click to see the live demo update.</p>
+    <button class="mobile-banner-close" id="mobile-banner-close">Got it</button>
+</div>
+<section id="hero">
+    <div class="hero-eyebrow">Behavioural analytics</div>
+    <h1>Understand how people use your site.</h1>
+    <p class="hero-sub">TraceTray turns movement, clicks, scrolling, and pauses into clear browsing patterns.</p>
+    <div class="hero-actions">
+        <span data-auth-cta="hero-wrap"><a href="/sign-in.html" class="btn-primary" data-auth-cta="hero">Create an account</a></span>
+        <button class="btn-ghost" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'})">See it live</button>
+    </div>
+    <div class="hero-stats">
+        <div class="stat-item">
+            <div class="stat-value"><span id="stat-moves">0</span></div>
+            <div class="stat-label">movement events on this page</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value"><span id="stat-pauses">0</span></div>
+            <div class="stat-label">pauses detected</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value"><span id="stat-clicks">0</span></div>
+            <div class="stat-label">clicks and taps tracked</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="stat-time">0s</div>
+            <div class="stat-label">you have been here</div>
+        </div>
+    </div>
+</section>
+<div class="dark-band">
+    <div class="dark-band-inner">
+        <p>Two lines to install. <span>Start collecting in minutes.</span></p>
+        <a href="/sign-in.html" class="btn-light" data-auth-cta="strip">Get started</a>
+    </div>
+</div>
+<div class="surface-wrap" id="how">
+<div class="section">
+    <div class="reveal">
+        <span class="eyebrow">How it works</span>
+        <h2>From raw interactions to useful patterns.</h2>
+        <p class="section-intro">Paste the snippet into your site and TraceTray starts collecting interaction data. Once enough sessions are available, you can run an analysis from your dashboard.</p>
+    </div>
+    <div class="steps reveal">
+        <div class="step">
+            <div class="step-label">Collect</div>
+            <h3>One snippet, any site</h3>
+            <p>Paste two lines before your closing body tag. TraceTray records how visitors move, pause, scroll, tap, and click across the page.</p>
+        </div>
+        <div class="step">
+            <div class="step-label">Measure</div>
+            <h3>Every session becomes a signal</h3>
+            <p>Each visit is turned into a set of useful measures, including cursor activity, pauses, clicks, scrolling, and where attention appears to stay.</p>
+        </div>
+        <div class="step">
+            <div class="step-label">Group</div>
+            <h3>Visitors sorted by how they browse</h3>
+            <p>TraceTray compares sessions and groups similar browsing patterns together. The groups come from the activity on your page rather than a fixed set of visitor labels.</p>
+        </div>
+        <div class="step">
+            <div class="step-label">Act</div>
+            <h3>Analysis summaries</h3>
+            <p>The dashboard summarizes the patterns found in each visitor group and lists possible areas to review.</p>
+        </div>
+    </div>
+</div>
+</div>
+<div class="section" id="features">
+    <div class="reveal">
+        <span class="eyebrow">What you get</span>
+        <h2>Interaction patterns behind the session counts</h2>
+        <p class="section-intro">TraceTray adds context that pageviews alone cannot provide. It helps show how visitors move through a page and where the experience may be causing confusion or friction.</p>
+    </div>
+    <div class="output-grid reveal">
+        <div class="output-card">
+            <div class="output-icon">📖</div>
+            <h3>Who is reading vs who is scanning</h3>
+            <p>Slow cursor movement and frequent pauses may point to careful reading, while fast movement may suggest scanning. TraceTray helps compare these patterns across your visitors and pages.</p>
+        </div>
+        <div class="output-card">
+            <div class="output-icon">🗺️</div>
+            <h3>Where attention goes on your page</h3>
+            <p>TraceTray shows where cursor activity tends to stay, making it easier to compare attention across different parts of a page.</p>
+        </div>
+        <div class="output-card">
+            <div class="output-icon">💨</div>
+            <h3>Who left without engaging</h3>
+            <p>Short sessions with minimal interaction are worth understanding. TraceTray tells you what share of visitors leave quickly and where on the page they tend to drop off.</p>
+        </div>
+        <div class="output-card">
+            <div class="output-icon">💡</div>
+            <h3>What to change, and why</h3>
+            <p>Each analysis run summarizes the collected patterns and suggests areas that may be worth reviewing.</p>
+        </div>
+    </div>
+</div>
+<div class="surface-wrap" id="demo">
+<div class="section">
+    <div class="reveal">
+        <span class="eyebrow">Live</span>
+        <h2>See your session update live</h2>
+        <p class="section-intro">Move your mouse, scroll, tap, or click around. The counters below update as you interact with the page.</p>
+    </div>
+    <div class="demo-grid reveal">
+        <div class="demo-card">
+            <h3>Your session, live</h3>
+            <p>Watch the session metrics update as you interact with this page.</p>
+            <div class="monitor-grid">
+                <div class="monitor-metric">
+                    <div class="m-label">Moves</div>
+                    <div class="m-value" id="mon-moves">0</div>
+                </div>
+                <div class="monitor-metric">
+                    <div class="m-label">Pauses</div>
+                    <div class="m-value" id="mon-pauses">0</div>
+                </div>
+                <div class="monitor-metric">
+                    <div class="m-label">Clicks</div>
+                    <div class="m-value" id="mon-clicks">0</div>
+                </div>
+                <div class="monitor-metric">
+                    <div class="m-label">Scrolls</div>
+                    <div class="m-value" id="mon-scrolls">0</div>
+                </div>
+                <div class="monitor-metric">
+                    <div class="m-label">Velocity</div>
+                    <div class="m-value" id="mon-vel">-</div>
+                </div>
+                <div class="monitor-metric">
+                    <div class="m-label">Duration</div>
+                    <div class="m-value" id="mon-dur">0s</div>
+                </div>
+            </div>
+            <p class="monitor-note">These are the same types of interaction signals TraceTray can collect from your own website.</p>
+        </div>
+
+        <div class="demo-card">
+            <h3>What a result looks like</h3>
+            <p>After enough sessions, TraceTray identifies the natural groupings in your visitor data. Here is an example of what that output looks like.</p>
+            <div class="visitor-preview">
+                <div class="visitor-row">
+                    <div class="visitor-head">
+                        <div class="visitor-name">Careful readers</div>
+                        <div class="visitor-pct">38%</div>
+                    </div>
+                    <div class="visitor-bar-track"><div class="visitor-bar-fill" style="width:38%;background:var(--indigo)"></div></div>
+                    <div class="visitor-desc">Slow-moving, high pause rate. Reading your content carefully before deciding anything.</div>
+                </div>
+                <div class="visitor-row">
+                    <div class="visitor-head">
+                        <div class="visitor-name">Active explorers</div>
+                        <div class="visitor-pct">24%</div>
+                    </div>
+                    <div class="visitor-bar-track"><div class="visitor-bar-fill" style="width:24%;background:#4a90d9"></div></div>
+                    <div class="visitor-desc">High move density and click rate. Looking for something specific and interacting as they go.</div>
+                </div>
+                <div class="visitor-row">
+                    <div class="visitor-head">
+                        <div class="visitor-name">Quick visitors</div>
+                        <div class="visitor-pct">38%</div>
+                    </div>
+                    <div class="visitor-bar-track"><div class="visitor-bar-fill" style="width:38%;background:var(--border)"></div></div>
+                    <div class="visitor-desc">In and out fast with minimal interaction. May have found what they needed, or may not have found it at all.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<div class="section" id="pricing">
+    <div class="reveal">
+        <span class="eyebrow">Pricing</span>
+        <h2>Free during the beta</h2>
+        <p class="section-intro">Create an account and use TraceTray free while the beta is underway. Paid plans will be introduced after the product and pricing are finalized.</p>
+    </div>
+    <div class="pricing-grid reveal">
+
+        <div class="plan-card">
+            <div class="plan-name">Starter</div>
+            <div class="plan-price" style="font-size:28px;padding-top:10px;letter-spacing:-0.02em">Coming soon</div>
+            <p class="plan-desc">For smaller sites getting started with behavioural analytics.</p>
+            <ul class="plan-features">
+                <li>Up to 5,000 sessions per month</li>
+                <li>Visitor pattern breakdowns</li>
+                <li>Analysis summaries</li>
+                <li>One website</li>
+                <li>Two-line tracker install</li>
+            </ul>
+            <button class="plan-btn outline" type="button" data-auth-cta="pricing" onclick="window.location.href='/sign-in.html'">Try it out</button>
+        </div>
+
+        <div class="plan-card featured">
+            <div class="plan-badge">Preview</div>
+            <div class="plan-name">Pro</div>
+            <div class="plan-price" style="font-size:28px;padding-top:10px;letter-spacing:-0.02em">Coming soon</div>
+            <p class="plan-desc">For sites that want to analyze every session without a monthly cap.</p>
+            <ul class="plan-features">
+                <li>Unlimited sessions</li>
+                <li>Everything in Starter</li>
+                <li>Up to 5 websites</li>
+                <li>Click and scroll breakdowns</li>
+            </ul>
+            <button class="plan-btn filled" type="button" data-auth-cta="pricing" onclick="window.location.href='/sign-in.html'">Try it out</button>
+        </div>
+
+
+    </div>
+</div>
+<div class="surface-wrap" id="faq">
+<div class="section">
+    <div class="reveal">
+        <span class="eyebrow">Questions</span>
+        <h2>FAQ</h2>
+    </div>
+    <div class="faq-list reveal">
+        <div class="faq-item">
+            <div class="faq-question">
+                How is TraceTray different from traditional analytics tools?
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-answer">TraceTray focuses on interaction patterns rather than full session recordings. It measures movement, pauses, clicks, taps, and scrolling, then compares sessions to show how different visitors browse a page and where the experience may need attention.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">
+                What does the tracker collect?
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-answer">TraceTray collects cursor or touch movement, pauses, clicks or taps, scrolling, session timing, and basic context about interacted elements. It does not record keystrokes, form input values, screenshots, or video.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">
+                How much traffic do I need before results are useful?
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-answer">You can begin exploring patterns with a relatively small set of sessions. Results become more useful as more visits are collected, and the dashboard includes context about the amount of data behind each analysis.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">
+                Does it work on mobile?
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-answer">Yes. TraceTray supports touch movement, taps, and scrolling on mobile devices, alongside cursor movement and clicks on desktop. Mobile and desktop sessions can both be included in your analysis.</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">
+                Can I add it to multiple pages?
+                <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-answer">Yes. You can add the tracker to multiple pages and review the activity collected from each one. TraceTray is designed to help you compare how visitors interact with different parts of your site.</div>
+        </div>
+    </div>
+</div>
+</div>
+<footer>
+    <div class="footer-top">
+        <div class="footer-logo">Trace<span>Tray</span></div>
+        <ul class="footer-links">
+            <li data-auth-cta="footer-item"><a href="/sign-in.html">Sign in</a></li>
+            <li><a href="mailto:hello@tracetray.com">Contact</a></li>
+            <li><a href="/privacy.html">Privacy</a></li>
+            <li><a href="/terms.html">Terms</a></li>
+        </ul>
+    </div>
+    <div class="footer-copy">© 2026 TraceTray.</div>
+</footer>
+
+<script>
+function toggleMenu() {
+  document.getElementById("nav-links").classList.toggle("open");
+}
+function closeMenu() {
+  document.getElementById("nav-links").classList.remove("open");
+}
+function toggleDark() {
+  const isDark = document.documentElement.classList.toggle("dark");
+  localStorage.setItem("tt-dark", isDark ? "1" : "0");
+  updateDarkIcon(isDark);
+}
+function updateDarkIcon(isDark) {
+  const icon = document.getElementById("dark-icon");
+  if (!icon) return;
+  icon.innerHTML = isDark
+    ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+    : '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+}
+(function() {
+  const saved = localStorage.getItem("tt-dark");
+  if (saved === "1") {
+    document.documentElement.classList.add("dark");
+  }
+  window.addEventListener("DOMContentLoaded", () => updateDarkIcon(document.documentElement.classList.contains("dark")));
+})();
+</script>
+<script>
+async function startTraceTrayTracker() {
+  let siteKey = null;
+
+  try {
+    const config = await fetch("/api/config").then(r => r.json());
+    siteKey = config.site_key || null;
+  } catch (e) {
+  }
+
+  window.TraceTray = {
+    endpoint: `${window.location.origin}/collect`,
+    key: siteKey
+  };
+
+  const script = document.createElement("script");
+  script.src = "/client/tracker.js";
+  script.async = true;
+  document.head.appendChild(script);
+}
+
+startTraceTrayTracker();
+</script>
+
+<script>
+async function checkAuth() {
+  try {
+    const config      = await fetch("/api/config").then(r => r.json());
+    const pubKey      = config.clerk_publishable_key;
+    const clerkDomain = atob(pubKey.split("_")[2]).slice(0, -1);
+
+    await new Promise((resolve, reject) => {
+      const s        = document.createElement("script");
+      s.src          = `https://${clerkDomain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`;
+      s.setAttribute("data-clerk-publishable-key", pubKey);
+      s.async        = true;
+      s.crossOrigin  = "anonymous";
+      s.onload       = resolve;
+      s.onerror      = reject;
+      document.head.appendChild(s);
+    });
+
+    await window.Clerk.load();
+
+    if (window.Clerk.user) {
+      const token = await window.Clerk.session.getToken();
+      const stats = await fetch("/api/stats", {
+        headers: { "Authorization": `Bearer ${token}` }
+      }).then(r => r.json()).catch(() => null);
+
+      const navCta = document.querySelector('[data-auth-cta="nav"]');
+      const stripCta = document.querySelector('[data-auth-cta="strip"]');
+
+      if (navCta) {
+        navCta.textContent = "Dashboard";
+        navCta.href = "/dashboard.html";
+      }
+
+      if (stripCta) {
+        stripCta.textContent = "Dashboard";
+        stripCta.href = "/dashboard.html";
+      }
+
+      document.querySelectorAll(
+        '[data-auth-cta="hero-wrap"], [data-auth-cta="pricing"], [data-auth-cta="footer-item"]'
+      ).forEach(element => {
+        element.hidden = true;
+      });
+    }
+  } catch(e) {
+  }
+}
+
+checkAuth();
+</script>
+
+<script>
+function updateMonitor() {
+    if (!window.sessionData) return;
+
+    const events  = window.sessionData.events || [];
+    const moves   = events.filter(e => e.type === "mousemove").length;
+    const pauses  = events.filter(e => e.type === "cursor_pause").length;
+    const clicks  = events.filter(e => e.type === "click").length;
+    const scrolls = events.filter(e => e.type === "scroll").length;
+    const dur     = Math.round((Date.now() - window.sessionData.start_time) / 1000);
+
+    const moveEvents = events.filter(e => e.type === "mousemove");
+    let vel = "-";
+    if (moveEvents.length > 5) {
+        const recent = moveEvents.slice(-20);
+        let totalDist = 0, totalTime = 0;
+        for (let i = 1; i < recent.length; i++) {
+            const dx = recent[i].x - recent[i-1].x;
+            const dy = recent[i].y - recent[i-1].y;
+            totalDist += Math.sqrt(dx*dx + dy*dy);
+            totalTime += (recent[i].delta_t || 0);
+        }
+        vel = totalTime > 0 ? (totalDist / totalTime).toFixed(2) : "-";
+    }
+
+    document.getElementById("mon-moves").textContent   = moves;
+    document.getElementById("mon-pauses").textContent  = pauses;
+    document.getElementById("mon-clicks").textContent  = clicks;
+    document.getElementById("mon-scrolls").textContent = scrolls;
+    document.getElementById("mon-vel").textContent     = vel;
+    document.getElementById("mon-dur").textContent     = dur + "s";
+    document.getElementById("stat-moves").textContent  = moves;
+    document.getElementById("stat-pauses").textContent = pauses;
+    document.getElementById("stat-clicks").textContent = clicks;
+    document.getElementById("stat-time").textContent   = dur + "s";
+}
+
+setInterval(updateMonitor, 500);
+document.querySelectorAll(".faq-item").forEach(item => {
+    item.addEventListener("click", () => {
+        const isOpen = item.classList.contains("open");
+        document.querySelectorAll(".faq-item").forEach(i => i.classList.remove("open"));
+        if (!isOpen) item.classList.add("open");
+    });
+});
+if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
+    document.getElementById("mobile-banner").classList.add("visible");
+}
+document.getElementById("mobile-banner-close").addEventListener("click", () => {
+    document.getElementById("mobile-banner").classList.remove("visible");
+});
+const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); });
+}, { threshold: 0.08 });
+
+document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

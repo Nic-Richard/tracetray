@@ -1,0 +1,16 @@
+{
+  "name": "tracetray-analysis",
+  "version": "1.0.0",
+  "description": "Feature extraction for TraceTray session data",
+  "main": "extractFeatures.js",
+  "scripts": {
+    "extract": "node extractFeatures.js"
+  },
+  "keywords": [],
+  "author": "Nicholas Richard",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "mongoose": "^9.2.3"
+  }
+}

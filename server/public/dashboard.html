@@ -1,0 +1,2035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="View your TraceTray behavioural analytics dashboard.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="canonical" href="https://tracetray.com/dashboard.html">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#5b5bd6">
+<title>Dashboard | TraceTray</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+:root {
+  --bg:        #ffffff;
+  --surface:   #f6f6f8;
+  --surface-2: #eeeeF2;
+  --border:    #e2e2e8;
+  --border-2:  #c8c8d4;
+  --accent:    #5b5bd6;
+  --accent-2:  #4a90d9;
+  --warn:      #d97706;
+  --danger:    #dc2626;
+  --text:      #0d0d0f;
+  --ink-2:     #2e2e35;
+  --muted:     #6b6b78;
+  --muted-2:   #a8a8b3;
+  --font-ui:   'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --c0: #4C72B0; --c1: #DD8452; --c2: #55A868;
+  --c3: #C44E52; --c4: #8172B2; --c5: #937860;
+  --c6: #4C9B9B; --c7: #B07D4C;
+}
+.dark {
+  --bg:        #0f0f13;
+  --surface:   #161619;
+  --surface-2: #1e1e24;
+  --border:    rgba(255,255,255,0.08);
+  --border-2:  rgba(255,255,255,0.14);
+  --text:      #e8e8f0;
+  --ink-2:     #b8b8c8;
+  --muted:     #6b6b80;
+  --muted-2:   #9898b0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--surface); color: var(--text); font-family: var(--font-body); font-weight: 300; line-height: 1.6; min-height: 100vh; }
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; visibility: hidden; }
+.sidebar { background: var(--bg); border-right: 1px solid var(--border); padding: 28px 0; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.sidebar-logo { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.sidebar-logo span { color: var(--accent); }
+.dark .sidebar-logo { color: var(--text); }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; color: var(--muted); font-size: 13px; font-weight: 400; text-decoration: none; border-left: 2px solid transparent; transition: all 0.15s; cursor: pointer; user-select: none; }
+.nav-item:hover { color: var(--text); background: var(--surface); }
+.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(91,91,214,0.06); }
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+.nav-item.active svg { opacity: 1; }
+.sidebar-sep { height: 1px; background: var(--border); margin: 10px 20px; }
+.sidebar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 8px 20px 4px; }
+#user-button-mount { padding: 8px 16px; margin-top: auto; display: flex; align-items: center; gap: 10px; }
+.main { display: flex; flex-direction: column; min-height: 100vh; background: var(--surface); }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 10; }
+.topbar-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.topbar-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.run-btn { display: flex; align-items: center; gap: 8px; background: var(--accent); color: #ffffff; border: none; padding: 9px 18px; border-radius: 6px; font-family: var(--font-ui); font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+.run-btn:hover { opacity: 0.88; }
+.run-btn:disabled { opacity: 0.5; cursor: not-allowed; background: var(--surface-2); color: var(--muted); }
+.run-btn svg { width: 14px; height: 14px; }
+.run-btn.running svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.content { padding: 28px 32px; flex: 1; display: flex; flex-direction: column; gap: 20px; max-width: 1280px; width: 100%; margin: 0 auto; }
+.section { display: none; flex-direction: column; gap: 18px; }
+.section.active { display: flex; }
+.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+.stat-label { font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
+.stat-value { font-size: 26px; font-weight: 700; line-height: 1; color: var(--text); letter-spacing: -0.03em; }
+.stat-value.accent  { color: var(--accent); }
+.stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.panel { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+.panel-title { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+.panel-meta { font-size: 11px; color: var(--muted); }
+.panel-body { padding: 20px; }
+.ai-summary { background: linear-gradient(135deg, rgba(91,91,214,0.05) 0%, rgba(74,144,217,0.03) 100%); border: 1px solid rgba(91,91,214,0.15); border-radius: 10px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; }
+.tab-intro { background: rgba(91,91,214,0.05); border: 1px solid rgba(91,91,214,0.15); border-radius: 8px; padding: 16px 22px; font-size: 13.5px; color: var(--ink-2); line-height: 1.7; margin-bottom: 18px; }
+.ai-summary-label { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--accent); }
+.ai-summary-label svg { width: 13px; height: 13px; }
+.ai-summary-text { font-size: 15px; color: var(--ink-2); line-height: 1.75; }
+.suggestions-list { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+.suggestion-item { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--ink-2); line-height: 1.6; }
+.suggestion-item::before { content: "→"; color: var(--accent); flex-shrink: 0; font-weight: 600; margin-top: 1px; }
+.placeholder { background: var(--surface); border: 1px dashed var(--border-2); border-radius: 10px; padding: 48px 32px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.placeholder-icon { font-size: 32px; opacity: 0.4; }
+.placeholder-title { font-size: 15px; font-weight: 600; color: var(--muted); }
+.placeholder-body { font-size: 13px; color: var(--muted); max-width: 340px; line-height: 1.7; }
+.placeholder-btn { margin-top: 8px; background: var(--accent); color: #ffffff; border: none; padding: 10px 22px; border-radius: 6px; font-family: var(--font-ui); font-weight: 600; font-size: 13px; cursor: pointer; }
+.placeholder-btn:hover { opacity: 0.88; }
+.device-toggle { display: inline-flex; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 2px; align-self: flex-start; }
+.device-toggle-btn { background: none; border: none; padding: 7px 16px; border-radius: 6px; font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+.device-toggle-btn:hover { color: var(--text); }
+.device-toggle-btn.active { background: var(--bg); color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+.visitor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.visitor-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.visitor-card-top { display: flex; align-items: flex-start; gap: 12px; }
+.visitor-color-bar { width: 3px; border-radius: 2px; align-self: stretch; flex-shrink: 0; }
+.visitor-header { flex: 1; }
+.visitor-headline { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 3px; letter-spacing: -0.01em; }
+.visitor-count { font-size: 12px; color: var(--muted-2); }
+.visitor-pct-row { display: flex; align-items: center; gap: 10px; }
+.visitor-bar-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.visitor-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s cubic-bezier(0.16,1,0.3,1); }
+.visitor-pct { font-family: var(--font-mono); font-size: 11px; color: var(--muted); width: 32px; text-align: right; }
+.visitor-body { font-size: 13.5px; color: var(--ink-2); line-height: 1.7; }
+.donut-wrap { display: flex; align-items: center; gap: 32px; max-width: 520px; }
+.donut-canvas-wrap { width: 180px; height: 180px; flex-shrink: 0; position: relative; }
+.donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+.donut-center-value { font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
+.donut-center-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.donut-legend { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.legend-item { display: flex; align-items: center; gap: 10px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.legend-label { font-size: 13px; color: var(--ink-2); flex: 1; }
+.legend-pct { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.insight-group { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--bg); }
+.insight-item { padding: 20px; border-bottom: 1px solid var(--border); }
+.insight-item:last-child { border-bottom: none; }
+.insight-item-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.insight-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.insight-headline { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+.insight-n { font-size: 12px; color: var(--muted); margin-left: auto; flex-shrink: 0; }
+.insight-body { font-size: 13.5px; color: var(--ink-2); line-height: 1.7; margin-bottom: 12px; }
+.insight-suggestions { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid var(--border); }
+.insight-suggestion { font-size: 13px; color: var(--ink-2); display: flex; align-items: flex-start; gap: 8px; line-height: 1.55; }
+.insight-suggestion::before { content: "→"; color: var(--accent); font-size: 12px; flex-shrink: 0; margin-top: 1px; font-weight: 600; }
+.chart-wrap { position: relative; max-width: 640px; }
+.sessions-table { width: 100%; border-collapse: collapse; }
+.sessions-table th { text-align: left; font-size: 11px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); padding: 0 14px 12px; border-bottom: 1px solid var(--border); }
+.sessions-table th:first-child { padding-left: 0; }
+.sessions-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 13px; vertical-align: middle; }
+.sessions-table td:first-child { padding-left: 0; }
+.sessions-table tr:last-child td { border-bottom: none; }
+.sessions-table tr:hover td { background: rgba(0,0,0,0.01); }
+.eng-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+.eng-high { background: #55A868; } .eng-medium { background: #DD8452; } .eng-low { background: #9e9e9e; }
+.adv-meta-row { display: flex; gap: 28px; flex-wrap: wrap; }
+.adv-meta-item { display: flex; flex-direction: column; gap: 3px; }
+.adv-meta-label { font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+.adv-meta-value { font-family: var(--font-mono); font-size: 14px; color: var(--text); }
+.feature-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.feature-table th { text-align: left; font-size: 11px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); padding: 0 12px 12px; border-bottom: 1px solid var(--border); }
+.feature-table th:first-child { padding-left: 0; }
+.feature-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); font-family: var(--font-mono); font-size: 12px; }
+.feature-table td:first-child { padding-left: 0; color: var(--muted); }
+.feature-table tr:last-child td { border-bottom: none; }
+.sig-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: var(--font-ui); font-size: 10px; font-weight: 600; }
+.sig-yes { background: rgba(91,91,214,0.12); color: var(--accent); }
+.sig-no  { background: rgba(248,113,113,0.12); color: #f87171; }
+.snippet-intro { font-size: 13.5px; color: var(--muted); line-height: 1.7; }
+.snippet-intro strong { color: var(--text); font-weight: 500; }
+.code-block { background: #1e1e2e; border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; font-family: var(--font-mono); font-size: 12.5px; color: #a5f3c4; line-height: 1.7; position: relative; white-space: pre; overflow-x: auto; }
+.copy-btn { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; padding: 5px 10px; font-family: var(--font-ui); font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); cursor: pointer; transition: all 0.15s; }
+.copy-btn:hover { color: #ffffff; border-color: rgba(255,255,255,0.4); }
+.copy-btn.copied { color: #a5f3c4; border-color: #a5f3c4; }
+.note-box { background: rgba(217,119,6,0.06); border: 1px solid rgba(217,119,6,0.2); border-radius: 7px; padding: 12px 16px; font-size: 13px; color: #92400e; line-height: 1.6; }
+.data-note { background: rgba(217,119,6,0.06); border: 1px solid rgba(217,119,6,0.2); border-radius: 7px; padding: 12px 16px; font-size: 13px; color: #92400e; line-height: 1.6; }
+.page-tab { display: inline-flex; align-items: center; padding: 12px 18px; font-size: 12.5px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font-ui); }
+.page-tab:hover { color: var(--text); }
+.page-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.page-tab-label { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.page-tab-count { margin-left: 6px; font-size: 11px; color: var(--muted-2); background: var(--surface); border-radius: 10px; padding: 1px 7px; }
+.journey-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 20px; border-bottom: 1px solid var(--border); gap: 16px; }
+.journey-row:last-child { border-bottom: none; }
+.journey-page { font-size: 13px; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); }
+.journey-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.journey-bar-wrap { width: 80px; flex-shrink: 0; }
+.journey-bar-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.journey-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); }
+#toast { position: fixed; bottom: 28px; right: 28px; background: #f1f1f4; border: 1px solid #e2e2e8; border-radius: 8px; padding: 12px 18px; font-size: 13px; color: #0d0d0f; z-index: 999; transform: translateY(80px); opacity: 0; transition: all 0.25s ease; max-width: 340px; }
+#toast.show { transform: translateY(0); opacity: 1; }
+#toast.ok  { background: #166534; color: #ffffff; border-color: #166534; }
+#toast.err { background: #991b1b; color: #ffffff; border-color: #991b1b; }
+.empty { padding: 40px 0; text-align: center; color: var(--muted); font-size: 13px; }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+.bug-report-btn { display: flex; align-items: center; gap: 7px; background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--muted); font-family: var(--font-ui); font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.bug-report-btn:hover { color: var(--text); border-color: var(--border-2); background: var(--surface); }
+.bug-report-btn svg { width: 14px; height: 14px; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,0.55); }
+.modal-backdrop.open { display: flex; }
+.bug-modal { width: min(520px, 100%); background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.bug-modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 20px 22px; border-bottom: 1px solid var(--border); }
+.bug-modal-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.bug-modal-sub { margin-top: 3px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.bug-modal-close { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 22px; line-height: 1; padding: 0 2px; }
+.bug-modal-body { display: flex; flex-direction: column; gap: 14px; padding: 20px 22px 22px; }
+.bug-field { display: flex; flex-direction: column; gap: 6px; }
+.bug-field label { font-size: 12px; font-weight: 500; color: var(--text); }
+.bug-field select, .bug-field textarea { width: 100%; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--text); font-family: var(--font-ui); font-size: 13px; padding: 10px 11px; }
+.bug-field textarea { min-height: 150px; resize: vertical; line-height: 1.55; }
+.bug-field select:focus, .bug-field textarea:focus { outline: 2px solid rgba(91,91,214,0.2); border-color: var(--accent); }
+.bug-modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 2px; }
+.bug-secondary-btn, .bug-submit-btn { border-radius: 6px; padding: 9px 15px; font-family: var(--font-ui); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.bug-secondary-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.bug-submit-btn { background: var(--accent); border: 1px solid var(--accent); color: #fff; }
+.bug-submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+@media (max-width: 720px) {
+  .bug-report-btn span { display: none; }
+  .bug-report-btn { padding: 8px 9px; }
+}
+
+
+.site-switcher { display:flex; align-items:center; gap:7px; }
+.site-select { min-width:170px; max-width:240px; border:1.5px solid var(--border); border-radius:6px; background:var(--bg); color:var(--text); padding:8px 30px 8px 10px; font-family:var(--font-ui); font-size:12.5px; font-weight:500; cursor:pointer; }
+.site-add-btn, .site-action-btn { border:1.5px solid var(--border); border-radius:6px; background:var(--bg); color:var(--muted); width:34px; height:34px; line-height:1; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.site-add-btn { font-size:20px; }
+.site-action-btn { font-size:14px; }
+.site-add-btn:hover, .site-action-btn:hover { color:var(--accent); border-color:var(--accent); }
+.site-action-btn.danger:hover { color:#d64545; border-color:#d64545; }
+.site-action-btn:disabled, .site-add-btn:disabled { opacity:0.4; cursor:not-allowed; }
+@media (max-width: 900px) { .site-select { min-width:120px; max-width:150px; } }
+
+</style>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <a href="/" class="sidebar-logo" style="text-decoration:none;display:block;">Trace<span>Tray</span></a>
+
+    <a class="nav-item active" data-section="overview" onclick="nav('overview',this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Overview
+    </a>
+    <a class="nav-item" data-section="trends" onclick="nav('trends',this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>
+      Trends
+    </a>
+    <a class="nav-item" data-section="visitors" onclick="nav('visitors',this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Visitors
+    </a>
+    <a class="nav-item" data-section="insights" onclick="nav('insights',this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      Insights
+    </a>
+    <a class="nav-item" data-section="attention" onclick="nav('attention',this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 17v-6m3 6V7m3 10v-3M3 21h18M5 21V9a2 2 0 012-2h0a2 2 0 012 2v12M13 21V5a2 2 0 012-2h0a2 2 0 012 2v16"/></svg>
+      Attention
+    </a>
+    <a class="nav-item" data-section="journey" onclick="nav('journey',this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>
+      Journey
+    </a>
+    <a class="nav-item" data-section="sessions" onclick="nav('sessions',this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Sessions
+    </a>
+    <a class="nav-item" data-section="embed" onclick="nav('embed',this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Embed
+    </a>
+
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-label">For developers</div>
+    <a class="nav-item" data-section="advanced" onclick="nav('advanced',this)">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+      Advanced
+    </a>
+
+    <div class="sidebar-sep"></div>
+    <div id="user-button-mount"></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="page-title">Overview</div>
+        <div class="topbar-sub" id="page-sub">Loading...</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="site-switcher">
+          <select id="site-select" class="site-select" aria-label="Choose website" onchange="switchSite(this.value)"></select>
+          <button type="button" class="site-add-btn" id="site-add-btn" onclick="createWebsite()" title="Add website">+</button>
+          <button type="button" class="site-action-btn" id="site-rename-btn" onclick="renameWebsite()" title="Rename website" aria-label="Rename website">✎</button>
+          <button type="button" class="site-action-btn danger" id="site-delete-btn" onclick="deleteWebsite()" title="Remove website" aria-label="Remove website">×</button>
+        </div>
+        <button class="bug-report-btn" type="button" onclick="openBugReport()">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 3h3v4h-2v2a6 6 0 01-12 0V9H4V5h3l1-3z"/><path d="M9 9h6M9 13h.01M15 13h.01M9 17h6"/></svg>
+          <span>Report a bug</span>
+        </button>
+        <button onclick="toggleDark()" id="dark-btn" title="Toggle dark mode" style="background:transparent;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;cursor:pointer;color:var(--muted);display:flex;align-items:center;transition:all 0.15s;">
+          <svg id="dark-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        </button>
+        <span id="journey-run-button" style="display:none;align-items:center;">
+          <button onclick="loadJourney(true)" id="journey-refresh-btn" class="run-btn" style="display:flex;align-items:center;gap:7px;">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Refresh journey
+          </button>
+        </span>
+        <span id="page-run-buttons" style="display:flex;align-items:center;gap:10px;">
+          <button onclick="runAllAnalysis()" id="run-all-btn" title="Run analysis for every tracked page, one at a time" style="background:transparent;border:1.5px solid var(--border);border-radius:6px;padding:8px 14px;cursor:pointer;color:var(--muted);font-family:var(--font-ui);font-size:13px;font-weight:500;transition:all 0.15s;">
+            Refresh all pages
+          </button>
+          <button class="run-btn" id="run-btn" onclick="runAnalysis()">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Refresh this page
+          </button>
+        </span>
+      </div>
+    </div>
+    <div id="page-selector-bar" style="display:none;padding:0 32px;background:var(--bg);border-bottom:1px solid var(--border);align-items:center;justify-content:space-between;">
+      <div id="page-tabs" style="display:flex;gap:0;"></div>
+      <button onclick="resetCurrentPage()" title="Clear collected sessions for this page after a redesign" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:8px 4px;flex-shrink:0;display:flex;align-items:center;gap:5px;">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>
+        Reset page history
+      </button>
+    </div>
+
+    <div class="content">
+      <div class="section active" id="section-overview">
+        <div class="stat-row" style="grid-template-columns: repeat(5, 1fr);">
+          <div class="stat-card"><div class="stat-label">Total visitors</div><div class="stat-value accent" id="stat-total">-</div><div class="stat-sub">all time</div></div>
+          <div class="stat-card"><div class="stat-label">Desktop sessions</div><div class="stat-value" id="stat-desktop">-</div><div class="stat-sub">with cursor data</div></div>
+          <div class="stat-card"><div class="stat-label">Mobile sessions</div><div class="stat-value" id="stat-mobile">-</div><div class="stat-sub">with touch data</div></div>
+          <div class="stat-card"><div class="stat-label">Engaged sessions</div><div class="stat-value" id="stat-engaged">-</div><div class="stat-sub" id="stat-engaged-sub">last 14 days</div></div>
+          <div class="stat-card"><div class="stat-label">Last analysis</div><div class="stat-value accent" id="stat-ran-at">-</div><div class="stat-sub" id="stat-ran-sub">-</div></div>
+        </div>
+
+        <div class="panel" id="trend-panel" style="margin-top:14px;">
+          <div class="panel-header">
+            <span class="panel-title">Sessions over time</span>
+            <span class="panel-meta" id="trend-meta">last 14 days</span>
+          </div>
+          <div class="panel-body">
+            <div class="chart-wrap" style="height:220px;">
+              <canvas id="trend-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div id="overview-placeholder" class="placeholder" style="margin-top:14px;">
+          <div class="placeholder-icon">🔍</div>
+          <div class="placeholder-title">No analysis yet</div>
+          <div class="placeholder-body">Click Refresh Analysis to analyse your current visitors and see how they browse your page.</div>
+        </div>
+
+        <div id="overview-content" style="display:none;flex-direction:column;gap:18px;margin-top:14px;">
+          <div class="ai-summary" id="ai-summary-box">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <div class="ai-summary-label">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                What TraceTray found
+              </div>
+              <span id="page-type-badge" style="display:none;font-size:11px;font-weight:600;color:var(--accent);background:var(--indigo-bg, rgba(91,91,214,0.1));padding:3px 10px;border-radius:20px;flex-shrink:0;"></span>
+            </div>
+            <div class="ai-summary-text" id="ai-summary-text"></div>
+            <div id="ai-suggestions" class="suggestions-list"></div>
+          </div>
+          <div class="panel" id="device-comparison-panel" style="display:none;">
+            <div class="panel-header">
+              <span class="panel-title">Desktop vs. mobile</span>
+              <span class="panel-meta">how behaviour differs by device</span>
+            </div>
+            <div class="panel-body">
+              <div class="ai-summary-text" id="device-comparison-text" style="font-size:14px;"></div>
+            </div>
+          </div>
+          <div class="data-note" id="data-note" style="display:none"></div>
+        </div>
+      </div>
+      <div class="section" id="section-trends">
+        <p class="tab-intro">Tracks how key UX signals shift across your analysis runs, so you can see whether a change you made actually improved how visitors engage. Each point on these charts represents one Refresh Analysis run, not a single day.</p>
+
+        <div id="trends-placeholder" class="placeholder">
+          <div class="placeholder-icon">📈</div>
+          <div class="placeholder-title">Not enough history yet</div>
+          <div class="placeholder-body">Run analysis a few times over the coming days or weeks to start building a trend. Trends become meaningful after 3 or more runs.</div>
+        </div>
+
+        <div id="trends-content" style="display:none;flex-direction:column;gap:14px;">
+
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Engagement rate</span>
+              <span class="panel-meta">% of sessions with real interaction, last 14 days</span>
+            </div>
+            <div class="panel-body">
+              <div class="chart-wrap" style="height:200px;">
+                <canvas id="trend-engagement-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="panel">
+              <div class="panel-header">
+                <span class="panel-title">Hesitation time</span>
+                <span class="panel-meta">pause before clicking or tapping</span>
+              </div>
+              <div class="panel-body">
+                <div class="chart-wrap" style="height:180px;">
+                  <canvas id="trend-hesitation-chart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <span class="panel-title">Reading pauses</span>
+                <span class="panel-meta">rate of pauses while engaged</span>
+              </div>
+              <div class="panel-body">
+                <div class="chart-wrap" style="height:180px;">
+                  <canvas id="trend-pauses-chart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="panel">
+              <div class="panel-header">
+                <span class="panel-title">Scroll depth</span>
+                <span class="panel-meta">how far visitors get into the page</span>
+              </div>
+              <div class="panel-body">
+                <div class="chart-wrap" style="height:180px;">
+                  <canvas id="trend-scroll-chart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <span class="panel-title">Click-through rate</span>
+                <span class="panel-meta" id="trend-ctr-meta">top clicked element</span>
+              </div>
+              <div class="panel-body">
+                <div class="chart-wrap" style="height:180px;">
+                  <canvas id="trend-ctr-chart"></canvas>
+                </div>
+                <p id="trend-ctr-note" style="font-size:11.5px;color:var(--muted-2);margin-top:10px;display:none;">Click-through rate history only goes back as far as your most recent analysis runs since this deploy. Older runs aren't included.</p>
+              </div>
+            </div>
+          </div>
+
+          <p style="font-size:11.5px;color:var(--muted-2);line-height:1.6;">Higher or lower isn't automatically better for every metric. A short hesitation time can mean confident visitors or a confusing page people click through without reading. The Overview summary accounts for your page type when judging whether a shift here is a good sign.</p>
+        </div>
+      </div>
+      <div class="section" id="section-visitors">
+        <div class="device-toggle" id="visitors-device-toggle" style="display:none;margin-bottom:18px;">
+          <button class="device-toggle-btn active" data-device="desktop" onclick="setDevice('visitors','desktop',this)">Desktop</button>
+          <button class="device-toggle-btn" data-device="mobile" onclick="setDevice('visitors','mobile',this)">Mobile</button>
+        </div>
+        <div id="visitors-placeholder" class="placeholder">
+          <div class="placeholder-icon">👥</div>
+          <div class="placeholder-title">No visitor data yet</div>
+          <div class="placeholder-body">Run an analysis from the Overview tab to see your visitor breakdown.</div>
+        </div>
+        <div id="visitors-content" style="display:none;flex-direction:column;gap:18px;">
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">Visitor distribution</span><span class="panel-meta" id="donut-meta"></span></div>
+            <div class="panel-body">
+              <div class="donut-wrap">
+                <div class="donut-canvas-wrap">
+                  <canvas id="donut-chart"></canvas>
+                  <div class="donut-center">
+                    <div class="donut-center-value" id="donut-total">-</div>
+                    <div class="donut-center-label">sessions</div>
+                  </div>
+                </div>
+                <div class="donut-legend" id="donut-legend"></div>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">Your visitor types</span><span class="panel-meta" id="visitor-meta"></span></div>
+            <div class="panel-body">
+              <div class="visitor-grid" id="visitor-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section" id="section-insights">
+        <div class="device-toggle" id="insights-device-toggle" style="display:none;margin-bottom:18px;">
+          <button class="device-toggle-btn active" data-device="desktop" onclick="setDevice('insights','desktop',this)">Desktop</button>
+          <button class="device-toggle-btn" data-device="mobile" onclick="setDevice('insights','mobile',this)">Mobile</button>
+        </div>
+        <div id="insights-placeholder" class="placeholder">
+          <div class="placeholder-icon">💡</div>
+          <div class="placeholder-title">No insights yet</div>
+          <div class="placeholder-body">Run an analysis from the Overview tab to see per-visitor-type recommendations.</div>
+        </div>
+        <div id="insights-content" style="display:none;flex-direction:column;gap:18px;">
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">Recommendations by visitor type</span></div>
+            <div class="panel-body" style="padding:0;">
+              <div id="insight-group" class="insight-group"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">Most clicked elements</span><span class="panel-meta">across all sessions</span></div>
+            <div class="panel-body">
+              <div class="chart-wrap" style="height:260px;">
+                <canvas id="clicks-chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section" id="section-attention">
+        <div id="attention-placeholder" class="placeholder">
+          <div class="placeholder-icon">📊</div>
+          <div class="placeholder-title">No attention data yet</div>
+          <div class="placeholder-body">Run an analysis first, then open this tab to see how attention is distributed across the page.</div>
+        </div>
+        <div id="attention-content" style="display:none;flex-direction:column;gap:18px;">
+          <div class="ai-summary" id="attention-insight-box" style="padding:18px 22px;">
+            <div class="ai-summary-label">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 17v-6m3 6V7m3 10v-3M3 21h18M5 21V9a2 2 0 012-2h0a2 2 0 012 2v12M13 21V5a2 2 0 012-2h0a2 2 0 012 2v16"/></svg>
+              What the data shows
+            </div>
+            <div class="ai-summary-text" id="attention-insight-text" style="font-size:14px;">Loading...</div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Attention by page depth</span>
+              <span class="panel-meta" id="attention-meta">Loading...</span>
+            </div>
+            <div class="panel-body" style="display:flex;gap:28px;">
+              <div style="flex-shrink:0;width:64px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+                <span style="font-size:10.5px;color:var(--muted-2);font-weight:500;">TOP</span>
+                <div id="depth-bar" style="width:40px;height:340px;border-radius:8px;overflow:hidden;border:1px solid var(--border);display:flex;flex-direction:column;"></div>
+                <span style="font-size:10.5px;color:var(--muted-2);font-weight:500;">BOTTOM</span>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:18px;justify-content:center;">
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:6px;">
+                    <span>Top third</span><span id="zone-top-pct" style="font-family:var(--font-mono);">-</span>
+                  </div>
+                  <div class="visitor-bar-track"><div class="visitor-bar-fill" id="zone-top-bar" style="background:var(--accent);width:0%;"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:6px;">
+                    <span>Middle third</span><span id="zone-mid-pct" style="font-family:var(--font-mono);">-</span>
+                  </div>
+                  <div class="visitor-bar-track"><div class="visitor-bar-fill" id="zone-mid-bar" style="background:var(--accent);width:0%;"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:6px;">
+                    <span>Bottom third</span><span id="zone-bot-pct" style="font-family:var(--font-mono);">-</span>
+                  </div>
+                  <div class="visitor-bar-track"><div class="visitor-bar-fill" id="zone-bot-bar" style="background:var(--accent);width:0%;"></div></div>
+                </div>
+                <p style="font-size:12px;color:var(--muted-2);line-height:1.6;margin-top:4px;">Depth is measured relative to each visitor's own cursor reach, so it stays meaningful across different screen sizes. Want to know what people actually clicked along the way? Check the <a onclick="nav('insights', document.querySelector('[data-section=insights]'))" style="color:var(--accent);cursor:pointer;text-decoration:none;">Insights</a> tab.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">First impression</span>
+              <span class="panel-meta">first 5 seconds vs. the rest of the session</span>
+            </div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:14px;">
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+                <div class="stat-card" style="padding:14px 16px;">
+                  <div class="stat-label">Cursor speed, first 5s</div>
+                  <div class="stat-value" id="fi-velocity-delta" style="font-size:20px;">-</div>
+                  <div class="stat-sub">vs. rest of session</div>
+                </div>
+                <div class="stat-card" style="padding:14px 16px;">
+                  <div class="stat-label">Pauses, first 5s</div>
+                  <div class="stat-value" id="fi-early-pauses" style="font-size:20px;">-</div>
+                  <div class="stat-sub" id="fi-rest-pauses"></div>
+                </div>
+                <div class="stat-card" style="padding:14px 16px;">
+                  <div class="stat-label">Early focus</div>
+                  <div class="stat-value" id="fi-zone" style="font-size:20px;">-</div>
+                  <div class="stat-sub">where the first 5s concentrate</div>
+                </div>
+              </div>
+              <div class="ai-summary" id="fi-insight-box" style="padding:16px 20px;display:none;">
+                <div class="ai-summary-label">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                  What this means
+                </div>
+                <div class="ai-summary-text" id="fi-insight-text" style="font-size:14px;"></div>
+              </div>
+            </div>
+          </div>
+<div class="panel" id="mobile-attention-panel" style="display:none;">
+            <div class="panel-header">
+              <span class="panel-title">Mobile scroll depth</span>
+              <span class="panel-meta">how far mobile visitors scroll, by visitor type</span>
+            </div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:14px;">
+              <p style="font-size:12.5px;color:var(--muted);line-height:1.6;">Mobile sessions have no cursor position data, so attention here is measured by scroll depth instead. Each bar shows how far that visitor type typically scrolled, relative to the deepest point reached by any mobile session on this page.</p>
+              <div id="mobile-depth-bars" style="display:flex;flex-direction:column;gap:14px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="section" id="section-journey">
+        <div id="journey-placeholder" class="placeholder">
+          <div class="placeholder-icon">🗺️</div>
+          <div class="placeholder-title">No journey data yet</div>
+          <div class="placeholder-body">Journey tracking requires visitor IDs. Sessions collected after your latest deploy will appear here automatically.</div>
+        </div>
+        <div id="journey-content" style="display:none;flex-direction:column;gap:18px;">
+
+          <p class="tab-intro" style="margin-bottom:0;">Journey tracks individual visitors across every page they visit in a single session, not just one page at a time. Use it to see where people enter your site, where they tend to leave, and which paths through your pages come up most often.</p>
+
+          <div class="stat-row">
+            <div class="stat-card"><div class="stat-label">Unique visitors</div><div class="stat-value accent" id="j-visitors">-</div><div class="stat-sub">with visitor ID</div></div>
+            <div class="stat-card"><div class="stat-label">Multi-page visits</div><div class="stat-value" id="j-multi">-</div><div class="stat-sub" id="j-multi-pct"></div></div>
+            <div class="stat-card"><div class="stat-label">Single-page visits</div><div class="stat-value" id="j-single">-</div><div class="stat-sub" id="j-single-pct"></div></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title">Top entry pages</span><span class="panel-meta">where visitors start</span></div>
+              <div class="panel-body" style="padding:0;"><div id="j-entries"></div></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><span class="panel-title">Top exit pages</span><span class="panel-meta">where visitors leave</span></div>
+              <div class="panel-body" style="padding:0;"><div id="j-exits"></div></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">Most common paths</span><span class="panel-meta">up to 3 pages deep</span></div>
+            <div class="panel-body" style="padding:0;"><div id="j-paths"></div></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">Page transitions</span><span class="panel-meta">how visitors move between pages</span></div>
+            <div class="panel-body">
+              <div class="chart-wrap" style="height:240px;">
+                <canvas id="transitions-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="section" id="section-sessions">
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Recent visitors</span><span class="panel-meta" id="sessions-meta"></span></div>
+          <div class="panel-body" style="padding:0;">
+            <div id="sessions-wrap" style="padding:0 20px 20px;"><div class="empty"><span class="spinner"></span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="section" id="section-embed">
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Add TraceTray to your website</span></div>
+          <div class="panel-body" style="display:flex;flex-direction:column;gap:16px;">
+            <p class="snippet-intro">Paste these two lines just before the <strong>&lt;/body&gt;</strong> tag on any page you want to track.</p>
+            <div class="code-block"><button class="copy-btn" onclick="copySnippet()">Copy</button><span id="snippet-text"></span></div>
+            <p class="snippet-intro"><strong>Use one key per website.</strong> Do not reuse this key on another domain. Add another website above to generate a separate key.</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">What gets collected</span></div>
+          <div class="panel-body">
+            <p class="snippet-intro" style="margin-bottom:14px;">Cursor and touch movement, pauses, clicks, taps, and scrolling. No keystrokes or form data.</p>
+            <table class="feature-table">
+              <thead><tr><th>Signal</th><th>Why it matters</th></tr></thead>
+              <tbody>
+                <tr><td>Pointer path</td><td>Shows how visitors move through the page on desktop and mobile</td></tr>
+                <tr><td>Pauses</td><td>Highlights places where visitors slow down or stop</td></tr>
+                <tr><td>Clicks and taps</td><td>Shows what visitors interact with</td></tr>
+                <tr><td>Scrolling</td><td>Shows how far visitors move through the page</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="section" id="section-advanced">
+        <div id="adv-placeholder" class="placeholder">
+          <div class="placeholder-icon">⚗️</div>
+          <div class="placeholder-title">No analysis results yet</div>
+          <div class="placeholder-body">Run an analysis from the Overview tab.</div>
+          <button class="placeholder-btn" onclick="runAnalysis()">Run Analysis</button>
+        </div>
+        <div id="adv-content" style="display:none;flex-direction:column;gap:18px;">
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">Model summary</span><span class="panel-meta" id="adv-ran-at"></span></div>
+            <div class="panel-body"><div class="adv-meta-row" id="adv-meta-row"></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">k selection rationale</span></div>
+            <div class="panel-body"><div id="adv-k-rationale" style="font-size:12.5px;color:var(--muted);line-height:1.8;font-family:var(--font-mono);"></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">Cluster feature means</span><span class="panel-meta">rate-normalized per second</span></div>
+            <div class="panel-body" style="overflow-x:auto;"><div id="adv-cluster-table"></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">Kruskal-Wallis significance tests</span><span class="panel-meta" id="adv-kw-meta"></span></div>
+            <div class="panel-body" style="overflow-x:auto;"><div id="adv-kw-table"></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="bug-report-modal" aria-hidden="true">
+  <div class="bug-modal" role="dialog" aria-modal="true" aria-labelledby="bug-report-title">
+    <div class="bug-modal-header">
+      <div>
+        <div class="bug-modal-title" id="bug-report-title">Report a bug</div>
+        <div class="bug-modal-sub">Tell me what happened and what you expected instead.</div>
+      </div>
+      <button class="bug-modal-close" type="button" onclick="closeBugReport()" aria-label="Close">&times;</button>
+    </div>
+    <form class="bug-modal-body" id="bug-report-form">
+      <div class="bug-field">
+        <label for="bug-category">Type</label>
+        <select id="bug-category">
+          <option value="bug">Bug</option>
+          <option value="account">Account or sign-in</option>
+          <option value="billing">Billing</option>
+          <option value="suggestion">Suggestion</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="bug-field">
+        <label for="bug-description">What happened?</label>
+        <textarea id="bug-description" maxlength="5000" required placeholder="Include what you were doing, what went wrong, and what you expected to happen."></textarea>
+      </div>
+      <div class="bug-modal-actions">
+        <button class="bug-secondary-btn" type="button" onclick="closeBugReport()">Cancel</button>
+        <button class="bug-submit-btn" id="bug-submit-btn" type="submit">Send report</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const COLORS = ["#4C72B0","#DD8452","#55A868","#C44E52","#8172B2","#937860","#4C9B9B","#B07D4C"];
+const TITLES = { overview:"Overview", trends:"Trends", visitors:"Visitors", insights:"Insights", attention:"Attention", journey:"Journey", sessions:"Sessions", embed:"Embed", advanced:"Advanced" };
+let sessionsLoaded = false;
+let donutChart = null;
+let clicksChart = null;
+let trendChart = null;
+let attentionProfileLoaded = false;
+let tracetrayMode = "beta";
+let journeyLoaded  = false;
+let trendsLoaded   = false;
+let currentPage    = null; // set once /api/pages resolves the first real page
+let activeSiteKey  = null;
+let accountSites   = [];
+let siteLimit      = 5;
+
+function siteUrl(path) {
+  if (!activeSiteKey) return path;
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}site_key=${encodeURIComponent(activeSiteKey)}`;
+}
+
+let lastAnalysisResult = null;
+let activeDevice = { visitors: "desktop", insights: "desktop" }; // per-section device toggle state
+let lastClickSummary = []; // most recent click summary, kept so setDevice can re-render Insights without a new fetch
+function setDevice(section, device, btn) {
+  activeDevice[section] = device;
+  document.querySelectorAll(`#${section}-device-toggle .device-toggle-btn`).forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  if (!lastAnalysisResult) return;
+  if (section === "visitors") renderVisitors(lastAnalysisResult);
+  if (section === "insights") renderInsights(lastAnalysisResult, lastClickSummary);
+}
+let transitionsChart = null;
+const PAGE_SELECTOR_HIDDEN_ON = ["journey", "embed"];
+
+function nav(id, el) {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  document.getElementById("section-" + id).classList.add("active");
+  if (el) el.classList.add("active");
+  document.getElementById("page-title").textContent = TITLES[id] || id;
+  if (id === "sessions" && !sessionsLoaded) loadSessions();
+  if (id === "attention"  && !attentionProfileLoaded)  loadAttentionProfile();
+  if (id === "journey"  && !journeyLoaded)  loadJourney();
+  if (id === "trends"   && !trendsLoaded)   loadTrendsTab();
+
+  const bar            = document.getElementById("page-selector-bar");
+  const runButtons     = document.getElementById("page-run-buttons");
+  const journeyButton  = document.getElementById("journey-run-button");
+  const hideForThis    = PAGE_SELECTOR_HIDDEN_ON.includes(id);
+  const hideRunButtons = hideForThis || id === "trends";
+
+  if (bar.dataset.hasPages === "1") {
+    bar.style.display = hideForThis ? "none" : "flex";
+  }
+  runButtons.style.display    = hideRunButtons ? "none" : "flex";
+  journeyButton.style.display = id === "journey" ? "flex" : "none";
+}
+async function loadPages() {
+  const bar = document.getElementById("page-selector-bar");
+  const tabs = document.getElementById("page-tabs");
+  tabs.innerHTML = "";
+
+  try {
+    const response = await fetch(siteUrl("/api/pages"), { headers: await authHeaders() });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok || !Array.isArray(data)) {
+      throw new Error(data?.error || "Could not load tracked pages");
+    }
+
+    bar.dataset.hasPages = data.length ? "1" : "0";
+    bar.style.display = data.length ? "flex" : "none";
+
+    if (!data.length) {
+      currentPage = null;
+      document.getElementById("page-sub").textContent = "No pages tracked yet";
+      return true;
+    }
+
+    data.forEach((page, index) => {
+      const label = formatPageLabel(page.page);
+      const tab = makePageTab(label, page.analysable, page.page, index === 0);
+      tabs.appendChild(tab);
+    });
+
+    currentPage = data[0].page;
+    return true;
+  } catch (error) {
+    currentPage = null;
+    bar.dataset.hasPages = "0";
+    bar.style.display = "none";
+    document.getElementById("page-sub").textContent = error.message || "Could not load tracked pages";
+    console.error("pages load error:", error);
+    return false;
+  }
+}
+async function resetCurrentPage() {
+  if (!currentPage) return;
+  if (!confirm(`This will permanently delete all collected sessions for this page so future analysis only reflects new traffic. This cannot be undone. Continue?`)) return;
+
+  try {
+    const r    = await fetch("/api/pages/reset", { method: "POST", headers: { ...await authHeaders(), "Content-Type": "application/json" }, body: JSON.stringify({ page: currentPage, site_key: activeSiteKey }) });
+    const data = await r.json();
+    if (!r.ok) { showToast(data.error || "Failed to reset page", "err"); return; }
+    showToast(`Cleared ${data.deleted_sessions} sessions. Page history reset.`, "ok");
+    await loadStats();
+  } catch(e) {
+    showToast("Could not reach the server", "err");
+  }
+}
+
+function formatPageLabel(url) {
+  try {
+    const u = new URL(url);
+    return u.pathname === "/" ? "Home" : u.pathname;
+  } catch(e) { return url; }
+}
+
+function makePageTab(label, count, page, active) {
+  const btn = document.createElement("button");
+  btn.className = "page-tab" + (active ? " active" : "");
+  btn.innerHTML = `<span class="page-tab-label">${label}</span><span class="page-tab-count">${count}</span>`;
+  btn.onclick = () => selectPage(page, btn);
+  return btn;
+}
+
+async function selectPage(page, btn) {
+  document.querySelectorAll(".page-tab").forEach(t => t.classList.remove("active"));
+  btn.classList.add("active");
+  currentPage   = page;
+  attentionProfileLoaded = false;
+  trendsLoaded   = false;
+  sessionsLoaded = false;
+  journeyLoaded  = false;
+  activeDevice = { visitors: "desktop", insights: "desktop" };
+  document.querySelectorAll(".device-toggle-btn").forEach(b => b.classList.toggle("active", b.dataset.device === "desktop"));
+
+  await loadStats();
+}
+async function authHeaders() {
+  const token = await window.Clerk.session.getToken();
+  return { "Authorization": `Bearer ${token}` };
+}
+async function initClerk() {
+  await window.Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } });
+  if (!window.Clerk.user) { window.location.href = "/sign-in.html"; return false; }
+  const accountResponse = await fetch("/api/account", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...await authHeaders() }
+  });
+  const account = await accountResponse.json();
+  if (!accountResponse.ok || !account.site_key) {
+    throw new Error(account.error || "Could not load account site key");
+  }
+  accountSites = Array.isArray(account.sites) && account.sites.length
+    ? account.sites
+    : [{ key: account.site_key, name: "My website", url: null }];
+  siteLimit = account.site_limit || 1;
+  activeSiteKey = accountSites[0].key;
+  renderSiteSelector();
+  buildSnippet(activeSiteKey);
+  document.querySelector(".shell").style.visibility = "visible";
+  const userButtonEl = document.getElementById("user-button-mount");
+  if (userButtonEl) {
+    window.Clerk.mountUserButton(userButtonEl, {
+      afterSignOutUrl: "/",
+      customMenuItems: [{
+        label: "Billing", href: "/billing.html",
+        mountIcon:   (el) => { el.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>'; },
+        unmountIcon: (el) => { el.innerHTML = ""; }
+      }]
+    });
+  }
+  return true;
+}
+async function loadStats() {
+  try {
+    if (!currentPage) { document.getElementById("page-sub").textContent = "No pages tracked yet"; return; }
+    const pageParam = `?page=${encodeURIComponent(currentPage)}`;
+    const r    = await fetch(siteUrl(`/api/stats${pageParam}`), { headers: await authHeaders() });
+    const data = await r.json();
+
+    document.getElementById("stat-total").textContent   = data.total_sessions ?? "-";
+    document.getElementById("stat-desktop").textContent = data.desktop_sessions ?? "-";
+    document.getElementById("stat-mobile").textContent  = data.mobile_sessions ?? "-";
+
+    loadTrendChart();
+
+    if (tracetrayMode === "production" && data.plan === "none") { window.location.href = "/pricing.html"; return; }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") { showToast("Subscription activated. Welcome to TraceTray.", "ok"); history.replaceState({}, "", "/dashboard.html"); }
+
+    if (activeSiteKey || data.site_key) buildSnippet(activeSiteKey || data.site_key);
+
+    const lr = data.last_analysis;
+    lastAnalysisResult = lr || null;
+    if (lr) {
+      const ranAt  = new Date(lr.ran_at);
+      const isToday = ranAt.toDateString() === new Date().toDateString();
+      document.getElementById("stat-ran-at").textContent  = isToday ? ranAt.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) : ranAt.toLocaleDateString();
+      document.getElementById("stat-ran-sub").textContent = `${lr.session_count} sessions`;
+      document.getElementById("page-sub").textContent     = `Last updated ${ranAt.toLocaleString()}`;
+      renderOverview(lr);
+      renderVisitors(lr);
+      lastClickSummary = data.click_summary || [];
+      renderInsights(lr, lastClickSummary);
+      renderAdvanced(lr);
+      const attentionSection = document.getElementById("section-attention");
+      if (attentionSection && attentionSection.classList.contains("active")) {
+        attentionProfileLoaded = false;
+        loadAttentionProfile();
+      }
+    } else {
+      document.getElementById("stat-ran-at").textContent  = "Never";
+      document.getElementById("stat-ran-sub").textContent = "click Refresh Analysis";
+      document.getElementById("page-sub").textContent     = "No analysis run yet for this page";
+      resetSectionsToEmpty();
+    }
+  } catch(e) { document.getElementById("page-sub").textContent = "Could not connect to server"; console.error(e); }
+}
+function resetSectionsToEmpty() {
+  document.getElementById("overview-placeholder").style.display = "flex";
+  document.getElementById("overview-content").style.display     = "none";
+  document.getElementById("visitors-placeholder").style.display  = "flex";
+  document.getElementById("visitors-content").style.display      = "none";
+  document.getElementById("insights-placeholder").style.display  = "flex";
+  document.getElementById("insights-content").style.display      = "none";
+  document.getElementById("attention-placeholder").style.display   = "flex";
+  document.getElementById("attention-content").style.display       = "none";
+  document.getElementById("trends-placeholder").style.display      = "flex";
+  document.getElementById("trends-content").style.display          = "none";
+  document.getElementById("adv-placeholder").style.display        = "flex";
+  document.getElementById("adv-content").style.display            = "none";
+  attentionProfileLoaded = false;
+  trendsLoaded = false;
+  activeDevice = { visitors: "desktop", insights: "desktop" };
+  document.querySelectorAll(".device-toggle-btn").forEach(b => b.classList.toggle("active", b.dataset.device === "desktop"));
+}
+function fmt(t) { return (t||"").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"); }
+async function loadTrendChart() {
+  try {
+    const pageParam = currentPage ? `?page=${encodeURIComponent(currentPage)}&days=14` : "?days=14";
+    const r    = await fetch(siteUrl(`/api/sessions/timeseries${pageParam}`), { headers: await authHeaders() });
+    const data = await r.json();
+
+    document.getElementById("stat-engaged").textContent = data.engaged_sessions ?? "-";
+    document.getElementById("stat-engaged-sub").textContent =
+      data.total_sessions > 0 ? `${Math.round((data.engagement_rate||0)*100)}% of last 14 days` : "last 14 days";
+
+    const series = data.series || [];
+    const labels = series.map(d => {
+      const date = new Date(d.date + "T00:00:00");
+      return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    });
+
+    if (trendChart) trendChart.destroy();
+    const ctx = document.getElementById("trend-chart").getContext("2d");
+    trendChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          { label: "Desktop", data: series.map(d => d.desktop), backgroundColor: "rgba(91,91,214,0.75)", stack: "sessions", borderRadius: 3 },
+          { label: "Mobile",  data: series.map(d => d.mobile),  backgroundColor: "rgba(74,144,217,0.6)",  stack: "sessions", borderRadius: 3 }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: "top", align: "end", labels: { boxWidth: 10, font: { size: 11 }, color: "#6b6b78" } } },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10.5 }, color: "#a8a8b3" } },
+          y: { stacked: true, beginAtZero: true, grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { size: 10.5 }, color: "#a8a8b3", precision: 0 } }
+        },
+        animation: { duration: 400 }
+      }
+    });
+  } catch(e) {
+    console.error("trend chart error:", e);
+  }
+}
+
+function renderOverview(result) {
+  document.getElementById("overview-placeholder").style.display = "none";
+  document.getElementById("overview-content").style.display = "flex";
+  const ai = result.ai_interpretation;
+
+  const badge = document.getElementById("page-type-badge");
+  if (ai?.page_type && ai.page_type !== "Unclear") {
+    badge.textContent   = ai.page_type;
+    badge.style.display = "inline-block";
+  } else {
+    badge.style.display = "none";
+  }
+  if (result.failure) {
+    document.getElementById("ai-suggestions").innerHTML = "";
+    document.getElementById("ai-summary-text").textContent =
+      result.failure.message || `Not enough sessions to identify visitor types yet (have ${result.failure.have ?? 0}, need ${result.failure.needed ?? 16}).`;
+    document.getElementById("data-note").style.display = "none";
+    return;
+  }
+
+  if (ai) {
+    document.getElementById("ai-summary-text").innerHTML = fmt(ai.site_summary || "");
+    document.getElementById("ai-suggestions").innerHTML  = (ai.top_suggestions || []).map(s => `<div class="suggestion-item">${fmt(s)}</div>`).join("");
+    if (ai.data_note) {
+      const dn = document.getElementById("data-note");
+      dn.textContent = ai.data_note;
+      dn.style.display = "block";
+    }
+    const comparisonPanel = document.getElementById("device-comparison-panel");
+    if (ai.device_comparison) {
+      document.getElementById("device-comparison-text").textContent = ai.device_comparison;
+      comparisonPanel.style.display = "block";
+    } else {
+      comparisonPanel.style.display = "none";
+    }
+  } else {
+    document.getElementById("ai-summary-text").textContent = `Analysis complete: ${result.session_count} sessions grouped into ${result.k} visitor types.`;
+    document.getElementById("device-comparison-panel").style.display = "none";
+  }
+}
+
+function renderVisitors(result) {
+  const device   = activeDevice.visitors;
+  const source   = device === "mobile" ? (result.mobile || {}) : result;
+  const clusters = source.clusters || [];
+  const total    = clusters.reduce((s,c) => s+(c.n||0), 0);
+  const ai = device === "desktop" ? result.ai_interpretation : null;
+  const hasAnyData = (result.clusters?.length > 0) || (result.mobile?.clusters?.length > 0);
+  document.getElementById("visitors-device-toggle").style.display = hasAnyData ? "flex" : "none";
+
+  document.getElementById("visitors-placeholder").style.display = clusters.length ? "none" : "flex";
+  document.getElementById("visitors-content").style.display     = clusters.length ? "flex" : "none";
+  if (!clusters.length) {
+    document.getElementById("visitors-placeholder").querySelector(".placeholder-body").textContent = device === "mobile"
+      ? (result.mobile?.failure?.message || "Not enough mobile sessions yet to identify visitor types.")
+      : "Run an analysis from the Overview tab to see your visitor breakdown.";
+    return;
+  }
+
+  document.getElementById("donut-meta").textContent   = `${source.k} visitor types`;
+  document.getElementById("visitor-meta").textContent = `${total} sessions`;
+  document.getElementById("donut-total").textContent  = total;
+  if (donutChart) donutChart.destroy();
+  const ctx = document.getElementById("donut-chart").getContext("2d");
+  donutChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels:   clusters.map(c => ai?.cluster_stories?.[c.id]?.headline || c.label),
+      datasets: [{ data: clusters.map(c => c.n), backgroundColor: clusters.map(c => COLORS[c.id % COLORS.length]), borderWidth: 2, borderColor: "#ffffff" }]
+    },
+    options: { maintainAspectRatio: false, cutout: "72%", plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} sessions (${((ctx.raw/total)*100).toFixed(0)}%)` } } }, animation: { duration: 600 } }
+  });
+  document.getElementById("donut-legend").innerHTML = clusters.map(c => {
+    const pct      = total > 0 ? ((c.n/total)*100).toFixed(0) : 0;
+    const headline = ai?.cluster_stories?.[c.id]?.headline || c.label;
+    const color    = COLORS[c.id % COLORS.length];
+    return `<div class="legend-item"><div class="legend-dot" style="background:${color}"></div><div class="legend-label">${headline}</div><div class="legend-pct">${pct}%</div></div>`;
+  }).join("");
+  document.getElementById("visitor-grid").innerHTML = clusters.map(c => {
+    const pct   = total > 0 ? ((c.n/total)*100).toFixed(0) : 0;
+    const color = COLORS[c.id % COLORS.length];
+    const story = ai?.cluster_stories?.[c.id] || ai?.cluster_stories?.[String(c.id)] || null;
+    const headline = story?.headline || c.label;
+    const body     = story?.body     || "";
+    return `<div class="visitor-card">
+      <div class="visitor-card-top">
+        <div class="visitor-color-bar" style="background:${color}"></div>
+        <div class="visitor-header">
+          <div class="visitor-headline">${headline}</div>
+          <div class="visitor-count">${c.n} visitor${c.n!==1?"s":""}</div>
+        </div>
+      </div>
+      <div class="visitor-pct-row">
+        <div class="visitor-bar-track"><div class="visitor-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+        <div class="visitor-pct">${pct}%</div>
+      </div>
+      ${body ? `<div class="visitor-body">${fmt(body)}</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+function renderInsights(result, clickSummary) {
+  const device   = activeDevice.insights;
+  const source   = device === "mobile" ? (result.mobile || {}) : result;
+  const clusters = source.clusters || [];
+  const ai       = device === "desktop" ? result.ai_interpretation : null;
+  const hasAnyData = (result.clusters?.length > 0) || (result.mobile?.clusters?.length > 0);
+  document.getElementById("insights-device-toggle").style.display = hasAnyData ? "flex" : "none";
+
+  document.getElementById("insights-placeholder").style.display = clusters.length ? "none" : "flex";
+  document.getElementById("insights-content").style.display     = clusters.length ? "flex" : "none";
+  if (!clusters.length) {
+    document.getElementById("insights-placeholder").querySelector(".placeholder-body").textContent = device === "mobile"
+      ? (result.mobile?.failure?.message || "Not enough mobile sessions yet to identify visitor types.")
+      : "Run an analysis from the Overview tab to see per-visitor-type recommendations.";
+    return;
+  }
+  document.getElementById("insight-group").innerHTML = clusters.map(c => {
+    const color = COLORS[c.id % COLORS.length];
+    const story = ai?.cluster_stories?.[c.id] || ai?.cluster_stories?.[String(c.id)] || null;
+    const headline = story?.headline || c.label;
+    const body     = story?.body     || (device === "mobile" ? mobileFeatureSummary(c) : "");
+    const suggs    = story?.suggestions || [];
+    return `<div class="insight-item">
+      <div class="insight-item-header">
+        <div class="insight-color-dot" style="background:${color}"></div>
+        <div class="insight-headline">${headline}</div>
+        <div class="insight-n">${c.n} visitors</div>
+      </div>
+      ${body ? `<div class="insight-body">${fmt(body)}</div>` : ""}
+      ${suggs.length ? `<div class="insight-suggestions">${suggs.map(s=>`<div class="insight-suggestion">${fmt(s)}</div>`).join("")}</div>` : ""}
+    </div>`;
+  }).join("");
+  const clicksPanel = document.getElementById("clicks-chart").closest(".panel");
+  if (device === "desktop" && clickSummary && clickSummary.length > 0) {
+    clicksPanel.style.display = "block";
+    if (clicksChart) clicksChart.destroy();
+    const sorted = [...clickSummary].sort((a,b) => b.count - a.count).slice(0, 10);
+    const ctx2   = document.getElementById("clicks-chart").getContext("2d");
+    clicksChart  = new Chart(ctx2, {
+      type: "bar",
+      data: {
+        labels:   sorted.map(c => c.text.length > 28 ? c.text.slice(0,28)+"…" : c.text),
+        datasets: [{ data: sorted.map(c => c.count), backgroundColor: "rgba(91,91,214,0.75)", borderRadius: 4, borderSkipped: false }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} clicks` } } },
+        scales: {
+          x: { grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { size: 11 }, color: "#a8a8b3" } },
+          y: { grid: { display: false }, ticks: { font: { size: 12 }, color: "#2e2e35" } }
+        },
+        animation: { duration: 500 }
+      }
+    });
+  } else {
+    clicksPanel.style.display = "none";
+  }
+}
+function mobileFeatureSummary(cluster) {
+  const m = cluster.feature_means || {};
+  const parts = [];
+  if (m.tap_rate != null)           parts.push(`${m.tap_rate.toFixed(3)} taps/sec`);
+  if (m.scroll_velocity_rate != null) parts.push(`${m.scroll_velocity_rate.toFixed(2)} px/ms scroll speed`);
+  if (m.scroll_depth_norm != null)  parts.push(`reaches ${(m.scroll_depth_norm*100).toFixed(0)}% of typical scroll depth`);
+  return parts.length ? `This group averages ${parts.join(", ")}.` : "";
+}
+
+function renderAdvanced(result) {
+  document.getElementById("adv-placeholder").style.display = "none";
+  document.getElementById("adv-content").style.display = "flex";
+  const kw       = result.kruskal_wallis || [];
+  const clusters = result.clusters       || [];
+  const sigCount = kw.filter(r => r.significant === "yes").length;
+  document.getElementById("adv-ran-at").textContent = result.ran_at ? new Date(result.ran_at).toLocaleString() : "-";
+  document.getElementById("adv-meta-row").innerHTML = [
+    ["Sessions", result.session_count ?? "-"],
+    ["k (clusters)", result.k ?? "-"],
+    ["Silhouette score", result.silhouette_score?.toFixed(4) ?? "-"],
+    ["Significant features", `${sigCount} / ${kw.length}`],
+  ].map(([l,v]) => `<div class="adv-meta-item"><span class="adv-meta-label">${l}</span><span class="adv-meta-value">${v}</span></div>`).join("");
+
+  const kr = result.k_rationale;
+  document.getElementById("adv-k-rationale").innerHTML = kr ? [
+    `n_sessions:         ${kr.n_sessions}`,
+    `min_cluster_size:   ${kr.min_cluster_size}`,
+    `k_range_evaluated:  [${(kr.k_range_evaluated||[]).join(", ")}]`,
+    `best_k:             ${kr.best_k}`,
+    `selection_basis:    ${kr.selection_basis}`,
+  ].join("<br>") : "Not available.";
+
+  const featureKeys = clusters[0]?.feature_means ? Object.keys(clusters[0].feature_means) : [];
+  const headerCols  = clusters.map(c => {
+    const color = COLORS[c.id % COLORS.length];
+    return `<th style="text-align:right"><span style="display:inline-flex;align-items:center;gap:5px;justify-content:flex-end;"><span style="width:7px;height:7px;border-radius:50%;background:${color};display:inline-block"></span>${c.label}</span></th>`;
+  }).join("");
+  const tableRows = featureKeys.map(feat =>
+    `<tr><td>${feat}</td>${clusters.map(c=>`<td style="text-align:right">${Number(c.feature_means?.[feat]??0).toFixed(4)}</td>`).join("")}</tr>`
+  ).join("");
+  document.getElementById("adv-cluster-table").innerHTML = featureKeys.length
+    ? `<table class="feature-table"><thead><tr><th>Feature</th>${headerCols}</tr></thead><tbody>${tableRows}</tbody></table>`
+    : `<div class="empty">No feature means available.</div>`;
+
+  document.getElementById("adv-kw-meta").textContent = `${sigCount}/${kw.length} features significant at p < 0.05`;
+  document.getElementById("adv-kw-table").innerHTML = kw.length
+    ? `<table class="feature-table"><thead><tr><th>Feature</th><th style="text-align:right">H stat</th><th style="text-align:right">p-value</th><th style="text-align:right">Significant</th></tr></thead>
+       <tbody>${kw.map(r=>{
+         const sig = r.significant==="yes";
+         const pFmt = r.p_value < 0.001 ? "&lt;0.001" : (r.p_value?.toFixed(4)??"-");
+         return `<tr><td>${r.feature}</td><td style="text-align:right">${r.H_statistic?.toFixed(4)??"-"}</td><td style="text-align:right">${pFmt}</td><td style="text-align:right"><span class="sig-badge ${sig?"sig-yes":"sig-no"}">${sig?"yes":"no"}</span></td></tr>`;
+       }).join("")}</tbody></table>`
+    : `<div class="empty">No Kruskal-Wallis data.</div>`;
+}
+let trendEngagementChart = null, trendHesitationChart = null,
+    trendPausesChart = null, trendScrollChart = null, trendCtrChart = null;
+
+async function loadTrendsTab() {
+  trendsLoaded = true;
+  const placeholder = document.getElementById("trends-placeholder");
+  const content      = document.getElementById("trends-content");
+
+  try {
+    const pageParam = currentPage ? `?page=${encodeURIComponent(currentPage)}` : "";
+    const [uxRes, tsRes] = await Promise.all([
+      fetch(siteUrl(`/api/ux-trends${pageParam}${pageParam ? "&" : "?"}runs=10`), { headers: await authHeaders() }),
+      fetch(siteUrl(`/api/sessions/timeseries${pageParam}`), { headers: await authHeaders() })
+    ]);
+    const ux = await uxRes.json();
+    const ts = await tsRes.json();
+
+    const points = (ux.points || []).filter(p => p.session_count > 0);
+
+    if (points.length < 3) {
+      placeholder.style.display = "flex";
+      content.style.display     = "none";
+      return;
+    }
+
+    placeholder.style.display = "none";
+    content.style.display     = "flex";
+
+    const runLabels = points.map(p => new Date(p.ran_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+
+    function lineChart(canvasId, existing, data, color, valueFormatter) {
+      if (existing) existing.destroy();
+      const ctx = document.getElementById(canvasId).getContext("2d");
+      return new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: runLabels,
+          datasets: [{ data, borderColor: color, backgroundColor: color + "22", fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: color }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => valueFormatter(ctx.raw) } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, color: "#a8a8b3" } },
+            y: { grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { size: 10 }, color: "#a8a8b3" } }
+          },
+          animation: { duration: 400 }
+        }
+      });
+    }
+    const tsLabels = (ts.series || []).map(d => new Date(d.date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+    const tsEngagedPct = (ts.series || []).map(d => {
+      const total = d.desktop + d.mobile;
+      return total > 0 ? Math.round((d.engaged / total) * 100) : null;
+    });
+    if (trendEngagementChart) trendEngagementChart.destroy();
+    const ctxE = document.getElementById("trend-engagement-chart").getContext("2d");
+    trendEngagementChart = new Chart(ctxE, {
+      type: "line",
+      data: { labels: tsLabels, datasets: [{ data: tsEngagedPct, borderColor: "#5b5bd6", backgroundColor: "#5b5bd622", fill: true, tension: 0.3, pointRadius: 2, spanGaps: true }] },
+      options: {
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${ctx.raw}% engaged` } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: "#a8a8b3", maxTicksLimit: 7 } },
+          y: { grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { size: 10 }, color: "#a8a8b3", callback: v => v + "%" } }
+        },
+        animation: { duration: 400 }
+      }
+    });
+    trendHesitationChart = lineChart("trend-hesitation-chart", trendHesitationChart,
+      points.map(p => p.hesitation_ms != null ? +(p.hesitation_ms / 1000).toFixed(2) : null),
+      "#4a90d9", v => `${v}s hesitation`);
+    trendPausesChart = lineChart("trend-pauses-chart", trendPausesChart,
+      points.map(p => p.reading_pauses != null ? +p.reading_pauses.toFixed(3) : null),
+      "#937860", v => `${v} pauses/sec`);
+    trendScrollChart = lineChart("trend-scroll-chart", trendScrollChart,
+      points.map(p => p.scroll_depth != null ? Math.round(p.scroll_depth * 100) : null),
+      "#55A868", v => `${v}% depth`);
+    const ctrNote = document.getElementById("trend-ctr-note");
+    if (ux.has_ctr_history) {
+      ctrNote.style.display = "none";
+      trendCtrChart = lineChart("trend-ctr-chart", trendCtrChart,
+        points.map(p => p.ctr != null ? +(p.ctr * 100).toFixed(1) : null),
+        "#DD8452", v => `${v}% click-through`);
+      const lastWithTop = [...points].reverse().find(p => p.top_click_text);
+      if (lastWithTop) document.getElementById("trend-ctr-meta").textContent = `"${lastWithTop.top_click_text}"`;
+    } else {
+      ctrNote.style.display = "block";
+      if (trendCtrChart) { trendCtrChart.destroy(); trendCtrChart = null; }
+    }
+
+  } catch(e) {
+    console.error("trends error:", e);
+    placeholder.style.display = "flex";
+    content.style.display     = "none";
+  }
+}
+async function loadJourney(isManualRefresh = false) {
+  journeyLoaded = true;
+  const placeholder = document.getElementById("journey-placeholder");
+  const jContent    = document.getElementById("journey-content");
+  const refreshBtn  = document.getElementById("journey-refresh-btn");
+
+  if (isManualRefresh && refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = "Refreshing...";
+  }
+
+  try {
+    const r    = await fetch(siteUrl("/api/journey"), { headers: await authHeaders() });
+    const data = await r.json();
+
+    if (!data.total_visitors || data.total_visitors === 0) {
+      if (isManualRefresh) showToast("No journey data yet", "");
+      return;
+    }
+
+    placeholder.style.display = "none";
+    jContent.style.display    = "flex";
+
+    document.getElementById("j-visitors").textContent = data.total_visitors;
+    document.getElementById("j-multi").textContent    = data.multi_page_visitors;
+    document.getElementById("j-single").textContent   = data.single_page_visitors;
+    const total = data.total_visitors;
+    document.getElementById("j-multi-pct").textContent  = `${((data.multi_page_visitors/total)*100).toFixed(0)}% of visitors`;
+    document.getElementById("j-single-pct").textContent = `${((data.single_page_visitors/total)*100).toFixed(0)}% of visitors`;
+    const maxEntry = data.top_entries?.[0]?.count || 1;
+    document.getElementById("j-entries").innerHTML = (data.top_entries || []).map(e => `
+      <div class="journey-row">
+        <div class="journey-page">${formatPageLabel(e.page)}</div>
+        <div class="journey-bar-wrap"><div class="journey-bar-track"><div class="journey-bar-fill" style="width:${(e.count/maxEntry*100).toFixed(0)}%"></div></div></div>
+        <div class="journey-count">${e.count} visits</div>
+      </div>`).join("");
+    const maxExit = data.top_exits?.[0]?.count || 1;
+    document.getElementById("j-exits").innerHTML = (data.top_exits || []).map(e => `
+      <div class="journey-row">
+        <div class="journey-page">${formatPageLabel(e.page)}</div>
+        <div class="journey-bar-wrap"><div class="journey-bar-track"><div class="journey-bar-fill" style="width:${(e.count/maxExit*100).toFixed(0)}%;background:#C44E52"></div></div></div>
+        <div class="journey-count">${e.count} exits</div>
+      </div>`).join("");
+    const maxPath = data.top_paths?.[0]?.count || 1;
+    document.getElementById("j-paths").innerHTML = (data.top_paths || []).map(p => {
+      const pages = p.path.split(" → ").map(formatPageLabel).join(" → ");
+      return `<div class="journey-row">
+        <div class="journey-page" style="font-family:var(--font-body);max-width:none;">${pages}</div>
+        <div class="journey-bar-wrap"><div class="journey-bar-track"><div class="journey-bar-fill" style="width:${(p.count/maxPath*100).toFixed(0)}%;background:#55A868"></div></div></div>
+        <div class="journey-count">${p.count} visitors</div>
+      </div>`;
+    }).join("");
+    if (transitionsChart) transitionsChart.destroy();
+    const transitions = (data.top_transitions || []).slice(0, 8);
+    if (transitions.length) {
+      const ctx = document.getElementById("transitions-chart").getContext("2d");
+      transitionsChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels:   transitions.map(t => {
+            const parts = t.path.split(" -> ").map(formatPageLabel);
+            return parts.join(" → ");
+          }),
+          datasets: [{ data: transitions.map(t => t.count), backgroundColor: "rgba(91,91,214,0.75)", borderRadius: 4, borderSkipped: false }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          indexAxis: "y",
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} visitors` } } },
+          scales: {
+            x: { grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { size: 11 }, color: "#a8a8b3" } },
+            y: { grid: { display: false }, ticks: { font: { size: 11 }, color: "#2e2e35" } }
+          },
+          animation: { duration: 400 }
+        }
+      });
+    }
+
+    if (isManualRefresh) showToast("Journey data refreshed", "ok");
+  } catch(e) {
+    console.error("journey error:", e);
+    if (isManualRefresh) showToast("Could not refresh journey data", "err");
+  } finally {
+    if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Refresh journey'; }
+  }
+}
+async function loadAttentionProfile() {
+  attentionProfileLoaded = true;
+
+  try {
+    const pageParam = currentPage ? `?page=${encodeURIComponent(currentPage)}` : "";
+    const r    = await fetch(siteUrl(`/api/attention-profile${pageParam}`), { headers: await authHeaders() });
+    const data = await r.json();
+
+    if (!data.depth_profile || data.sessions === 0) {
+      document.getElementById("attention-placeholder").style.display = "flex";
+      document.getElementById("attention-content").style.display     = "none";
+      return;
+    }
+
+    document.getElementById("attention-placeholder").style.display = "none";
+    document.getElementById("attention-content").style.display     = "flex";
+
+    document.getElementById("attention-meta").textContent =
+      `${data.total_moves?.toLocaleString() || 0} cursor points across ${data.sessions || 0} sessions`;
+
+    document.getElementById("attention-insight-text").textContent = data.insight;
+    const depthBar = document.getElementById("depth-bar");
+    depthBar.innerHTML = data.depth_profile.map(b => {
+      const opacity = (0.06 + b.weight * 0.85).toFixed(2);
+      return `<div style="flex:1;background:rgba(91,91,214,${opacity});" title="${(b.depth*100).toFixed(0)}% depth"></div>`;
+    }).join("");
+    const zones = data.zone_breakdown || {};
+    const maxZone = Math.max(zones.top||0, zones.middle||0, zones.bottom||0, 0.01);
+    document.getElementById("zone-top-pct").textContent = `${((zones.top||0)*100).toFixed(0)}%`;
+    document.getElementById("zone-mid-pct").textContent = `${((zones.middle||0)*100).toFixed(0)}%`;
+    document.getElementById("zone-bot-pct").textContent = `${((zones.bottom||0)*100).toFixed(0)}%`;
+    document.getElementById("zone-top-bar").style.width = `${((zones.top||0)/maxZone*100).toFixed(0)}%`;
+    document.getElementById("zone-mid-bar").style.width = `${((zones.middle||0)/maxZone*100).toFixed(0)}%`;
+    document.getElementById("zone-bot-bar").style.width = `${((zones.bottom||0)/maxZone*100).toFixed(0)}%`;
+    const fi = data.first_impression || {};
+    if (fi.velocity_delta_pct != null) {
+      const dir = fi.velocity_delta_pct > 0 ? "faster" : "slower";
+      document.getElementById("fi-velocity-delta").textContent = `${Math.abs(fi.velocity_delta_pct).toFixed(0)}% ${dir}`;
+    } else {
+      document.getElementById("fi-velocity-delta").textContent = "Not enough data";
+    }
+
+    document.getElementById("fi-early-pauses").textContent = fi.early_pause_count ?? "-";
+    document.getElementById("fi-rest-pauses").textContent  = fi.rest_pause_count != null ? `${fi.rest_pause_count} in the rest of the session` : "";
+
+    const ez = fi.early_zone_breakdown || {};
+    const dominantZone = Object.entries(ez).sort((a,b) => b[1]-a[1])[0];
+    document.getElementById("fi-zone").textContent = dominantZone
+      ? dominantZone[0].charAt(0).toUpperCase() + dominantZone[0].slice(1)
+      : "-";
+    const aiNote = lastAnalysisResult?.ai_interpretation?.first_impression_note;
+    const fiBox  = document.getElementById("fi-insight-box");
+    if (aiNote) {
+      document.getElementById("fi-insight-text").textContent = aiNote;
+      fiBox.style.display = "flex";
+    } else {
+      fiBox.style.display = "none";
+    }
+
+    renderMobileAttention();
+
+  } catch(e) {
+    console.error("attention profile error:", e);
+    document.getElementById("attention-insight-text").textContent = "Could not load attention profile data.";
+  }
+}
+function renderMobileAttention() {
+  const panel    = document.getElementById("mobile-attention-panel");
+  const mobile   = lastAnalysisResult?.mobile;
+  const clusters = mobile?.clusters || [];
+
+  if (!clusters.length) { panel.style.display = "none"; return; }
+
+  panel.style.display = "block";
+
+  const maxDepth = Math.max(...clusters.map(c => c.feature_means?.scroll_depth_norm || 0), 0.01);
+
+  document.getElementById("mobile-depth-bars").innerHTML = clusters.map(c => {
+    const depth = c.feature_means?.scroll_depth_norm || 0;
+    const pct   = (depth * 100).toFixed(0);
+    const color = COLORS[c.id % COLORS.length];
+    return `<div>
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:6px;">
+        <span>${c.label} <span style="color:var(--muted-2);">(${c.n} visitors)</span></span>
+        <span style="font-family:var(--font-mono);">${pct}%</span>
+      </div>
+      <div class="visitor-bar-track"><div class="visitor-bar-fill" style="width:${(depth/maxDepth*100).toFixed(0)}%;background:${color};"></div></div>
+    </div>`;
+  }).join("");
+}
+async function loadSessions() {
+  sessionsLoaded = true;
+  const wrap = document.getElementById("sessions-wrap");
+  try {
+    const r        = await fetch(siteUrl("/api/sessions/recent?limit=50"), { headers: await authHeaders() });
+    const sessions = await r.json();
+    document.getElementById("sessions-meta").textContent = `${sessions.length} most recent`;
+    if (!sessions.length) { wrap.innerHTML = `<div class="empty" style="padding:48px 0">No sessions yet. Embed the tracker on a page and visit it.</div>`; return; }
+    const rows = sessions.map(s => {
+      const isMobile = s.device_type === "mobile";
+      const dur_s  = s.summary?.duration_ms ? s.summary.duration_ms/1000 : null;
+      const durLabel = dur_s!=null ? (dur_s<60?`${dur_s.toFixed(0)}s`:`${(dur_s/60).toFixed(1)}m`) : "-";
+      const page = (() => { try { return new URL(s.page||"").pathname||"/"; } catch { return s.page||"-"; } })();
+      let engClass = "eng-low", engLabel = "Quick visit";
+      let activityCount, activityLabel;
+
+      if (isMobile) {
+        const taps    = s.summary?.taps ?? 0;
+        const scrolls = s.summary?.scrolls ?? 0;
+        activityCount = taps;
+        activityLabel = "Taps";
+        if (taps > 5 && dur_s > 20) { engClass="eng-high"; engLabel="Engaged"; }
+        else if (taps > 1 || scrolls > 5) { engClass="eng-medium"; engLabel="Browsed"; }
+      } else {
+        const moves  = s.summary?.mouse_moves ?? 0;
+        activityCount = moves;
+        activityLabel = "Moves";
+        if (moves > 50 && dur_s > 20) { engClass="eng-high"; engLabel="Engaged"; }
+        else if (moves > 15 || dur_s > 8) { engClass="eng-medium"; engLabel="Browsed"; }
+      }
+
+      const deviceTag = isMobile
+        ? `<span style="font-size:10px;color:var(--muted-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;margin-left:6px;">mobile</span>`
+        : "";
+
+      return `<tr>
+        <td>${timeAgo(parseInt(s.start_time))}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${page}${deviceTag}</td>
+        <td>${durLabel}</td>
+        <td><span class="eng-dot ${engClass}"></span>${engLabel}</td>
+        <td style="text-align:right">${activityCount}</td>
+      </tr>`;
+    }).join("");
+    wrap.innerHTML = `<table class="sessions-table" style="margin-top:16px;">
+      <thead><tr><th>When</th><th>Page</th><th>Time on page</th><th>Engagement</th><th style="text-align:right">Activity</th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+  } catch(e) { wrap.innerHTML = `<div class="empty">Failed to load sessions.</div>`; }
+}
+async function requestAnalysisPermit(scope, pageCount = 1) {
+  const response = await fetch("/api/analysis-permit", {
+    method: "POST",
+    headers: { ...await authHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({
+      site_key: activeSiteKey,
+      scope,
+      page_count: pageCount
+    })
+  });
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    if (result.cooldown_remaining_ms) {
+      startCooldownTimer(result.cooldown_remaining_ms, scope);
+    }
+    throw new Error(result.error || "Refresh is not available yet");
+  }
+
+  return result;
+}
+
+async function runAnalysis() {
+  const btn = document.getElementById("run-btn");
+  btn.disabled = true;
+  btn.classList.add("running");
+  btn.innerHTML = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Refreshing...`;
+
+  try {
+    if (!currentPage) {
+      showToast("No page selected.", "err");
+      return;
+    }
+
+    const permit = await requestAnalysisPermit("page");
+    const response = await fetch("/api/run-analysis", {
+      method: "POST",
+      headers: { ...await authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        page: currentPage,
+        site_key: activeSiteKey,
+        permit_token: permit.permit_token
+      })
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      showToast("Analysis failed: " + (data.error || "unknown"), "err");
+      return;
+    }
+
+    const failure = data.result?.failure;
+    if (failure) {
+      showToast(
+        failure.message || `Not enough sessions to identify visitor types yet (have ${failure.have ?? 0}, need ${failure.needed ?? 16}).`,
+        ""
+      );
+    } else if (data.ai_cooldown_remaining_ms > 0) {
+      showToast(
+        "Numbers updated. AI commentary refreshes again in " +
+        Math.ceil(data.ai_cooldown_remaining_ms / 60000) + " min.",
+        ""
+      );
+    } else {
+      const remaining = permit.remaining_free_today;
+      showToast(
+        remaining > 0
+          ? `Done. ${remaining} immediate refresh${remaining === 1 ? "" : "es"} left today.`
+          : "Done. Further page refreshes use the 30-minute cooldown.",
+        "ok"
+      );
+    }
+
+    sessionsLoaded = false;
+    attentionProfileLoaded = false;
+    trendsLoaded = false;
+    await loadStats();
+  } catch (error) {
+    showToast(error.message || "Could not reach the server", "err");
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove("running");
+    btn.innerHTML = `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Refresh Analysis`;
+  }
+}
+async function runAllAnalysis() {
+  const allBtn = document.getElementById("run-all-btn");
+  allBtn.disabled = true;
+  const originalLabel = allBtn.textContent;
+
+  try {
+    const pagesResponse = await fetch(siteUrl("/api/pages"), {
+      headers: await authHeaders()
+    });
+    const pages = await pagesResponse.json().catch(() => null);
+    if (!pagesResponse.ok || !Array.isArray(pages)) {
+      throw new Error(pages?.error || "Could not load tracked pages");
+    }
+    if (!pages.length) throw new Error("No tracked pages to refresh");
+
+    const permit = await requestAnalysisPermit("all", pages.length);
+
+    for (let index = 0; index < pages.length; index++) {
+      allBtn.textContent = `Analysing ${index + 1}/${pages.length}...`;
+      const targetPage = pages[index].page;
+
+      const response = await fetch("/api/run-analysis", {
+        method: "POST",
+        headers: { ...await authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          page: targetPage,
+          site_key: activeSiteKey,
+          permit_token: permit.permit_token
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Could not refresh ${targetPage}`);
+      }
+
+      if (index < pages.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    }
+
+    showToast(`Finished refreshing ${pages.length} pages.`, "ok");
+    await loadStats();
+  } catch (error) {
+    showToast(error.message || "Could not complete bulk analysis", "err");
+  } finally {
+    allBtn.disabled = false;
+    allBtn.textContent = originalLabel;
+  }
+}
+
+let cooldownInterval = null;
+function startCooldownTimer(remainingMs, scope = "page") {
+  if (cooldownInterval) clearInterval(cooldownInterval);
+
+  const button = document.getElementById(
+    scope === "all" ? "run-all-btn" : "run-btn"
+  );
+  const readyLabel = scope === "all" ? "Refresh all pages" : "Refresh Analysis";
+  let ms = remainingMs;
+
+  function tick() {
+    if (ms <= 0) {
+      clearInterval(cooldownInterval);
+      button.disabled = false;
+      button.textContent = readyLabel;
+      return;
+    }
+
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.ceil((ms % 60000) / 1000);
+    button.disabled = true;
+    button.textContent = `Next refresh in ${minutes}:${String(seconds).padStart(2, "0")}`;
+    ms -= 1000;
+  }
+
+  tick();
+  cooldownInterval = setInterval(tick, 1000);
+}
+
+function openBugReport() {
+  const modal = document.getElementById("bug-report-modal");
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+  setTimeout(() => document.getElementById("bug-description").focus(), 0);
+}
+
+function closeBugReport() {
+  const modal = document.getElementById("bug-report-modal");
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+async function submitBugReport(event) {
+  event.preventDefault();
+
+  const description = document.getElementById("bug-description").value.trim();
+  const category = document.getElementById("bug-category").value;
+  const button = document.getElementById("bug-submit-btn");
+
+  if (description.length < 10) {
+    showToast("Please include a little more detail", "err");
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Sending...";
+
+  try {
+    const response = await fetch("/api/bug-reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...await authHeaders() },
+      body: JSON.stringify({
+        category,
+        description,
+        dashboard_section: document.querySelector(".section.active")?.id || "",
+        page_url: window.location.href,
+        site_key: activeSiteKey
+      })
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Could not send report");
+
+    document.getElementById("bug-report-form").reset();
+    closeBugReport();
+    showToast("Bug report sent. Thank you.", "ok");
+  } catch (err) {
+    showToast(err.message || "Could not send report", "err");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Send report";
+  }
+}
+
+document.getElementById("bug-report-form").addEventListener("submit", submitBugReport);
+document.getElementById("bug-report-modal").addEventListener("click", event => {
+  if (event.target.id === "bug-report-modal") closeBugReport();
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeBugReport();
+});
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function renderSiteSelector() {
+  const select = document.getElementById("site-select");
+  if (!select) return;
+  select.innerHTML = accountSites.map(site =>
+    `<option value="${site.key}">${escapeHtml(site.name || "Website")}</option>`
+  ).join("");
+  select.value = activeSiteKey || accountSites[0]?.key || "";
+  const addButton = document.getElementById("site-add-btn");
+  const deleteButton = document.getElementById("site-delete-btn");
+  if (addButton) addButton.disabled = accountSites.length >= siteLimit;
+  if (deleteButton) deleteButton.disabled = false;
+}
+
+async function switchSite(siteKey) {
+  if (!siteKey || siteKey === activeSiteKey) return;
+  activeSiteKey = siteKey;
+  renderSiteSelector();
+  currentPage = null;
+  sessionsLoaded = false;
+  journeyLoaded = false;
+  trendsLoaded = false;
+  attentionProfileLoaded = false;
+  lastAnalysisResult = null;
+  buildSnippet(activeSiteKey);
+  resetSectionsToEmpty();
+  const pagesLoaded = await loadPages();
+  if (!pagesLoaded) return;
+  await loadStats();
+  const activeSection = document.querySelector(".section.active")?.id;
+  if (activeSection === "section-sessions") loadSessions();
+  if (activeSection === "section-journey") loadJourney();
+  if (activeSection === "section-trends") loadTrendsTab();
+  if (activeSection === "section-attention") loadAttentionProfile();
+}
+
+async function createWebsite() {
+  if (accountSites.length >= siteLimit) {
+    showToast(`You can add up to ${siteLimit} websites.`, "err");
+    return;
+  }
+  const name = window.prompt("Website name:");
+  if (!name || !name.trim()) return;
+
+  try {
+    const response = await fetch("/api/sites", {
+      method: "POST",
+      headers: { ...await authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name.trim() })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Could not add website");
+    accountSites = result.sites || accountSites.concat(result.site);
+    siteLimit = result.limit || siteLimit;
+    renderSiteSelector();
+    await switchSite(result.site.key);
+    buildSnippet(activeSiteKey);
+    showToast("Website added. Copy its tracker from Embed.", "ok");
+  } catch (error) {
+    showToast(error.message || "Could not add website", "err");
+  }
+}
+
+async function renameWebsite() {
+  const site = accountSites.find(item => item.key === activeSiteKey);
+  if (!site) return;
+
+  const name = window.prompt("Website name:", site.name || "");
+  if (!name || !name.trim() || name.trim() === site.name) return;
+
+  try {
+    const response = await fetch(`/api/sites/${encodeURIComponent(activeSiteKey)}`, {
+      method: "PATCH",
+      headers: { ...await authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name.trim() })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Could not rename website");
+
+    accountSites = result.sites || accountSites.map(item =>
+      item.key === activeSiteKey ? result.site : item
+    );
+    renderSiteSelector();
+    showToast("Website renamed.", "ok");
+  } catch (error) {
+    showToast(error.message || "Could not rename website", "err");
+  }
+}
+
+async function deleteWebsite() {
+  const site = accountSites.find(item => item.key === activeSiteKey);
+  if (!site) return;
+
+  const isOnlyWebsite = accountSites.length === 1;
+  const message = isOnlyWebsite
+    ? `Reset "${site.name}"? Its key and all collected data will be permanently deleted. A new My website key will be created.`
+    : `Remove "${site.name}"? Its site key, sessions, analyses, and reports will be permanently deleted.`;
+
+  if (!window.confirm(message)) return;
+
+  try {
+    const response = await fetch(`/api/sites/${encodeURIComponent(activeSiteKey)}`, {
+      method: "DELETE",
+      headers: await authHeaders()
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Could not remove website");
+
+    accountSites = result.sites;
+    siteLimit = result.limit || siteLimit;
+    activeSiteKey = accountSites[0].key;
+    renderSiteSelector();
+    buildSnippet(activeSiteKey);
+    resetSectionsToEmpty();
+    const pagesLoaded = await loadPages();
+    if (pagesLoaded) await loadStats();
+
+    showToast(
+      result.reset
+        ? "Website reset. A new site key was generated."
+        : "Website and its data were removed.",
+      "ok"
+    );
+  } catch (error) {
+    showToast(error.message || "Could not remove website", "err");
+  }
+}
+
+function buildSnippet(siteKey) {
+  const o = window.location.origin;
+  const key = siteKey || "your-site-key";
+  document.getElementById("snippet-text").textContent = `<script>\n  window.TraceTray = { endpoint: "${o}/collect", key: "${key}" };\n<\/script>\n<script src="${o}/client/tracker.js"><\/script>`;
+}
+function copySnippet() {
+  navigator.clipboard.writeText(document.getElementById("snippet-text").textContent).then(() => {
+    const btn = document.querySelector(".copy-btn");
+    btn.textContent="Copied!"; btn.classList.add("copied");
+    setTimeout(()=>{btn.textContent="Copy";btn.classList.remove("copied");},2000);
+  });
+}
+function timeAgo(ms) {
+  const s = Math.floor((Date.now()-ms)/1000);
+  if (s<60) return `${s}s ago`; if (s<3600) return `${Math.floor(s/60)}m ago`;
+  if (s<86400) return `${Math.floor(s/3600)}h ago`; return `${Math.floor(s/86400)}d ago`;
+}
+let toastTimer;
+function showToast(msg, type) {
+  const el = document.getElementById("toast");
+  el.textContent=msg; el.className="show "+(type||"");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>{el.className="";},4500);
+}
+function toggleDark() {
+  const isDark = document.documentElement.classList.toggle("dark");
+  localStorage.setItem("tt-dark", isDark ? "1" : "0");
+  updateDarkIcon(isDark);
+}
+
+function updateDarkIcon(isDark) {
+  const icon = document.getElementById("dark-icon");
+  if (!icon) return;
+  icon.innerHTML = isDark
+    ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+    : '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+}
+(function() {
+  const saved = localStorage.getItem("tt-dark");
+  if (saved === "1") document.documentElement.classList.add("dark");
+})();
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const configResponse = await fetch("/api/config");
+    const config = await configResponse.json();
+
+    if (!configResponse.ok || !config.clerk_publishable_key) {
+      throw new Error("TraceTray authentication is not configured.");
+    }
+
+    tracetrayMode = config.mode || "beta";
+    const pubKey = config.clerk_publishable_key;
+    const encodedDomain = pubKey.split("_")[2];
+    if (!encodedDomain) throw new Error("Invalid Clerk publishable key.");
+    const clerkDomain = atob(encodedDomain).slice(0, -1);
+
+    await new Promise((resolve, reject) => {
+      const ui = document.createElement("script");
+      ui.src = `https://${clerkDomain}/npm/@clerk/ui@1/dist/ui.browser.js`;
+      ui.async = true;
+      ui.crossOrigin = "anonymous";
+      ui.onload = resolve;
+      ui.onerror = () => reject(new Error("Could not load Clerk UI."));
+      document.head.appendChild(ui);
+    });
+
+    await new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = `https://${clerkDomain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`;
+      script.setAttribute("data-clerk-publishable-key", pubKey);
+      script.async = true;
+      script.crossOrigin = "anonymous";
+      script.onload = resolve;
+      script.onerror = () => reject(new Error("Could not load Clerk."));
+      document.head.appendChild(script);
+    });
+
+    const authenticated = await initClerk();
+    if (!authenticated) return;
+
+    updateDarkIcon(document.documentElement.classList.contains("dark"));
+    const pagesLoaded = await loadPages();
+    if (pagesLoaded) await loadStats();
+  } catch (error) {
+    console.error("dashboard startup failed:", error);
+    const shell = document.querySelector(".shell");
+    if (shell) shell.style.visibility = "visible";
+    const subtitle = document.getElementById("page-sub");
+    if (subtitle) subtitle.textContent = error.message || "Dashboard could not be loaded";
+    showToast(error.message || "Dashboard could not be loaded", "err");
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /collect
+Disallow: /dashboard.html
+Disallow: /billing.html
+Disallow: /sign-in.html
+
+Sitemap: https://tracetray.com/sitemap.xml

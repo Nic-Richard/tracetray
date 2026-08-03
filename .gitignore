@@ -1,0 +1,27 @@
+# Dependencies
+server/node_modules/
+analysis/node_modules/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.deploy.example
+
+# Generated analysis data
+data/features/*
+data/output/*
+!data/features/.gitkeep
+!data/output/.gitkeep
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Logs and local files
+logs/
+*.log
+.DS_Store
+Thumbs.db
