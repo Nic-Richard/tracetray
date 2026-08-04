@@ -607,7 +607,7 @@ body { background: var(--surface); color: var(--text); font-family: var(--font-b
               <span class="panel-meta">how far mobile visitors scroll, by visitor type</span>
             </div>
             <div class="panel-body" style="display:flex;flex-direction:column;gap:14px;">
-              <p style="font-size:12.5px;color:var(--muted);line-height:1.6;">Mobile sessions have no cursor position data, so attention here is measured by scroll depth instead. Each bar shows how far that visitor type typically scrolled, relative to the deepest point reached by any mobile session on this page.</p>
+              <p style="font-size:12.5px;color:var(--muted);line-height:1.6;">Mobile attention is measured through reading pauses, taps, and page-relative scroll depth. Each bar shows the average percentage of the page reached by that visitor type.</p>
               <div id="mobile-depth-bars" style="display:flex;flex-direction:column;gap:14px;"></div>
             </div>
           </div>
@@ -676,7 +676,7 @@ body { background: var(--surface); color: var(--text); font-family: var(--font-b
         <div class="panel">
           <div class="panel-header"><span class="panel-title">What gets collected</span></div>
           <div class="panel-body">
-            <p class="snippet-intro" style="margin-bottom:14px;">Cursor and touch movement, pauses, clicks, taps, and scrolling. No keystrokes or form data.</p>
+            <p class="snippet-intro" style="margin-bottom:14px;">Cursor movement, clicks, taps, reading pauses, scrolling, and page depth. No keystrokes or form data.</p>
             <table class="feature-table">
               <thead><tr><th>Signal</th><th>Why it matters</th></tr></thead>
               <tbody>
@@ -1202,9 +1202,12 @@ function renderInsights(result, clickSummary) {
 function mobileFeatureSummary(cluster) {
   const m = cluster.feature_means || {};
   const parts = [];
-  if (m.tap_rate != null)           parts.push(`${m.tap_rate.toFixed(3)} taps/sec`);
-  if (m.scroll_velocity_rate != null) parts.push(`${m.scroll_velocity_rate.toFixed(2)} px/ms scroll speed`);
-  if (m.scroll_depth_norm != null)  parts.push(`reaches ${(m.scroll_depth_norm*100).toFixed(0)}% of typical scroll depth`);
+  if (m.tap_rate != null) parts.push(`${m.tap_rate.toFixed(3)} taps/sec`);
+  if (m.attention_pause_rate != null) parts.push(`${m.attention_pause_rate.toFixed(3)} reading pauses/sec`);
+  if (m.avg_attention_pause_ms != null) parts.push(`${(m.avg_attention_pause_ms / 1000).toFixed(1)}s average reading pause`);
+  const scrollDepth = m.scroll_depth_reached ?? m.scroll_depth_norm;
+  if (scrollDepth != null) parts.push(`reaches ${(scrollDepth * 100).toFixed(0)}% of the page`);
+  if (m.direction_change_rate != null) parts.push(`${m.direction_change_rate.toFixed(3)} direction changes/sec`);
   return parts.length ? `This group averages ${parts.join(", ")}.` : "";
 }
 
@@ -1512,10 +1515,8 @@ function renderMobileAttention() {
 
   panel.style.display = "block";
 
-  const maxDepth = Math.max(...clusters.map(c => c.feature_means?.scroll_depth_norm || 0), 0.01);
-
   document.getElementById("mobile-depth-bars").innerHTML = clusters.map(c => {
-    const depth = c.feature_means?.scroll_depth_norm || 0;
+    const depth = c.feature_means?.scroll_depth_reached ?? c.feature_means?.scroll_depth_norm ?? 0;
     const pct   = (depth * 100).toFixed(0);
     const color = COLORS[c.id % COLORS.length];
     return `<div>
@@ -1523,7 +1524,7 @@ function renderMobileAttention() {
         <span>${c.label} <span style="color:var(--muted-2);">(${c.n} visitors)</span></span>
         <span style="font-family:var(--font-mono);">${pct}%</span>
       </div>
-      <div class="visitor-bar-track"><div class="visitor-bar-fill" style="width:${(depth/maxDepth*100).toFixed(0)}%;background:${color};"></div></div>
+      <div class="visitor-bar-track"><div class="visitor-bar-fill" style="width:${Math.min(100, depth * 100).toFixed(0)}%;background:${color};"></div></div>
     </div>`;
   }).join("");
 }
@@ -2030,6 +2031,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     showToast(error.message || "Dashboard could not be loaded", "err");
   }
 });
+</script>
+
+<script>
+async function startTraceTrayTracker() {
+  try {
+    const config = await fetch("/api/config").then(r => r.json());
+    if (!config.site_key) return;
+
+    window.TraceTray = {
+      endpoint: `${window.location.origin}/collect`,
+      key: config.site_key
+    };
+
+    const script = document.createElement("script");
+    script.src = "/client/tracker.js?v=20260804-2";
+    script.async = true;
+    document.head.appendChild(script);
+  } catch (e) {
+  }
+}
+
+startTraceTrayTracker();
 </script>
 </body>
 </html>

@@ -26,7 +26,7 @@
 <meta name="twitter:description" content="Behavioural web analytics that uses cursor movement, clicks, scrolling, pauses, and touch activity to show how visitors browse your website.">
 <meta name="twitter:image" content="https://tracetray.com/social-preview.png">
 <meta name="twitter:image:alt" content="TraceTray behavioural web analytics">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraceTray","url":"https://tracetray.com/","description":"Behavioural web analytics that uses cursor movement, clicks, scrolling, pauses, and touch activity to show how visitors browse your website.","applicationCategory":"BusinessApplication","operatingSystem":"Web","browserRequirements":"Requires JavaScript and a modern web browser.","isAccessibleForFree":true,"featureList":["Cursor and touch movement tracking","Click, tap, scroll, and pause analysis","Visitor browsing pattern clustering","Page-level behavioural summaries"],"publisher":{"@type":"Organization","name":"TraceTray","url":"https://tracetray.com/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraceTray","url":"https://tracetray.com/","description":"Behavioural web analytics that uses cursor movement, clicks, scrolling, pauses, and touch activity to show how visitors browse your website.","applicationCategory":"BusinessApplication","operatingSystem":"Web","browserRequirements":"Requires JavaScript and a modern web browser.","isAccessibleForFree":true,"featureList":["Cursor movement and mobile attention tracking","Click, tap, scroll, and pause analysis","Visitor browsing pattern clustering","Page-level behavioural summaries"],"publisher":{"@type":"Organization","name":"TraceTray","url":"https://tracetray.com/"}}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","url":"https://tracetray.com/","name":"TraceTray","alternateName":"TraceTray"}</script>
 <title>TraceTray | Behavioural Web Analytics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -743,30 +743,30 @@ footer {
     transition: opacity 0.5s ease, transform 0.5s ease;
 }
 .reveal.visible { opacity: 1; transform: none; }
-.mobile-banner {
-    display: none;
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    z-index: 200;
-    background: var(--ink);
-    padding: 14px 24px;
+
+.tracking-mode {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    gap: 7px;
+    margin: 18px 0 16px;
+    padding: 6px 9px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
-.mobile-banner.visible { display: flex; }
-.mobile-banner p { font-size: 13px; color: rgba(255,255,255,0.55); line-height: 1.4; margin: 0; }
-.mobile-banner p strong { color: var(--white); }
-.mobile-banner-close {
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.2);
-    color: rgba(255,255,255,0.5);
-    font-size: 12px;
-    padding: 5px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    flex-shrink: 0;
+
+.tracking-mode::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--indigo);
 }
+
 
 .nav-hamburger { display: none; background: transparent; border: none; cursor: pointer; color: var(--muted); padding: 4px; }
 
@@ -840,10 +840,6 @@ footer {
     </div>
 </nav>
 
-<div class="mobile-banner" id="mobile-banner">
-    <p><strong>TraceTray works on desktop and mobile.</strong> Move, scroll, tap, and click to see the live demo update.</p>
-    <button class="mobile-banner-close" id="mobile-banner-close">Got it</button>
-</div>
 <section id="hero">
     <div class="hero-eyebrow">Behavioural analytics</div>
     <h1>Understand how people use your site.</h1>
@@ -855,15 +851,15 @@ footer {
     <div class="hero-stats">
         <div class="stat-item">
             <div class="stat-value"><span id="stat-moves">0</span></div>
-            <div class="stat-label">movement events on this page</div>
+            <div class="stat-label" id="stat-moves-label">movement events on this page</div>
         </div>
         <div class="stat-item">
             <div class="stat-value"><span id="stat-pauses">0</span></div>
-            <div class="stat-label">pauses detected</div>
+            <div class="stat-label" id="stat-pauses-label">cursor pauses detected</div>
         </div>
         <div class="stat-item">
             <div class="stat-value"><span id="stat-clicks">0</span></div>
-            <div class="stat-label">clicks and taps tracked</div>
+            <div class="stat-label" id="stat-clicks-label">clicks tracked</div>
         </div>
         <div class="stat-item">
             <div class="stat-value" id="stat-time">0s</div>
@@ -942,31 +938,32 @@ footer {
     <div class="reveal">
         <span class="eyebrow">Live</span>
         <h2>See your session update live</h2>
-        <p class="section-intro">Move your mouse, scroll, tap, or click around. The counters below update as you interact with the page.</p>
+        <p class="section-intro" id="demo-intro">Move your mouse, scroll, or click around. The counters below update as you interact with the page.</p>
     </div>
     <div class="demo-grid reveal">
         <div class="demo-card">
             <h3>Your session, live</h3>
             <p>Watch the session metrics update as you interact with this page.</p>
+            <div class="tracking-mode" id="tracking-mode">Desktop tracking</div>
             <div class="monitor-grid">
                 <div class="monitor-metric">
-                    <div class="m-label">Moves</div>
+                    <div class="m-label" id="mon-moves-label">Moves</div>
                     <div class="m-value" id="mon-moves">0</div>
                 </div>
                 <div class="monitor-metric">
-                    <div class="m-label">Pauses</div>
+                    <div class="m-label" id="mon-pauses-label">Pauses</div>
                     <div class="m-value" id="mon-pauses">0</div>
                 </div>
                 <div class="monitor-metric">
-                    <div class="m-label">Clicks</div>
+                    <div class="m-label" id="mon-clicks-label">Clicks</div>
                     <div class="m-value" id="mon-clicks">0</div>
                 </div>
                 <div class="monitor-metric">
-                    <div class="m-label">Scrolls</div>
+                    <div class="m-label" id="mon-scrolls-label">Scrolls</div>
                     <div class="m-value" id="mon-scrolls">0</div>
                 </div>
                 <div class="monitor-metric">
-                    <div class="m-label">Velocity</div>
+                    <div class="m-label" id="mon-vel-label">Velocity</div>
                     <div class="m-value" id="mon-vel">-</div>
                 </div>
                 <div class="monitor-metric">
@@ -1068,7 +1065,7 @@ footer {
                 What does the tracker collect?
                 <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
-            <div class="faq-answer">TraceTray collects cursor or touch movement, pauses, clicks or taps, scrolling, session timing, and basic context about interacted elements. It does not record keystrokes, form input values, screenshots, or video.</div>
+            <div class="faq-answer">TraceTray collects cursor movement, cursor and reading pauses, clicks or taps, scrolling, page depth, session timing, and basic context about interacted elements. It does not record keystrokes, form input values, screenshots, or video.</div>
         </div>
         <div class="faq-item">
             <div class="faq-question">
@@ -1082,7 +1079,7 @@ footer {
                 Does it work on mobile?
                 <svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
-            <div class="faq-answer">Yes. TraceTray supports touch movement, taps, and scrolling on mobile devices, alongside cursor movement and clicks on desktop. Mobile and desktop sessions can both be included in your analysis.</div>
+            <div class="faq-answer">Yes. TraceTray tracks taps, reading pauses, scrolling, and page depth on mobile, alongside cursor movement, clicks, pauses, and scrolling on desktop. Mobile and desktop sessions are analyzed separately.</div>
         </div>
         <div class="faq-item">
             <div class="faq-question">
@@ -1150,7 +1147,7 @@ async function startTraceTrayTracker() {
   };
 
   const script = document.createElement("script");
-  script.src = "/client/tracker.js";
+  script.src = "/client/tracker.js?v=20260804-3";
   script.async = true;
   document.head.appendChild(script);
 }
@@ -1214,37 +1211,68 @@ checkAuth();
 function updateMonitor() {
     if (!window.sessionData) return;
 
-    const events  = window.sessionData.events || [];
-    const moves   = events.filter(e => e.type === "mousemove").length;
-    const pauses  = events.filter(e => e.type === "cursor_pause").length;
-    const clicks  = events.filter(e => e.type === "click").length;
-    const scrolls = events.filter(e => e.type === "scroll").length;
-    const dur     = Math.round((Date.now() - window.sessionData.start_time) / 1000);
+    const events = window.sessionData.events || [];
+    const mobile = window.sessionData.device_type === "mobile";
+    const moves = events.filter(e => e.type === "mousemove").length;
+    const cursorPauses = events.filter(e => e.type === "cursor_pause").length;
+    const attentionPauses = events.filter(e => e.type === "attention_pause").length;
+    const clicks = events.filter(e => e.type === "click").length;
+    const taps = events.filter(e => e.type === "tap").length;
+    const scrollEvents = events.filter(e => e.type === "scroll");
+    const dur = Math.round((Date.now() - window.sessionData.start_time) / 1000);
 
-    const moveEvents = events.filter(e => e.type === "mousemove");
-    let vel = "-";
-    if (moveEvents.length > 5) {
-        const recent = moveEvents.slice(-20);
-        let totalDist = 0, totalTime = 0;
-        for (let i = 1; i < recent.length; i++) {
-            const dx = recent[i].x - recent[i-1].x;
-            const dy = recent[i].y - recent[i-1].y;
-            totalDist += Math.sqrt(dx*dx + dy*dy);
-            totalTime += (recent[i].delta_t || 0);
-        }
-        vel = totalTime > 0 ? (totalDist / totalTime).toFixed(2) : "-";
+    let directionChanges = 0;
+    let lastDirection = null;
+    for (const event of scrollEvents) {
+        const direction = event.delta > 0 ? "down" : event.delta < 0 ? "up" : null;
+        if (direction && lastDirection && direction !== lastDirection) directionChanges++;
+        if (direction) lastDirection = direction;
     }
 
-    document.getElementById("mon-moves").textContent   = moves;
-    document.getElementById("mon-pauses").textContent  = pauses;
-    document.getElementById("mon-clicks").textContent  = clicks;
-    document.getElementById("mon-scrolls").textContent = scrolls;
-    document.getElementById("mon-vel").textContent     = vel;
-    document.getElementById("mon-dur").textContent     = dur + "s";
-    document.getElementById("stat-moves").textContent  = moves;
-    document.getElementById("stat-pauses").textContent = pauses;
-    document.getElementById("stat-clicks").textContent = clicks;
-    document.getElementById("stat-time").textContent   = dur + "s";
+    const depth = events.reduce((max, event) => {
+        return typeof event.scroll_depth === "number" ? Math.max(max, event.scroll_depth) : max;
+    }, 0);
+
+    const moveEvents = events.filter(e => e.type === "mousemove");
+    let velocity = "-";
+    if (moveEvents.length > 5) {
+        const recent = moveEvents.slice(-20);
+        let totalDist = 0;
+        let totalTime = 0;
+        for (let i = 1; i < recent.length; i++) {
+            const dx = recent[i].x - recent[i - 1].x;
+            const dy = recent[i].y - recent[i - 1].y;
+            totalDist += Math.sqrt(dx * dx + dy * dy);
+            totalTime += recent[i].delta_t || 0;
+        }
+        velocity = totalTime > 0 ? (totalDist / totalTime).toFixed(2) : "-";
+    }
+
+    document.getElementById("tracking-mode").textContent = mobile ? "Mobile tracking" : "Desktop tracking";
+    document.getElementById("demo-intro").textContent = mobile
+        ? "Tap, scroll, and pause while reading. The counters below update as you interact with the page."
+        : "Move your mouse, scroll, or click around. The counters below update as you interact with the page.";
+
+    document.getElementById("mon-moves-label").textContent = mobile ? "Taps" : "Moves";
+    document.getElementById("mon-pauses-label").textContent = mobile ? "Reading pauses" : "Pauses";
+    document.getElementById("mon-clicks-label").textContent = mobile ? "Scroll depth" : "Clicks";
+    document.getElementById("mon-scrolls-label").textContent = "Scrolls";
+    document.getElementById("mon-vel-label").textContent = mobile ? "Direction changes" : "Velocity";
+
+    document.getElementById("mon-moves").textContent = mobile ? taps : moves;
+    document.getElementById("mon-pauses").textContent = mobile ? attentionPauses : cursorPauses;
+    document.getElementById("mon-clicks").textContent = mobile ? Math.round(depth * 100) + "%" : clicks;
+    document.getElementById("mon-scrolls").textContent = scrollEvents.length;
+    document.getElementById("mon-vel").textContent = mobile ? directionChanges : velocity;
+    document.getElementById("mon-dur").textContent = dur + "s";
+
+    document.getElementById("stat-moves").textContent = mobile ? taps : moves;
+    document.getElementById("stat-pauses").textContent = mobile ? attentionPauses : cursorPauses;
+    document.getElementById("stat-clicks").textContent = mobile ? Math.round(depth * 100) + "%" : clicks;
+    document.getElementById("stat-time").textContent = dur + "s";
+    document.getElementById("stat-moves-label").textContent = mobile ? "taps tracked" : "movement events on this page";
+    document.getElementById("stat-pauses-label").textContent = mobile ? "reading pauses detected" : "cursor pauses detected";
+    document.getElementById("stat-clicks-label").textContent = mobile ? "maximum scroll depth" : "clicks tracked";
 }
 
 setInterval(updateMonitor, 500);
@@ -1254,12 +1282,6 @@ document.querySelectorAll(".faq-item").forEach(item => {
         document.querySelectorAll(".faq-item").forEach(i => i.classList.remove("open"));
         if (!isOpen) item.classList.add("open");
     });
-});
-if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
-    document.getElementById("mobile-banner").classList.add("visible");
-}
-document.getElementById("mobile-banner-close").addEventListener("click", () => {
-    document.getElementById("mobile-banner").classList.remove("visible");
 });
 const observer = new IntersectionObserver(entries => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("visible"); });

@@ -792,8 +792,10 @@ app.get("/api/ux-trends", requireAuth(), async (req, res) => {
 
             const hasDesktopFeatures = clusters.some(c => c.feature_means?.dwell_before_click != null);
             const hesitation = hasDesktopFeatures ? weightedAvg("dwell_before_click") : weightedAvg("dwell_before_tap");
-            const readingPauses = hasDesktopFeatures ? weightedAvg("pause_rate") : weightedAvg("scroll_pause_rate");
-            const scrollDepth   = hasDesktopFeatures ? weightedAvg("bottom_zone_ratio") : weightedAvg("scroll_depth_norm");
+            const readingPauses = hasDesktopFeatures
+                ? weightedAvg("pause_rate")
+                : weightedAvg("attention_pause_rate") || weightedAvg("scroll_pause_rate");
+            const scrollDepth = weightedAvg("scroll_depth_reached") || weightedAvg("scroll_depth_norm");
 
             const topClick = (r.click_summary || [])[0] || null;
             const ctr = topClick && r.session_count > 0 ? topClick.count / r.session_count : null;
@@ -927,8 +929,9 @@ ${mobileResult && mobileResult.clusters && mobileResult.clusters.length > 0
                 const m = c.feature_means || {};
                 const pct = mTotal > 0 ? ((c.n/mTotal)*100).toFixed(0) : 0;
                 return `  - ${c.label} (${pct}% of mobile sessions, n=${c.n}): tap rate ${(m.tap_rate||0).toFixed(3)}/sec, ` +
-                    `scroll depth reached ${((m.scroll_depth_norm||0)*100).toFixed(0)}% of typical, ` +
-                    `scroll pause rate ${(m.scroll_pause_rate||0).toFixed(3)}/sec`;
+                    `scroll depth reached ${(((m.scroll_depth_reached ?? m.scroll_depth_norm) || 0)*100).toFixed(0)}% of the page, ` +
+                    `reading pause rate ${((m.attention_pause_rate ?? m.scroll_pause_rate) || 0).toFixed(3)}/sec, ` +
+                    `average reading pause ${((m.avg_attention_pause_ms||0)/1000).toFixed(1)} seconds`;
             }).join("\n");
     })()
     : "  No mobile sessions analysed for this page yet."}
@@ -960,7 +963,7 @@ ${clusterStoriesTemplate}
   ],
   "data_note": "One honest sentence about what the current dataset size allows you to conclude and what requires more data.",
   "first_impression_note": "1-2 sentences interpreting the first impression data above. If cursor velocity is notably faster in the first 5 seconds, that usually means visitors are scanning or searching for something specific before settling in. If it is similar to the rest of the session, visitors orient quickly and engage right away. Be specific to the numbers given, not generic. If there is not enough data, say so plainly in one sentence.",
-  "device_comparison": "2-3 sentences comparing how desktop and mobile visitors behave differently on this page, if mobile data is available. Ground this in the actual numbers (tap rate, scroll depth, scroll pauses) compared against the desktop patterns above, not generic assumptions about mobile behaviour. If mobile data is not available yet, say plainly that there is not enough mobile traffic to compare yet, in one sentence, rather than guessing."
+  "device_comparison": "2-3 sentences comparing how desktop and mobile visitors behave differently on this page, if mobile data is available. Ground this in the actual numbers (tap rate, page-relative scroll depth, reading pauses, and direction changes) compared against the desktop patterns above, not generic assumptions about mobile behaviour. If mobile data is not available yet, say plainly that there is not enough mobile traffic to compare yet, in one sentence, rather than guessing."
 }
 
 Return only the JSON object. No preamble, no markdown fences.`;
@@ -1397,7 +1400,7 @@ app.post("/api/analysis-permit", requireAuth(), async (req, res) => {
 
         const siteKey = resolveSiteKey(req, account);
         if (!siteKey) return res.status(403).json({ error: "website not available" });
-        if (account.plan === "none") {
+        if (TRACETRAY_MODE === "production" && account.plan === "none") {
             return res.status(403).json({ error: "active subscription required" });
         }
 
@@ -1477,7 +1480,7 @@ app.post("/api/run-analysis", requireAuth(), async (req, res) => {
     const siteKey = resolveSiteKey(req, account);
     if (!siteKey) return res.status(403).json({ error: "website not available" });
 
-    if (account.plan === "none") return res.status(403).json({ error: "active subscription required" });
+    if (TRACETRAY_MODE === "production" && account.plan === "none") return res.status(403).json({ error: "active subscription required" });
 
     const permitToken = String(req.body?.permit_token || "");
     if (!consumeAnalysisPermit(permitToken, getAuth(req).userId, siteKey)) {
@@ -1645,13 +1648,14 @@ setInterval(async () => {
             const scrolls      = events.filter(e => e.type === "scroll").length;
             const taps         = events.filter(e => e.type === "tap").length;
             const scrollPauses = events.filter(e => e.type === "scroll_pause").length;
+            const attentionPauses = events.filter(e => e.type === "attention_pause").length;
             const startMs      = session.start_time ? new Date(session.start_time).getTime() : null;
             const lastTs       = events.length > 0 ? Math.max(...events.map(e => e.timestamp || 0)) : null;
             const duration_ms  = startMs && lastTs ? lastTs - startMs : null;
 
             await Session.updateOne(
                 { session_id: session.session_id },
-                { $set: { end_time: new Date(lastTs || Date.now()).toISOString(), summary: { duration_ms, total_events: events.length, mouse_moves: moves, cursor_pauses: pauses, clicks, scrolls, taps, scroll_pauses: scrollPauses } } }
+                { $set: { end_time: new Date(lastTs || Date.now()).toISOString(), summary: { duration_ms, total_events: events.length, mouse_moves: moves, cursor_pauses: pauses, clicks, scrolls, taps, scroll_pauses: scrollPauses, attention_pauses: attentionPauses } } }
             );
             if (moves === 0 && taps === 0) continue;
             console.log(`finalized abandoned session ${session.session_id}`);

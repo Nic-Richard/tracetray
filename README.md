@@ -2,16 +2,16 @@
 
 TraceTray is a web analytics tool for tracking how people move through a website.
 
-It records cursor movement, touch movement, clicks, scrolling, pauses, page visits, and session timing. The dashboard groups those interactions into browsing patterns and page-level reports.
+It records cursor movement, clicks, cursor pauses, taps, reading pauses, scrolling, page depth, page visits, and session timing. Desktop and mobile sessions use separate analysis pipelines built around the interaction signals available on each device.
 
 ## Features
 
-- cursor, touch, click, scroll, pause, and page tracking
-- desktop and mobile session analysis
+- cursor movement, clicks, taps, pauses, scrolling, page depth, and page tracking
+- separate desktop and mobile session analysis
 - page tabs for every tracked URL on a website
 - client-side route tracking for React, Vue, Angular, Next.js, and other SPA routers
 - visitor journeys and recent sessions
-- attention and interaction summaries
+- cursor attention, mobile reading attention, and interaction summaries
 - multiple website keys per account
 - website rename, removal, and key rotation
 - root-domain locking for tracker keys
@@ -159,10 +159,10 @@ TraceTray does not record keystrokes, passwords, form values, payment details, o
 
 Tracked data may include:
 
-- cursor and touch coordinates
-- clicks and taps
-- scrolling
-- pauses
+- cursor coordinates
+- click and tap positions
+- scrolling and page depth
+- cursor and reading pauses
 - page and referrer URLs
 - session timing
 - device category
@@ -207,6 +207,4 @@ python3 -m py_compile ml/analyze.py
 
 ## Status
 
-TraceTray is in beta.
-
-Current work includes tracking, dashboard reporting, multiple website management, domain-locked keys, Clerk authentication, legal pages, and production deployment.
+TraceTray is in beta. Beta accounts can use tracking, desktop and mobile analysis, dashboard reporting, multiple website management, and domain-locked site keys without an active subscription.

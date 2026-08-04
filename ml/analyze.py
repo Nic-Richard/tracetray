@@ -26,12 +26,14 @@ RANDOM_SEED = 42
 DESKTOP_ENGINEERED_FEATURES = [
     "pause_rate", "click_rate", "move_density", "distance_per_move",
     "avg_cursor_velocity", "dwell_before_click",
-    "spatial_entropy", "top_zone_ratio", "centre_zone_ratio", "bottom_zone_ratio"
+    "spatial_entropy", "top_zone_ratio", "centre_zone_ratio", "bottom_zone_ratio",
+    "scroll_depth_reached", "direction_change_rate", "scroll_burst_rate"
 ]
 
 MOBILE_ENGINEERED_FEATURES = [
-    "tap_rate", "scroll_velocity_rate", "scroll_pause_rate",
-    "dwell_before_tap", "scroll_depth_norm", "direction_change_rate"
+    "tap_rate", "scroll_velocity_rate", "attention_pause_rate",
+    "avg_attention_pause_ms", "dwell_before_tap", "scroll_depth_reached",
+    "direction_change_rate", "scroll_burst_rate"
 ]
 
 
@@ -65,6 +67,8 @@ def engineer_desktop_features(df):
         lambda r: r["total_cursor_distance"] / r["mouse_moves"]
         if r["mouse_moves"] > 0 else 0, axis=1
     )
+    df["direction_change_rate"] = df["scroll_direction_changes"] / df["duration_s"]
+    df["scroll_burst_rate"] = df["scroll_bursts"] / df["duration_s"]
 
     # Convert cursor grid counts to proportions.
     grid_cols = [f"grid_{r}_{c}" for r in range(3) for c in range(3)]
@@ -97,12 +101,8 @@ def engineer_mobile_features(df):
     df["duration_s"] = df["duration_s"].replace(0, np.nan)
 
     df["scroll_velocity_rate"] = df["scroll_velocity"]
-
-    # Normalize scroll depth within the current dataset.
-    max_depth = df["scroll_depth_reached"].max()
-    df["scroll_depth_norm"] = df["scroll_depth_reached"] / max_depth if max_depth and max_depth > 0 else 0
-
     df["direction_change_rate"] = df["scroll_direction_changes"] / df["duration_s"]
+    df["scroll_burst_rate"] = df["scroll_bursts"] / df["duration_s"]
 
     df = df.fillna(0)
     return df
@@ -208,14 +208,14 @@ def label_mobile_clusters(df, labels):
     labels_map = {}
     for cl in means.index:
         row = means.loc[cl]
-        if row["tap_rate"] < 0.01 and row["scroll_depth_norm"] < 0.3:
+        if row["tap_rate"] < 0.01 and row["scroll_depth_reached"] < 0.3:
             name = "Passive / Brief Visitors"
-        elif row["tap_rate"] > 0.03 and row["scroll_depth_norm"] > 0.6:
-            name = "Active Scrollers"
-        elif row["scroll_pause_rate"] > 0.05 and row["dwell_before_tap"] > 800:
-            name = "Careful Readers"
+        elif row["attention_pause_rate"] > 0.03 and row["avg_attention_pause_ms"] > 2500:
+            name = "Focused Readers"
+        elif row["tap_rate"] > 0.03 and row["scroll_depth_reached"] > 0.6:
+            name = "Active Explorers"
         elif row["direction_change_rate"] > 0.05:
-            name = "Re-reading Visitors"
+            name = "Revisiting Visitors"
         else:
             name = "General Visitors"
         labels_map[int(cl)] = name

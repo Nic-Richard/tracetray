@@ -49,18 +49,19 @@ function getOrCreateVisitorId() {
 }
 
 const VISITOR_ID  = getOrCreateVisitorId();
-const sessionId   = generateId();
-const sessionStart = Date.now();
+let sessionId    = generateId();
+let sessionStart = Date.now();
 
 // Avoid classifying touch-capable laptops as mobile when the primary pointer is a mouse.
 const IS_MOBILE = ('ontouchstart' in window) && window.matchMedia('(pointer: coarse)').matches;
 const DEVICE_TYPE = IS_MOBILE ? "mobile" : "desktop";
 
-// Ignore query strings and hashes when grouping pages.
+// Ignore query strings and ordinary anchor hashes when grouping pages.
 function normalisePage(url) {
     try {
         const u = new URL(url);
-        return u.origin + u.pathname;
+        const routeHash = /^#!?\//.test(u.hash) ? u.hash : "";
+        return u.origin + u.pathname + routeHash;
     } catch(e) {
         return url;
     }
@@ -78,6 +79,22 @@ const sessionData = {
 };
 
 let unsentEvents = [];
+
+function resetSession(page, referrer) {
+    sessionId = generateId();
+    sessionStart = Date.now();
+    sessionData.session_id = sessionId;
+    sessionData.page = page;
+    sessionData.referrer = referrer;
+    sessionData.start_time = sessionStart;
+    sessionData.end_time = null;
+    sessionData.events = [];
+    unsentEvents = [];
+    sessionExported = false;
+    lastScrollY = window.scrollY;
+    lastScrollTime = Date.now();
+    resetMobileAttention();
+}
 
 function logEvent(type, data) {
     const event = {
@@ -117,7 +134,8 @@ function sendBatch(isFinal = false) {
             clicks:         sessionData.events.filter(e => e.type === "click").length,
             scrolls:        sessionData.events.filter(e => e.type === "scroll").length,
             taps:           sessionData.events.filter(e => e.type === "tap").length,
-            scroll_pauses:  sessionData.events.filter(e => e.type === "scroll_pause").length
+            scroll_pauses:  sessionData.events.filter(e => e.type === "scroll_pause").length,
+            attention_pauses: sessionData.events.filter(e => e.type === "attention_pause").length
         } : undefined,
         events: unsentEvents
     };
@@ -130,7 +148,45 @@ function sendBatch(isFinal = false) {
 setInterval(() => sendBatch(false), 3000);
 
 
-logEvent("page_load", { page: window.location.href });
+function getPageMetrics() {
+    const doc = document.documentElement;
+    const pageHeight = Math.max(doc.scrollHeight, document.body ? document.body.scrollHeight : 0, window.innerHeight);
+    const viewportHeight = window.innerHeight;
+    const scrollY = window.scrollY;
+
+    return {
+        scroll_depth: Math.min(1, (scrollY + viewportHeight) / pageHeight),
+        viewport_midpoint: scrollY + viewportHeight / 2,
+        page_height: pageHeight,
+        viewport_height: viewportHeight
+    };
+}
+
+logEvent("page_load", { page: window.location.href, ...getPageMetrics() });
+
+function handleRouteChange() {
+    const nextPage = normalisePage(window.location.href);
+    if (nextPage === sessionData.page) return;
+
+    const previousPage = sessionData.page;
+    exportSession();
+    resetSession(nextPage, previousPage);
+    logEvent("page_load", { page: window.location.href, ...getPageMetrics() });
+}
+
+for (const method of ["pushState", "replaceState"]) {
+    const original = history[method];
+    history[method] = function() {
+        const result = original.apply(this, arguments);
+        handleRouteChange();
+        return result;
+    };
+}
+
+window.addEventListener("popstate", handleRouteChange);
+window.addEventListener("hashchange", () => {
+    if (/^#!?\//.test(window.location.hash)) handleRouteChange();
+});
 
 // Skip synthetic mouse events on touch-first devices.
 if (!IS_MOBILE) {
@@ -205,28 +261,68 @@ if (!IS_MOBILE) {
 
 let lastScrollY = window.scrollY;
 let lastScrollTime = Date.now();
-let lastScrollEventTime = Date.now(); // tracks gaps between scroll events for scroll_pause detection
-const SCROLL_SAMPLE_RATE = 100;  // ms
-const SCROLL_PAUSE_THRESHOLD = 800; // ms - gap in scrolling long enough to count as a pause on mobile
+const SCROLL_SAMPLE_RATE = 100;
+const ATTENTION_PAUSE_THRESHOLD = 300;
+const MAX_ATTENTION_PAUSE = 30000;
+let attentionTimer = null;
+let openAttentionPause = null;
+let attentionContext = getPageMetrics();
+
+function closeAttentionPause(endedBy) {
+    clearTimeout(attentionTimer);
+    attentionTimer = null;
+
+    if (!openAttentionPause) return;
+
+    openAttentionPause.duration = Math.min(Date.now() - openAttentionPause.timestamp, MAX_ATTENTION_PAUSE);
+    openAttentionPause.ended_by = endedBy;
+    unsentEvents.push(openAttentionPause);
+    openAttentionPause = null;
+}
+
+function scheduleAttentionPause() {
+    if (!IS_MOBILE || document.visibilityState === "hidden") return;
+
+    clearTimeout(attentionTimer);
+    attentionTimer = setTimeout(() => {
+        const event = {
+            type: "attention_pause",
+            timestamp: Date.now() - ATTENTION_PAUSE_THRESHOLD,
+            duration: ATTENTION_PAUSE_THRESHOLD,
+            ...attentionContext
+        };
+        sessionData.events.push(event);
+        openAttentionPause = event;
+    }, ATTENTION_PAUSE_THRESHOLD);
+}
+
+function recordMobileInteraction(type) {
+    if (!IS_MOBILE) return;
+    closeAttentionPause(type);
+    attentionContext = getPageMetrics();
+    scheduleAttentionPause();
+}
+
+function resetMobileAttention() {
+    clearTimeout(attentionTimer);
+    attentionTimer = null;
+    openAttentionPause = null;
+    attentionContext = getPageMetrics();
+    scheduleAttentionPause();
+}
 
 document.addEventListener("scroll", () => {
     const now = Date.now();
-
-// Treat longer gaps between scrolls as reading pauses.
-    if (IS_MOBILE) {
-        const gap = now - lastScrollEventTime;
-        if (gap > SCROLL_PAUSE_THRESHOLD) {
-            logEvent("scroll_pause", { duration: gap, y: window.scrollY });
-        }
-    }
-    lastScrollEventTime = now;
+    recordMobileInteraction("scroll");
 
     if (now - lastScrollTime < SCROLL_SAMPLE_RATE) return;
 
+    const metrics = getPageMetrics();
     logEvent("scroll", {
         from: lastScrollY,
         to: window.scrollY,
-        delta: window.scrollY - lastScrollY
+        delta: window.scrollY - lastScrollY,
+        ...metrics
     });
 
     lastScrollY = window.scrollY;
@@ -234,23 +330,62 @@ document.addEventListener("scroll", () => {
 });
 
 if (IS_MOBILE) {
-    document.addEventListener("touchend", (e) => {
-        const touch = e.changedTouches && e.changedTouches[0];
-        if (!touch) return;
-
-        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    function recordTap(target, x, y) {
+        recordMobileInteraction("tap");
         if (!target || target.tagName === "BODY") return;
 
         logEvent("tap", {
-            x: touch.clientX,
-            y: touch.clientY,
+            x: x,
+            y: y,
             tag: target.tagName,
             id: target.id || null,
-            classes: target.className || null,
+            classes: typeof target.className === "string" ? target.className : null,
             text: target.innerText ? target.innerText.slice(0, 50) : null,
-            page: window.location.pathname
+            page: window.location.pathname,
+            ...getPageMetrics()
         });
-    }, { passive: true });
+    }
+
+    let touchStart = null;
+
+    function isTap(x, y) {
+        if (!touchStart) return false;
+        const dx = x - touchStart.x;
+        const dy = y - touchStart.y;
+        const duration = Date.now() - touchStart.time;
+        touchStart = null;
+        return Math.sqrt(dx * dx + dy * dy) <= 12 && duration <= 700;
+    }
+
+    if (window.PointerEvent) {
+        document.addEventListener("pointerdown", (e) => {
+            if (e.pointerType !== "touch") return;
+            touchStart = { x: e.clientX, y: e.clientY, time: Date.now() };
+        }, { passive: true });
+        document.addEventListener("pointerup", (e) => {
+            if (e.pointerType !== "touch" || !isTap(e.clientX, e.clientY)) return;
+            recordTap(e.target, e.clientX, e.clientY);
+        }, { passive: true });
+        document.addEventListener("pointercancel", () => {
+            touchStart = null;
+        }, { passive: true });
+    } else {
+        document.addEventListener("touchstart", (e) => {
+            const touch = e.touches && e.touches[0];
+            if (!touch) return;
+            touchStart = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+        }, { passive: true });
+        document.addEventListener("touchend", (e) => {
+            const touch = e.changedTouches && e.changedTouches[0];
+            if (!touch || !isTap(touch.clientX, touch.clientY)) return;
+            recordTap(e.target, touch.clientX, touch.clientY);
+        }, { passive: true });
+        document.addEventListener("touchcancel", () => {
+            touchStart = null;
+        }, { passive: true });
+    }
+
+    scheduleAttentionPause();
 }
 
 
@@ -258,12 +393,18 @@ let sessionExported = false;
 
 function exportSession() {
     if (sessionExported) return;
+    closeAttentionPause("session_end");
     sessionExported = true;
     sendBatch(true);
 }
 
 document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") exportSession();
+    if (document.visibilityState === "hidden") {
+        exportSession();
+    } else if (IS_MOBILE) {
+        attentionContext = getPageMetrics();
+        scheduleAttentionPause();
+    }
 });
 
 window.addEventListener("pagehide", () => exportSession());

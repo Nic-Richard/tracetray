@@ -460,5 +460,27 @@ applyTheme(savedTheme || preferredTheme);
 document.getElementById("theme-button").addEventListener("click", toggleTheme);
 </script>
 
+
+<script>
+async function startTraceTrayTracker() {
+  try {
+    const config = await fetch("/api/config").then(r => r.json());
+    if (!config.site_key) return;
+
+    window.TraceTray = {
+      endpoint: `${window.location.origin}/collect`,
+      key: config.site_key
+    };
+
+    const script = document.createElement("script");
+    script.src = "/client/tracker.js?v=20260804-2";
+    script.async = true;
+    document.head.appendChild(script);
+  } catch (e) {
+  }
+}
+
+startTraceTrayTracker();
+</script>
 </body>
 </html>

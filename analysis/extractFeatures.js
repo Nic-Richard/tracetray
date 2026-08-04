@@ -8,6 +8,7 @@ const basicFeatures = require("./featureModules/basicFeatures");
 const movementFeatures = require("./featureModules/movementFeatures");
 const spatialFeatures = require("./featureModules/spatialFeatures");
 const mobileFeatures = require("./featureModules/mobileFeatures");
+const scrollFeatures = require("./featureModules/scrollFeatures");
 
 mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/sessionDB");
 
@@ -43,14 +44,16 @@ async function run() {
             session_id: session.session_id,
             ...basicFeatures(session),
             ...movementFeatures(session),
-            ...spatialFeatures(session)
+            ...spatialFeatures(session),
+            ...scrollFeatures(session)
         }));
 
         const mobileDataset = mobileSessions.map(session => ({
             session_id: session.session_id,
             duration_ms: session.end_time ? session.end_time - session.start_time : 0,
             total_events: (session.events || []).length,
-            ...mobileFeatures(session)
+            ...mobileFeatures(session),
+            ...scrollFeatures(session)
         }));
 
         // Desktop and mobile datasets are analyzed separately.
