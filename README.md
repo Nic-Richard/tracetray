@@ -1,8 +1,8 @@
 # TraceTray
 
-TraceTray is a web analytics tool for tracking how people move through a website.
+TraceTray is a web analytics tool that uses a lightweight tracker to capture how people move through and interact with a website.
 
-It records cursor movement, clicks, cursor pauses, taps, reading pauses, scrolling, page depth, page visits, and session timing. Desktop and mobile sessions use separate analysis pipelines built around the interaction signals available on each device.
+The project focuses on turning simple raw interaction data, such as cursor movement, clicks, and scrolling, into behavioural analytics and useful UX insights. TraceTray looks for patterns that help explain where visitors focus their attention, where they hesitate, how they navigate, and which parts of the experience may need improvement.
 
 ## Features
 
