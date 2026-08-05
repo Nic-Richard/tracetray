@@ -334,7 +334,7 @@ body { background: var(--surface); color: var(--text); font-family: var(--font-b
         <div class="stat-row" style="grid-template-columns: repeat(5, 1fr);">
           <div class="stat-card"><div class="stat-label">Total visitors</div><div class="stat-value accent" id="stat-total">-</div><div class="stat-sub">all time</div></div>
           <div class="stat-card"><div class="stat-label">Desktop sessions</div><div class="stat-value" id="stat-desktop">-</div><div class="stat-sub">with cursor data</div></div>
-          <div class="stat-card"><div class="stat-label">Mobile sessions</div><div class="stat-value" id="stat-mobile">-</div><div class="stat-sub">with touch data</div></div>
+          <div class="stat-card"><div class="stat-label">Mobile sessions</div><div class="stat-value" id="stat-mobile">-</div><div class="stat-sub">recorded across all pages</div></div>
           <div class="stat-card"><div class="stat-label">Engaged sessions</div><div class="stat-value" id="stat-engaged">-</div><div class="stat-sub" id="stat-engaged-sub">last 14 days</div></div>
           <div class="stat-card"><div class="stat-label">Last analysis</div><div class="stat-value accent" id="stat-ran-at">-</div><div class="stat-sub" id="stat-ran-sub">-</div></div>
         </div>
@@ -1068,7 +1068,15 @@ function renderOverview(result) {
       dn.style.display = "block";
     }
     const comparisonPanel = document.getElementById("device-comparison-panel");
-    if (ai.device_comparison) {
+    const mobileFailure = result.mobile?.failure;
+    const mobileSessions = result.mobile?.session_count ?? mobileFailure?.have ?? 0;
+    if (mobileFailure) {
+      const needed = mobileFailure.needed ?? 16;
+      document.getElementById("device-comparison-text").textContent = mobileSessions > 0
+        ? `${mobileSessions} usable mobile session${mobileSessions === 1 ? " was" : "s were"} found for this page. At least ${needed} are needed for a reliable desktop and mobile comparison.`
+        : "No usable mobile sessions were found for this page in the current analysis.";
+      comparisonPanel.style.display = "block";
+    } else if (ai.device_comparison) {
       document.getElementById("device-comparison-text").textContent = ai.device_comparison;
       comparisonPanel.style.display = "block";
     } else {
