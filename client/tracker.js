@@ -33,15 +33,27 @@ function resolveConfig() {
 
 const { endpoint: COLLECT_URL, siteKey: SITE_KEY } = resolveConfig();
 
-// Reuses a visitor ID across page loads for journey analysis.
-const VISITOR_ID_KEY = "tt_vid";
+// Reuses a visitor ID across page loads for journey analysis, but starts a fresh
+// one after 30 minutes of inactivity (matches Google Analytics' session definition).
+const VISITOR_ID_KEY          = "tt_vid";
+const VISITOR_LAST_ACTIVE_KEY = "tt_vid_last_active";
+const VISIT_INACTIVITY_MS     = 30 * 60 * 1000;
+
+function touchVisitorActivity() {
+    try { localStorage.setItem(VISITOR_LAST_ACTIVE_KEY, String(Date.now())); } catch(e) {}
+}
+
 function getOrCreateVisitorId() {
     try {
+        const lastActive = parseInt(localStorage.getItem(VISITOR_LAST_ACTIVE_KEY), 10);
+        const expired     = !lastActive || (Date.now() - lastActive) > VISIT_INACTIVITY_MS;
+
         let vid = localStorage.getItem(VISITOR_ID_KEY);
-        if (!vid) {
+        if (!vid || expired) {
             vid = generateId();
             localStorage.setItem(VISITOR_ID_KEY, vid);
         }
+        touchVisitorActivity();
         return vid;
     } catch(e) {
         return generateId();
@@ -113,6 +125,8 @@ function sendBatch(isFinal = false) {
         unsentEvents = [];
         return;
     }
+
+    touchVisitorActivity();
 
     const now = Date.now();
 

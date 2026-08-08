@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js"
+    "dev": "node --watch server.js",
+    "check": "node --check server.js",
+    "smoke": "node scripts/smoke-lib.js"
   },
   "dependencies": {
     "cors": "^2.8.6",

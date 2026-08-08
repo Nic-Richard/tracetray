@@ -297,6 +297,9 @@ body { background: var(--surface); color: var(--text); font-family: var(--font-b
           <button type="button" class="site-action-btn" id="site-rename-btn" onclick="renameWebsite()" title="Rename website" aria-label="Rename website">✎</button>
           <button type="button" class="site-action-btn danger" id="site-delete-btn" onclick="deleteWebsite()" title="Remove website" aria-label="Remove website">×</button>
         </div>
+        <div id="site-total-badge" style="display:none;font-size:12px;color:var(--muted);white-space:nowrap;">
+          <span id="site-total-value">-</span> total visitors, all time
+        </div>
         <button class="bug-report-btn" type="button" onclick="openBugReport()">
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 3h3v4h-2v2a6 6 0 01-12 0V9H4V5h3l1-3z"/><path d="M9 9h6M9 13h.01M15 13h.01M9 17h6"/></svg>
           <span>Report a bug</span>
@@ -332,9 +335,9 @@ body { background: var(--surface); color: var(--text); font-family: var(--font-b
     <div class="content">
       <div class="section active" id="section-overview">
         <div class="stat-row" style="grid-template-columns: repeat(5, 1fr);">
-          <div class="stat-card"><div class="stat-label">Total visitors</div><div class="stat-value accent" id="stat-total">-</div><div class="stat-sub">all time</div></div>
+          <div class="stat-card"><div class="stat-label">Page visitors</div><div class="stat-value accent" id="stat-total">-</div><div class="stat-sub">this page</div></div>
           <div class="stat-card"><div class="stat-label">Desktop sessions</div><div class="stat-value" id="stat-desktop">-</div><div class="stat-sub">with cursor data</div></div>
-          <div class="stat-card"><div class="stat-label">Mobile sessions</div><div class="stat-value" id="stat-mobile">-</div><div class="stat-sub">recorded across all pages</div></div>
+          <div class="stat-card"><div class="stat-label">Mobile sessions</div><div class="stat-value" id="stat-mobile">-</div><div class="stat-sub">with touch data</div></div>
           <div class="stat-card"><div class="stat-label">Engaged sessions</div><div class="stat-value" id="stat-engaged">-</div><div class="stat-sub" id="stat-engaged-sub">last 14 days</div></div>
           <div class="stat-card"><div class="stat-label">Last analysis</div><div class="stat-value accent" id="stat-ran-at">-</div><div class="stat-sub" id="stat-ran-sub">-</div></div>
         </div>
@@ -939,9 +942,15 @@ async function loadStats() {
     const r    = await fetch(siteUrl(`/api/stats${pageParam}`), { headers: await authHeaders() });
     const data = await r.json();
 
-    document.getElementById("stat-total").textContent   = data.total_sessions ?? "-";
+    document.getElementById("stat-total").textContent   = data.analysable_sessions ?? "-";
     document.getElementById("stat-desktop").textContent = data.desktop_sessions ?? "-";
     document.getElementById("stat-mobile").textContent  = data.mobile_sessions ?? "-";
+
+    const totalBadge = document.getElementById("site-total-badge");
+    if (totalBadge && data.site_analysable_sessions != null) {
+      document.getElementById("site-total-value").textContent = data.site_analysable_sessions;
+      totalBadge.style.display = "block";
+    }
 
     loadTrendChart();
 
@@ -1844,6 +1853,8 @@ async function switchSite(siteKey) {
   trendsLoaded = false;
   attentionProfileLoaded = false;
   lastAnalysisResult = null;
+  const totalBadge = document.getElementById("site-total-badge");
+  if (totalBadge) totalBadge.style.display = "none";
   buildSnippet(activeSiteKey);
   resetSectionsToEmpty();
   const pagesLoaded = await loadPages();
