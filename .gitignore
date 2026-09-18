@@ -23,5 +23,6 @@ __pycache__/
 # Logs and local files
 logs/
 *.log
+/tmp/
 .DS_Store
 Thumbs.db
