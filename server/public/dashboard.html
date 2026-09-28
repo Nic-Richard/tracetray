@@ -291,14 +291,14 @@ body { background: var(--surface); color: var(--text); font-family: var(--font-b
         <div class="topbar-sub" id="page-sub">Loading...</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
+        <div id="site-total-badge" style="display:none;font-size:12px;color:var(--muted);white-space:nowrap;">
+          <span id="site-total-value">-</span> total visitors, all time
+        </div>
         <div class="site-switcher">
           <select id="site-select" class="site-select" aria-label="Choose website" onchange="switchSite(this.value)"></select>
           <button type="button" class="site-add-btn" id="site-add-btn" onclick="createWebsite()" title="Add website">+</button>
           <button type="button" class="site-action-btn" id="site-rename-btn" onclick="renameWebsite()" title="Rename website" aria-label="Rename website">✎</button>
           <button type="button" class="site-action-btn danger" id="site-delete-btn" onclick="deleteWebsite()" title="Remove website" aria-label="Remove website">×</button>
-        </div>
-        <div id="site-total-badge" style="display:none;font-size:12px;color:var(--muted);white-space:nowrap;">
-          <span id="site-total-value">-</span> total visitors, all time
         </div>
         <button class="bug-report-btn" type="button" onclick="openBugReport()">
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 3h3v4h-2v2a6 6 0 01-12 0V9H4V5h3l1-3z"/><path d="M9 9h6M9 13h.01M15 13h.01M9 17h6"/></svg>
@@ -1000,6 +1000,11 @@ function resetSectionsToEmpty() {
   document.getElementById("trends-content").style.display          = "none";
   document.getElementById("adv-placeholder").style.display        = "flex";
   document.getElementById("adv-content").style.display            = "none";
+  ["stat-total", "stat-desktop", "stat-mobile", "stat-engaged", "stat-ran-at", "stat-ran-sub"].forEach(id => {
+    document.getElementById(id).textContent = "-";
+  });
+  document.getElementById("stat-engaged-sub").textContent = "last 14 days";
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
   attentionProfileLoaded = false;
   trendsLoaded = false;
   activeDevice = { visitors: "desktop", insights: "desktop" };
