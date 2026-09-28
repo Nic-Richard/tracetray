@@ -11,6 +11,8 @@ const { MONGODB_URI, PORT } = require("./src/config");
 const { startSessionCleanupJob } = require("./src/jobs/sessionCleanup");
 
 const app = express();
+// uBlock blocks third-party responses from short .com domains that carry Express's weak ETag.
+app.set("etag", false);
 
 app.use(cors());
 app.use(clerkMiddleware());

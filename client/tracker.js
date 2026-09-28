@@ -154,8 +154,17 @@ function sendBatch(isFinal = false) {
         events: unsentEvents
     };
 
-    // text/plain keeps the beacon a simple cross-origin request; a JSON beacon needs a preflight that fails with credentials.
-    navigator.sendBeacon(COLLECT_URL, new Blob([JSON.stringify(payload)], { type: "text/plain;charset=UTF-8" }));
+    const body = JSON.stringify(payload);
+    // fetch with keepalive instead of sendBeacon: EasyPrivacy blocks every third-party ping
+    // (*$ping,third-party), and beacons are pings. text/plain and omitted credentials keep it a
+    // simple cross-origin request with no preflight.
+    fetch(COLLECT_URL, {
+        method: "POST",
+        body,
+        keepalive: true,
+        credentials: "omit",
+        headers: { "Content-Type": "text/plain;charset=UTF-8" }
+    }).catch(() => navigator.sendBeacon(COLLECT_URL, new Blob([body], { type: "text/plain;charset=UTF-8" })));
 
     unsentEvents = [];
 }
