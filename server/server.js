@@ -17,6 +17,7 @@ app.use(clerkMiddleware());
 
 // Stripe verifies the raw webhook body.
 app.use("/webhook/stripe", express.raw({ type: "application/json" }));
+app.use("/collect", express.json({ limit: "5mb", type: "text/plain" }));
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/client", express.static(path.join(__dirname, "..", "client")));

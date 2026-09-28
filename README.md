@@ -50,9 +50,9 @@ Add the tracker to each page you want to track:
 
 ```html
 <script>
-  window.TRACETRAY_KEY = "YOUR_SITE_KEY";
+  window.TraceTray = { endpoint: "https://tracetray.com/collect", key: "YOUR_SITE_KEY" };
 </script>
-<script src="https://tracetray.com/tracker.js" defer></script>
+<script src="https://tracetray.com/client/tracker.js" defer></script>
 ```
 
 Use the same key on every page and subdomain of one website.

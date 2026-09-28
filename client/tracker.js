@@ -154,7 +154,8 @@ function sendBatch(isFinal = false) {
         events: unsentEvents
     };
 
-    navigator.sendBeacon(COLLECT_URL, new Blob([JSON.stringify(payload)], { type: "application/json" }));
+    // text/plain keeps the beacon a simple cross-origin request; a JSON beacon needs a preflight that fails with credentials.
+    navigator.sendBeacon(COLLECT_URL, new Blob([JSON.stringify(payload)], { type: "text/plain;charset=UTF-8" }));
 
     unsentEvents = [];
 }
