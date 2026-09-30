@@ -881,7 +881,7 @@ function formatPageLabel(url) {
 function makePageTab(label, count, page, active) {
   const btn = document.createElement("button");
   btn.className = "page-tab" + (active ? " active" : "");
-  btn.innerHTML = `<span class="page-tab-label">${label}</span><span class="page-tab-count">${count}</span>`;
+  btn.innerHTML = `<span class="page-tab-label">${escapeHtml(label)}</span><span class="page-tab-count">${escapeHtml(count)}</span>`;
   btn.onclick = () => selectPage(page, btn);
   return btn;
 }
@@ -1010,7 +1010,7 @@ function resetSectionsToEmpty() {
   activeDevice = { visitors: "desktop", insights: "desktop" };
   document.querySelectorAll(".device-toggle-btn").forEach(b => b.classList.toggle("active", b.dataset.device === "desktop"));
 }
-function fmt(t) { return (t||"").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"); }
+function fmt(t) { return escapeHtml(t||"").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"); }
 async function loadTrendChart() {
   try {
     const pageParam = currentPage ? `?page=${encodeURIComponent(currentPage)}&days=14` : "?days=14";
@@ -1137,7 +1137,7 @@ function renderVisitors(result) {
     const pct      = total > 0 ? ((c.n/total)*100).toFixed(0) : 0;
     const headline = ai?.cluster_stories?.[c.id]?.headline || c.label;
     const color    = COLORS[c.id % COLORS.length];
-    return `<div class="legend-item"><div class="legend-dot" style="background:${color}"></div><div class="legend-label">${headline}</div><div class="legend-pct">${pct}%</div></div>`;
+    return `<div class="legend-item"><div class="legend-dot" style="background:${color}"></div><div class="legend-label">${escapeHtml(headline)}</div><div class="legend-pct">${pct}%</div></div>`;
   }).join("");
   document.getElementById("visitor-grid").innerHTML = clusters.map(c => {
     const pct   = total > 0 ? ((c.n/total)*100).toFixed(0) : 0;
@@ -1149,7 +1149,7 @@ function renderVisitors(result) {
       <div class="visitor-card-top">
         <div class="visitor-color-bar" style="background:${color}"></div>
         <div class="visitor-header">
-          <div class="visitor-headline">${headline}</div>
+          <div class="visitor-headline">${escapeHtml(headline)}</div>
           <div class="visitor-count">${c.n} visitor${c.n!==1?"s":""}</div>
         </div>
       </div>
@@ -1187,7 +1187,7 @@ function renderInsights(result, clickSummary) {
     return `<div class="insight-item">
       <div class="insight-item-header">
         <div class="insight-color-dot" style="background:${color}"></div>
-        <div class="insight-headline">${headline}</div>
+        <div class="insight-headline">${escapeHtml(headline)}</div>
         <div class="insight-n">${c.n} visitors</div>
       </div>
       ${body ? `<div class="insight-body">${fmt(body)}</div>` : ""}
@@ -1254,15 +1254,15 @@ function renderAdvanced(result) {
     `k_range_evaluated:  [${(kr.k_range_evaluated||[]).join(", ")}]`,
     `best_k:             ${kr.best_k}`,
     `selection_basis:    ${kr.selection_basis}`,
-  ].join("<br>") : "Not available.";
+  ].map(escapeHtml).join("<br>") : "Not available.";
 
   const featureKeys = clusters[0]?.feature_means ? Object.keys(clusters[0].feature_means) : [];
   const headerCols  = clusters.map(c => {
     const color = COLORS[c.id % COLORS.length];
-    return `<th style="text-align:right"><span style="display:inline-flex;align-items:center;gap:5px;justify-content:flex-end;"><span style="width:7px;height:7px;border-radius:50%;background:${color};display:inline-block"></span>${c.label}</span></th>`;
+    return `<th style="text-align:right"><span style="display:inline-flex;align-items:center;gap:5px;justify-content:flex-end;"><span style="width:7px;height:7px;border-radius:50%;background:${color};display:inline-block"></span>${escapeHtml(c.label)}</span></th>`;
   }).join("");
   const tableRows = featureKeys.map(feat =>
-    `<tr><td>${feat}</td>${clusters.map(c=>`<td style="text-align:right">${Number(c.feature_means?.[feat]??0).toFixed(4)}</td>`).join("")}</tr>`
+    `<tr><td>${escapeHtml(feat)}</td>${clusters.map(c=>`<td style="text-align:right">${Number(c.feature_means?.[feat]??0).toFixed(4)}</td>`).join("")}</tr>`
   ).join("");
   document.getElementById("adv-cluster-table").innerHTML = featureKeys.length
     ? `<table class="feature-table"><thead><tr><th>Feature</th>${headerCols}</tr></thead><tbody>${tableRows}</tbody></table>`
@@ -1274,7 +1274,7 @@ function renderAdvanced(result) {
        <tbody>${kw.map(r=>{
          const sig = r.significant==="yes";
          const pFmt = r.p_value < 0.001 ? "&lt;0.001" : (r.p_value?.toFixed(4)??"-");
-         return `<tr><td>${r.feature}</td><td style="text-align:right">${r.H_statistic?.toFixed(4)??"-"}</td><td style="text-align:right">${pFmt}</td><td style="text-align:right"><span class="sig-badge ${sig?"sig-yes":"sig-no"}">${sig?"yes":"no"}</span></td></tr>`;
+         return `<tr><td>${escapeHtml(r.feature)}</td><td style="text-align:right">${r.H_statistic?.toFixed(4)??"-"}</td><td style="text-align:right">${pFmt}</td><td style="text-align:right"><span class="sig-badge ${sig?"sig-yes":"sig-no"}">${sig?"yes":"no"}</span></td></tr>`;
        }).join("")}</tbody></table>`
     : `<div class="empty">No Kruskal-Wallis data.</div>`;
 }
@@ -1408,20 +1408,20 @@ async function loadJourney(isManualRefresh = false) {
     const maxEntry = data.top_entries?.[0]?.count || 1;
     document.getElementById("j-entries").innerHTML = (data.top_entries || []).map(e => `
       <div class="journey-row">
-        <div class="journey-page">${formatPageLabel(e.page)}</div>
+        <div class="journey-page">${escapeHtml(formatPageLabel(e.page))}</div>
         <div class="journey-bar-wrap"><div class="journey-bar-track"><div class="journey-bar-fill" style="width:${(e.count/maxEntry*100).toFixed(0)}%"></div></div></div>
         <div class="journey-count">${e.count} visits</div>
       </div>`).join("");
     const maxExit = data.top_exits?.[0]?.count || 1;
     document.getElementById("j-exits").innerHTML = (data.top_exits || []).map(e => `
       <div class="journey-row">
-        <div class="journey-page">${formatPageLabel(e.page)}</div>
+        <div class="journey-page">${escapeHtml(formatPageLabel(e.page))}</div>
         <div class="journey-bar-wrap"><div class="journey-bar-track"><div class="journey-bar-fill" style="width:${(e.count/maxExit*100).toFixed(0)}%;background:#C44E52"></div></div></div>
         <div class="journey-count">${e.count} exits</div>
       </div>`).join("");
     const maxPath = data.top_paths?.[0]?.count || 1;
     document.getElementById("j-paths").innerHTML = (data.top_paths || []).map(p => {
-      const pages = p.path.split(" → ").map(formatPageLabel).join(" → ");
+      const pages = p.path.split(" → ").map(page => escapeHtml(formatPageLabel(page))).join(" → ");
       return `<div class="journey-row">
         <div class="journey-page" style="font-family:var(--font-body);max-width:none;">${pages}</div>
         <div class="journey-bar-wrap"><div class="journey-bar-track"><div class="journey-bar-fill" style="width:${(p.count/maxPath*100).toFixed(0)}%;background:#55A868"></div></div></div>
@@ -1543,7 +1543,7 @@ function renderMobileAttention() {
     const color = COLORS[c.id % COLORS.length];
     return `<div>
       <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:6px;">
-        <span>${c.label} <span style="color:var(--muted-2);">(${c.n} visitors)</span></span>
+        <span>${escapeHtml(c.label)} <span style="color:var(--muted-2);">(${c.n} visitors)</span></span>
         <span style="font-family:var(--font-mono);">${pct}%</span>
       </div>
       <div class="visitor-bar-track"><div class="visitor-bar-fill" style="width:${Math.min(100, depth * 100).toFixed(0)}%;background:${color};"></div></div>
@@ -1587,7 +1587,7 @@ async function loadSessions() {
 
       return `<tr>
         <td>${timeAgo(parseInt(s.start_time))}</td>
-        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${page}${deviceTag}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(page)}${deviceTag}</td>
         <td>${durLabel}</td>
         <td><span class="eng-dot ${engClass}"></span>${engLabel}</td>
         <td style="text-align:right">${activityCount}</td>

@@ -31,7 +31,7 @@ router.post("/api/create-checkout-session", requireAuth(), async (req, res) => {
             payment_method_types: ["card"],
             line_items: [{ price: priceId, quantity: 1 }],
             customer_email:     account.email,
-            client_reference_id: account.site_key,
+            client_reference_id: clerkUserId,
             success_url:        `${host}/dashboard.html?checkout=success`,
             cancel_url:         `${host}/pricing.html`
         });
@@ -59,18 +59,20 @@ router.post("/webhook/stripe", async (req, res) => {
 
             case "checkout.session.completed": {
                 const session  = event.data.object;
-                const siteKey  = session.client_reference_id;
+                const ref      = session.client_reference_id;
                 const cusId    = session.customer;
                 const subId    = session.subscription;
                 const sub      = await stripe.subscriptions.retrieve(subId);
                 const priceId  = sub.items.data[0]?.price?.id;
                 const plan     = priceId === process.env.STRIPE_PRO_PRICE_ID ? "pro" : "starter";
 
-                await Account.updateOne(
-                    { site_key: siteKey },
+                // Older checkouts used the account's site key, which changes when its last site is deleted.
+                const result = await Account.updateOne(
+                    { $or: [{ clerk_user_id: ref }, { site_key: ref }] },
                     { $set: { stripe_customer_id: cusId, plan } }
                 );
-                logger.info(`subscription activated  key=${siteKey}  plan=${plan}`);
+                if (!result.matchedCount) throw new Error(`no account for checkout reference ${ref}`);
+                logger.info(`subscription activated  ref=${ref}  plan=${plan}`);
                 break;
             }
 
@@ -78,7 +80,10 @@ router.post("/webhook/stripe", async (req, res) => {
                 const sub     = event.data.object;
                 const cusId   = sub.customer;
                 const priceId = sub.items.data[0]?.price?.id;
-                const plan    = priceId === process.env.STRIPE_PRO_PRICE_ID ? "pro" : "starter";
+                // past_due keeps the plan while Stripe retries the payment.
+                const plan    = ["canceled", "unpaid", "incomplete_expired"].includes(sub.status)
+                    ? "none"
+                    : priceId === process.env.STRIPE_PRO_PRICE_ID ? "pro" : "starter";
 
                 await Account.updateOne(
                     { stripe_customer_id: cusId },
@@ -88,8 +93,7 @@ router.post("/webhook/stripe", async (req, res) => {
                 break;
             }
 
-            case "customer.subscription.deleted":
-            case "invoice.payment_failed": {
+            case "customer.subscription.deleted": {
                 const cusId = event.data.object.customer;
                 await Account.updateOne({ stripe_customer_id: cusId }, { $set: { plan: "none" } });
                 logger.info(`subscription ended  customer=${cusId}`);
@@ -98,6 +102,7 @@ router.post("/webhook/stripe", async (req, res) => {
         }
     } catch (err) {
         logger.error("webhook handler error:", err);
+        return res.status(500).json({ error: "webhook handling failed" });
     }
 
     res.json({ received: true });

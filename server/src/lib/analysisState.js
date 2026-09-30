@@ -3,13 +3,17 @@ const { AI_COOLDOWN_MS, PAGE_REFRESH_COOLDOWN_MS, ALL_REFRESH_COOLDOWN_MS } = re
 
 const analysisRunning = {};
 const analysisPermits = new Map();
-const lastAICallByIP = {};
+const lastAICallByUser = {};
 
 function utcDayKey(date = new Date()) {
     return date.toISOString().slice(0, 10);
 }
 
 function createAnalysisPermit(userId, siteKey, scope, remaining) {
+    const now = Date.now();
+    for (const [key, permit] of analysisPermits) {
+        if (permit.expiresAt < now) analysisPermits.delete(key);
+    }
     const token = crypto.randomBytes(24).toString("base64url");
     analysisPermits.set(token, {
         userId,
@@ -40,7 +44,7 @@ function consumeAnalysisPermit(token, userId, siteKey) {
 module.exports = {
     analysisRunning,
     analysisPermits,
-    lastAICallByIP,
+    lastAICallByUser,
     AI_COOLDOWN_MS,
     PAGE_REFRESH_COOLDOWN_MS,
     ALL_REFRESH_COOLDOWN_MS,

@@ -5,11 +5,38 @@ const { ensureAccountSites } = require("../lib/siteAccount");
 const { normalizeTrackingDomain } = require("../lib/tracking");
 const logger = require("../lib/logger");
 
+const RATE_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT = 240;
+const MAX_BATCH_EVENTS = 2000;
+const MAX_SESSION_EVENTS = 30000;
+const requestsByIp = new Map();
+
+function overRateLimit(ip) {
+    const now = Date.now();
+    if (requestsByIp.size > 50000) {
+        for (const [key, entry] of requestsByIp) if (entry.resetAt <= now) requestsByIp.delete(key);
+    }
+    const entry = requestsByIp.get(ip);
+    if (!entry || entry.resetAt <= now) {
+        requestsByIp.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+        return false;
+    }
+    entry.count += 1;
+    return entry.count > RATE_LIMIT;
+}
+
+function text(value, max) {
+    return typeof value === "string" ? value.slice(0, max) : null;
+}
+
 router.post("/collect", async (req, res) => {
     try {
+        if (overRateLimit(req.ip)) return res.sendStatus(429);
+
         const data = req.body || {};
-        const siteKey = String(data.key || "").trim();
-        const sessionId = String(data.session_id || "").trim();
+        const siteKey = String(data.key || "").trim().slice(0, 64);
+        const sessionId = String(data.session_id || "").trim().slice(0, 100);
+        const events = Array.isArray(data.events) ? data.events.slice(0, MAX_BATCH_EVENTS) : [];
         const originDomain = normalizeTrackingDomain(req.headers.origin);
         const pageDomain = normalizeTrackingDomain(data.page);
         const trackingDomain = originDomain || pageDomain;
@@ -66,16 +93,17 @@ router.post("/collect", async (req, res) => {
             {
                 $set: {
                     site_key: siteKey,
-                    visitor_id: data.visitor_id || null,
-                    device_type: data.device_type || "desktop",
-                    referrer: data.referrer || null,
-                    page: data.page,
+                    visitor_id: text(data.visitor_id, 100),
+                    device_type: data.device_type === "mobile" ? "mobile" : "desktop",
+                    referrer: text(data.referrer, 2000),
+                    page: text(data.page, 2000),
                     start_time: data.start_time,
                     end_time: data.end_time,
                     summary: data.summary,
                     updated_at: Date.now()
                 },
-                $push: { events: { $each: Array.isArray(data.events) ? data.events : [] } }
+                // A positive $slice keeps a session's first events and drops anything past the cap.
+                $push: { events: { $each: events, $slice: MAX_SESSION_EVENTS } }
             },
             { upsert: true }
         );

@@ -5,13 +5,13 @@ const { spawn } = require("child_process");
 const { getAuth } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
 const { Account, Session, AnalysisResult } = require("../db/models");
-const { resolveSiteKey, getClientIP } = require("../lib/siteAccount");
+const { resolveSiteKey } = require("../lib/siteAccount");
 const { getClickSummary } = require("../lib/clickSummary");
 const { computeAttentionProfile } = require("../lib/attentionProfile");
 const { buildInterpretationPrompt, callAI } = require("../lib/aiInterpretation");
 const {
     analysisRunning,
-    lastAICallByIP,
+    lastAICallByUser,
     AI_COOLDOWN_MS,
     PAGE_REFRESH_COOLDOWN_MS,
     ALL_REFRESH_COOLDOWN_MS,
@@ -104,7 +104,13 @@ router.post("/api/analysis-permit", requireAuth(), async (req, res) => {
 });
 
 router.post("/api/run-analysis", requireAuth(), async (req, res) => {
-    const account = await Account.findOne({ clerk_user_id: getAuth(req).userId }).lean();
+    let account;
+    try {
+        account = await Account.findOne({ clerk_user_id: getAuth(req).userId }).lean();
+    } catch (err) {
+        logger.error("run analysis error:", err);
+        return res.status(500).json({ error: "could not start analysis" });
+    }
     if (!account) return res.status(404).json({ error: "account not found" });
 
     const siteKey = resolveSiteKey(req, account);
@@ -117,7 +123,7 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
         return res.status(429).json({ error: "refresh permission expired; try again" });
     }
 
-    const pageFilter = req.body?.page || null;
+    const pageFilter = typeof req.body?.page === "string" && req.body.page ? req.body.page.slice(0, 2000) : null;
     if (analysisRunning[siteKey]) return res.status(409).json({ error: "analysis already running" });
 
     analysisRunning[siteKey] = true;
@@ -159,7 +165,13 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
         });
     }
 
-    extractProc.on("close", async (extractCode) => {
+    extractProc.on("close", extractCode => finishAnalysis(extractCode).catch(err => {
+        logger.error("analysis error:", err);
+        analysisRunning[siteKey] = false;
+        if (!res.headersSent) res.status(500).json({ error: "analysis failed" });
+    }));
+
+    async function finishAnalysis(extractCode) {
         if (extractCode !== 0) {
             logger.error(`extraction failed (exit ${extractCode}):`, extractLog);
             analysisRunning[siteKey] = false;
@@ -194,9 +206,8 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
             };
         }
 
-        const clientIP        = getClientIP(req);
-        const ipKey           = `${clientIP}::${siteKey}::${pageFilter || "all"}`;
-        const lastAICall      = lastAICallByIP[ipKey] || 0;
+        const aiKey           = `${getAuth(req).userId}::${siteKey}::${pageFilter || "all"}`;
+        const lastAICall      = lastAICallByUser[aiKey] || 0;
         const msSinceLast     = Date.now() - lastAICall;
         const aiAllowed       = msSinceLast >= AI_COOLDOWN_MS;
 
@@ -205,7 +216,7 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
         clusterResult.click_summary = clickSummary;
 
         if (!aiAllowed) {
-            logger.debug(`interpretation rate-limited  ip=${clientIP}  wait=${Math.ceil((AI_COOLDOWN_MS - msSinceLast)/1000)}s`);
+            logger.debug(`interpretation rate-limited  key=${siteKey}  wait=${Math.ceil((AI_COOLDOWN_MS - msSinceLast)/1000)}s`);
             const prev = await AnalysisResult.findOne({ site_key: siteKey, page: pageFilter || "all", "ai_interpretation": { $ne: null } }).sort({ ran_at: -1 }).lean();
             if (prev?.ai_interpretation) clusterResult.ai_interpretation = prev.ai_interpretation;
         } else {
@@ -229,7 +240,7 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
                 const interpretation = await callAI(prompt);
                 if (interpretation) {
                     clusterResult.ai_interpretation = interpretation;
-                    lastAICallByIP[ipKey] = Date.now();
+                    lastAICallByUser[aiKey] = Date.now();
                     logger.debug("interpretation complete");
                 }
             } catch (aiErr) {
@@ -248,7 +259,7 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
             ai_cooldown_remaining_ms: aiAllowed ? 0 : Math.max(0, AI_COOLDOWN_MS - msSinceLast),
             next_ai_allowed_in_ms:    aiAllowed ? AI_COOLDOWN_MS : Math.max(0, AI_COOLDOWN_MS - msSinceLast)
         });
-    });
+    }
 });
 
 module.exports = router;

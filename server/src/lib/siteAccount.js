@@ -40,11 +40,6 @@ function resolveSiteKey(req, account) {
     return sites.some(site => site.key === selected) ? selected : null;
 }
 
-function getClientIP(req) {
-    return (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown")
-        .split(",")[0].trim();
-}
-
 async function deleteSiteData(siteKey) {
     const [sessions, analyses, reports] = await Promise.all([
         Session.deleteMany({ site_key: siteKey }),
@@ -73,6 +68,5 @@ module.exports = {
     getAccountSites,
     ensureAccountSites,
     resolveSiteKey,
-    getClientIP,
     deleteSiteData
 };

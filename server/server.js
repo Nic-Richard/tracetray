@@ -11,9 +11,20 @@ const { MONGODB_URI, PORT } = require("./src/config");
 const { startSessionCleanupJob } = require("./src/jobs/sessionCleanup");
 
 const app = express();
+// nginx is the only proxy in front, so req.ip is the address it saw.
+app.set("trust proxy", 1);
 // uBlock blocks third-party responses from short .com domains that carry Express's weak ETag.
 app.set("etag", false);
 
+app.use((req, res, next) => {
+    res.set({
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "strict-origin-when-cross-origin"
+    });
+    next();
+});
 app.use(cors());
 app.use(clerkMiddleware());
 
