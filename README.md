@@ -96,6 +96,20 @@ tracetray/
     └── server.js
 ```
 
+## Checks
+
+```bash
+npm ci --prefix server
+npm ci --prefix analysis
+npm run smoke --prefix server
+npm test --prefix server
+```
+
+GitHub Actions also checks JavaScript and Python syntax on pushes to main and pull requests.
+The regression tests use local fixtures and child processes; they do not call paid APIs or
+connect to MongoDB. Each extraction or clustering process has a five-minute timeout, and
+failed extraction stops the analysis before any old dataset can be reused.
+
 ## Requirements
 
 - Node.js

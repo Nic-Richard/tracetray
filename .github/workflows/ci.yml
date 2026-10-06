@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            analysis/package-lock.json
+      - run: npm ci --prefix server
+      - run: npm ci --prefix analysis
+      - name: JavaScript syntax
+        run: git ls-files -z '*.js' | xargs -0 -n 1 node --check
+      - run: npm run smoke --prefix server
+      - run: npm test --prefix server
+      - name: Python syntax
+        run: python3 -m compileall -q ml

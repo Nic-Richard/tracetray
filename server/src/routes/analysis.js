@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const path = require("path");
-const { spawn } = require("child_process");
+const { runProcess } = require("../lib/runProcess");
 const { getAuth } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
 const { Account, Session, AnalysisResult } = require("../db/models");
@@ -118,13 +118,14 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
 
     if (TRACETRAY_MODE === "production" && account.plan === "none") return res.status(403).json({ error: "active subscription required" });
 
+    if (analysisRunning[siteKey]) return res.status(409).json({ error: "analysis already running" });
+
     const permitToken = String(req.body?.permit_token || "");
     if (!consumeAnalysisPermit(permitToken, getAuth(req).userId, siteKey)) {
         return res.status(429).json({ error: "refresh permission expired; try again" });
     }
 
     const pageFilter = typeof req.body?.page === "string" && req.body.page ? req.body.page.slice(0, 2000) : null;
-    if (analysisRunning[siteKey]) return res.status(409).json({ error: "analysis already running" });
 
     analysisRunning[siteKey] = true;
     logger.debug(`starting analysis  key=${siteKey}`);
@@ -132,68 +133,36 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
     const env = { ...process.env, TRACETRAY_SITE_KEY: siteKey, TRACETRAY_PAGE_FILTER: pageFilter || "" };
 
     const extractScript = path.join(__dirname, "..", "..", "..", "analysis", "extractFeatures.js");
-    const extractProc   = spawn("node", [extractScript], { cwd: path.join(__dirname, "..", "..", ".."), env });
-
-    let extractLog = "";
-    extractProc.stdout.on("data", d => { extractLog += d; });
-    extractProc.stderr.on("data", d => { extractLog += d; });
-
-    function runPythonAnalysis(device) {
-        return new Promise((resolve) => {
-            const pyScript = path.join(__dirname, "..", "..", "..", "ml", "analyze.py");
-            const pyProc   = spawn("python3", [pyScript, "--json-summary", "--device", device], {
-                cwd: path.join(__dirname, "..", "..", "..", "ml"),
-                env
-            });
-
-            let stdout = "", stderr = "";
-            pyProc.stdout.on("data", d => { stdout += d; });
-            pyProc.stderr.on("data", d => { stderr += d; });
-
-            pyProc.on("close", (code) => {
-                if (code !== 0) {
-                    logger.error(`python (${device}) failed:`, stderr);
-                    return resolve(null);
-                }
-                const marker     = "TRACETRAY_RESULT:";
-                const resultLine = stdout.split("\n").find(l => l.startsWith(marker));
-                if (!resultLine) return resolve(null);
-
-                try { resolve(JSON.parse(resultLine.slice(marker.length).trim())); }
-                catch (e) { resolve(null); }
-            });
+    async function runPythonAnalysis(device) {
+        const pyScript = path.join(__dirname, "..", "..", "..", "ml", "analyze.py");
+        const { stdout } = await runProcess("python3", [pyScript, "--json-summary", "--device", device], {
+            cwd: path.join(__dirname, "..", "..", "..", "ml"), env
         });
+        const marker = "TRACETRAY_RESULT:";
+        const resultLine = stdout.split("\n").find(line => line.startsWith(marker));
+        if (!resultLine) throw new Error(`python (${device}) returned no result`);
+        return JSON.parse(resultLine.slice(marker.length).trim());
     }
 
-    extractProc.on("close", extractCode => finishAnalysis(extractCode).catch(err => {
-        logger.error("analysis error:", err);
-        analysisRunning[siteKey] = false;
-        if (!res.headersSent) res.status(500).json({ error: "analysis failed" });
-    }));
-
-    async function finishAnalysis(extractCode) {
-        if (extractCode !== 0) {
-            logger.error(`extraction failed (exit ${extractCode}):`, extractLog);
-            analysisRunning[siteKey] = false;
-            return res.status(500).json({ error: "extraction failed", detail: extractLog.slice(0, 500) });
-        }
-        logger.debug(`extraction done (exit ${extractCode})`);
+    try {
+        await runProcess(process.execPath, [extractScript], { cwd: path.join(__dirname, "..", "..", ".."), env });
+        logger.debug("extraction done");
 
         const clusterResult = await runPythonAnalysis("desktop");
 
-        if (!clusterResult) {
-            analysisRunning[siteKey] = false;
-            return res.status(500).json({ error: "clustering failed" });
+        // Mobile analysis is optional when no mobile traffic is available.
+        let mobileResult = null;
+        try {
+            mobileResult = await runPythonAnalysis("mobile");
+        } catch (err) {
+            logger.error("mobile analysis failed:", err);
         }
-
-// Mobile analysis is optional when no mobile traffic is available.
-        const mobileResult = await runPythonAnalysis("mobile");
 
         clusterResult.site_key = siteKey;
         clusterResult.page     = pageFilter || "all";
         clusterResult.ran_at   = new Date();
 
-// Mobile results are stored without a separate model interpretation.
+        // Mobile results are stored without a separate model interpretation.
         if (mobileResult) {
             clusterResult.mobile = {
                 session_count:    mobileResult.session_count,
@@ -211,7 +180,7 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
         const msSinceLast     = Date.now() - lastAICall;
         const aiAllowed       = msSinceLast >= AI_COOLDOWN_MS;
 
-// Save click history even when model interpretation is rate-limited.
+        // Save click history even when model interpretation is rate-limited.
         const clickSummary = await getClickSummary(siteKey, pageFilter, 15);
         clusterResult.click_summary = clickSummary;
 
@@ -248,7 +217,6 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
             }
         }
 
-        analysisRunning[siteKey] = false;
         await AnalysisResult.create(clusterResult);
         logger.info(`analysis saved  key=${siteKey}  k=${clusterResult.k}  n=${clusterResult.session_count}  mobile_n=${mobileResult?.session_count ?? 0}`);
 
@@ -259,6 +227,11 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
             ai_cooldown_remaining_ms: aiAllowed ? 0 : Math.max(0, AI_COOLDOWN_MS - msSinceLast),
             next_ai_allowed_in_ms:    aiAllowed ? AI_COOLDOWN_MS : Math.max(0, AI_COOLDOWN_MS - msSinceLast)
         });
+    } catch (err) {
+        logger.error("analysis error:", err);
+        if (!res.headersSent) res.status(500).json({ error: "analysis failed" });
+    } finally {
+        analysisRunning[siteKey] = false;
     }
 });
 

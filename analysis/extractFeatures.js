@@ -10,14 +10,12 @@ const spatialFeatures = require("./featureModules/spatialFeatures");
 const mobileFeatures = require("./featureModules/mobileFeatures");
 const scrollFeatures = require("./featureModules/scrollFeatures");
 
-mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/sessionDB");
-
 const SessionSchema = new mongoose.Schema({}, { strict: false });
 const Session = mongoose.model("Session", SessionSchema, "sessions");
 
 async function run() {
     try {
-
+        await mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/sessionDB");
         const siteKeyFilter = process.env.TRACETRAY_SITE_KEY
             ? { site_key: process.env.TRACETRAY_SITE_KEY }
             : {};
@@ -58,6 +56,7 @@ async function run() {
 
         // Desktop and mobile datasets are analyzed separately.
         const datasetDir = path.join(__dirname, "..", "data", "features");
+        fs.mkdirSync(datasetDir, { recursive: true });
         const siteKey     = process.env.TRACETRAY_SITE_KEY || "unknown";
         const desktopFile = path.join(datasetDir, `dataset_${siteKey}_desktop.json`);
         const mobileFile  = path.join(datasetDir, `dataset_${siteKey}_mobile.json`);
@@ -80,9 +79,14 @@ async function run() {
 
     } catch (err) {
         console.error("extraction failed:", err);
+        process.exitCode = 1;
     } finally {
-        mongoose.connection.close();
-        process.exit();
+        try {
+            await mongoose.connection.close();
+        } catch (err) {
+            console.error("database cleanup failed:", err);
+            process.exitCode = 1;
+        }
     }
 }
 
