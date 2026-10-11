@@ -1,3 +1,5 @@
+const { errorAlert } = require('./alerts');
+
 const DEBUG_TRACETRAY = process.env.DEBUG_TRACETRAY === '1';
 
 function debug(...args) {
@@ -14,6 +16,7 @@ function warn(...args) {
 
 function error(...args) {
   console.error(...args);
+  errorAlert(args);
 }
 
 module.exports = { debug, info, warn, error };

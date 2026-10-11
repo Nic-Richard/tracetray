@@ -6,6 +6,7 @@ const stripe = require("../lib/stripe");
 const { Account } = require("../db/models");
 const { TRACETRAY_MODE } = require("../config");
 const logger = require("../lib/logger");
+const { sendAlert } = require("../lib/alerts");
 
 router.post("/api/create-checkout-session", requireAuth(), async (req, res) => {
     try {
@@ -50,7 +51,12 @@ router.post("/webhook/stripe", async (req, res) => {
     try {
         event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
-        logger.error("webhook signature error:", err.message);
+        logger.warn("webhook signature error:", err.message);
+        sendAlert("billing", {
+            title: "Stripe webhook refused: bad signature",
+            description: "Check STRIPE_WEBHOOK_SECRET against the endpoint's signing secret.",
+            key: "stripe-signature",
+        });
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
@@ -73,6 +79,10 @@ router.post("/webhook/stripe", async (req, res) => {
                 );
                 if (!result.matchedCount) throw new Error(`no account for checkout reference ${ref}`);
                 logger.info(`subscription activated  ref=${ref}  plan=${plan}`);
+                sendAlert("billing", {
+                    title: `Subscription started: ${plan}`,
+                    fields: [{ name: "Customer", value: cusId }, { name: "Account", value: ref }],
+                });
                 break;
             }
 
@@ -90,6 +100,10 @@ router.post("/webhook/stripe", async (req, res) => {
                     { $set: { plan } }
                 );
                 logger.info(`subscription updated  customer=${cusId}  plan=${plan}`);
+                sendAlert("billing", {
+                    title: `Subscription updated: ${plan} (${sub.status})`,
+                    fields: [{ name: "Customer", value: cusId }],
+                });
                 break;
             }
 
@@ -97,6 +111,10 @@ router.post("/webhook/stripe", async (req, res) => {
                 const cusId = event.data.object.customer;
                 await Account.updateOne({ stripe_customer_id: cusId }, { $set: { plan: "none" } });
                 logger.info(`subscription ended  customer=${cusId}`);
+                sendAlert("billing", {
+                    title: "Subscription ended",
+                    fields: [{ name: "Customer", value: cusId }],
+                });
                 break;
             }
         }

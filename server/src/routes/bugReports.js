@@ -5,8 +5,17 @@ const { requireAuth } = require("../middleware/auth");
 const { Account, BugReport } = require("../db/models");
 const { resolveSiteKey } = require("../lib/siteAccount");
 const logger = require("../lib/logger");
+const { sendAlert } = require("../lib/alerts");
+const { rateLimit } = require("../lib/rateLimit");
 
-router.post("/api/bug-reports", requireAuth(), async (req, res) => {
+const reportLimit = rateLimit({
+    limit: 10,
+    windowMs: 60 * 60 * 1000,
+    key: (req) => getAuth(req).userId,
+    message: "too many reports, try again in a little while",
+});
+
+router.post("/api/bug-reports", requireAuth(), reportLimit, async (req, res) => {
     try {
         const clerkUserId = getAuth(req).userId;
         const account = await Account.findOne({ clerk_user_id: clerkUserId });
@@ -37,6 +46,18 @@ router.post("/api/bug-reports", requireAuth(), async (req, res) => {
             dashboard_section: String(req.body.dashboard_section || "").slice(0, 100),
             page_url: String(req.body.page_url || "").slice(0, 1000),
             user_agent: String(req.headers["user-agent"] || "").slice(0, 1000)
+        });
+
+        sendAlert("bugs", {
+            title: `${category[0].toUpperCase()}${category.slice(1)} report`,
+            description: description.slice(0, 3000),
+            url: /^https?:\/\//.test(report.page_url) ? report.page_url : "",
+            fields: [
+                { name: "Account", value: String(account._id) },
+                { name: "Site", value: siteKey },
+                { name: "Section", value: report.dashboard_section },
+                { name: "Report", value: String(report._id) },
+            ],
         });
 
         res.status(201).json({ id: report._id, created_at: report.created_at });
