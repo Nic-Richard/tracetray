@@ -1,200 +1,99 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-CA">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Try TraceTray free during the beta and explore behavioural web analytics for cursor movement, clicks, scrolling, pauses, and touch activity.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://tracetray.com/pricing.html">
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="manifest" href="/site.webmanifest">
-<meta name="theme-color" content="#5b5bd6">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TraceTray">
 <meta property="og:title" content="TraceTray Beta and Pricing">
 <meta property="og:description" content="Try TraceTray free during the beta and explore behavioural web analytics for cursor movement, clicks, scrolling, pauses, and touch activity.">
 <meta property="og:url" content="https://tracetray.com/pricing.html">
-<meta property="og:image" content="https://tracetray.com/social-preview.png?v=3">
+<meta property="og:image" content="https://tracetray.com/social-preview.png?v=4">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="A visitor's cursor path across a web page, with its pauses and clicks labelled">
+<meta property="og:image:alt" content="Three TraceTray panels, attention, journeys and visitor groups, beside the headline Understand how people use your site">
 <meta property="og:locale" content="en_CA">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="TraceTray Beta and Pricing">
 <meta name="twitter:description" content="Try TraceTray free during the beta and explore behavioural web analytics for cursor movement, clicks, scrolling, pauses, and touch activity.">
-<meta name="twitter:image" content="https://tracetray.com/social-preview.png?v=3">
-<meta name="twitter:image:alt" content="A visitor's cursor path across a web page, with its pauses and clicks labelled">
+<meta name="twitter:image" content="https://tracetray.com/social-preview.png?v=4">
+<meta name="twitter:image:alt" content="Three TraceTray panels, attention, journeys and visitor groups, beside the headline Understand how people use your site">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#141724">
 <title>TraceTray Beta and Pricing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --ink:     #0d0d0f;
-  --ink-2:   #2e2e35;
-  --muted:   #6b6b78;
-  --muted-2: #a8a8b3;
-  --surface: #f6f6f8;
-  --border:  #e2e2e8;
-  --indigo:  #5b5bd6;
-  --white:   #ffffff;
-  --font:    'Inter', system-ui, sans-serif;
-}
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: var(--surface);
-  color: var(--ink);
-  font-family: var(--font);
-  font-weight: 300;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  gap: 40px;
-}
-
-.header { text-align: center; display: flex; flex-direction: column; gap: 12px; }
-.logo { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); text-decoration: none; }
-.logo span { color: var(--indigo); }
-.header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); }
-.header p { font-size: 15px; color: var(--muted); }
-
-.pricing-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  width: 100%;
-  max-width: 680px;
-}
-
-.plan-card {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.plan-card.featured { border-color: var(--indigo); border-width: 2px; }
-
-.plan-badge {
-  position: absolute;
-  top: -11px; left: 50%;
-  transform: translateX(-50%);
-  background: var(--indigo);
-  color: var(--white);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  padding: 3px 12px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
-
-.plan-name { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
-.plan-price { font-size: 40px; font-weight: 700; letter-spacing: -0.04em; color: var(--ink); line-height: 1; margin-bottom: 3px; }
-.plan-price sup { font-size: 18px; vertical-align: super; font-weight: 500; }
-.plan-price span { font-size: 14px; font-weight: 300; color: var(--muted); }
-.plan-desc { font-size: 13px; color: var(--muted); line-height: 1.6; margin: 14px 0 20px; padding-top: 14px; border-top: 1px solid var(--border); }
-.plan-features { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; flex: 1; }
-.plan-features li { font-size: 13px; color: var(--ink-2); display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; }
-.plan-features li::before { content: "✓"; color: var(--indigo); font-weight: 700; flex-shrink: 0; }
-
-.plan-btn {
-  display: block;
-  text-align: center;
-  padding: 12px;
-  border-radius: 6px;
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: opacity 0.15s;
-  width: 100%;
-}
-.plan-btn.filled { background: var(--indigo); color: var(--white); }
-.plan-btn.outline { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
-.plan-btn:hover { opacity: 0.85; }
-.plan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.trial-note { font-size: 12px; color: var(--muted-2); text-align: center; }
-
-#error-msg {
-  color: #dc2626;
-  font-size: 13px;
-  text-align: center;
-  display: none;
-  background: rgba(220,38,38,0.06);
-  border: 1px solid rgba(220,38,38,0.2);
-  border-radius: 6px;
-  padding: 10px 14px;
-  max-width: 680px;
-  width: 100%;
-}
-
-@media (max-width: 560px) {
-  .pricing-grid { grid-template-columns: 1fr; }
-}
-.dark { --ink: #e8e8f0; --ink-2: #b8b8c8; --muted: #6b6b80; --muted-2: #9898b0; --surface: #161619; --border: rgba(255,255,255,0.08); --indigo: #7b7be6; --indigo-bg: rgba(91,91,214,0.12); --white: #0f0f13; }
-</style>
-
-<script>
-(function() {
-  if (localStorage.getItem("tt-dark") === "1") document.documentElement.classList.add("dark");
-})();
-</script>
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png">
-<link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css?v=1">
+<script>try { const t = localStorage.getItem("tt-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body>
-
-<div class="header">
-  <a href="/" class="logo">Trace<span>Tray</span></a>
-  <h1 id="pricing-title">Try the TraceTray beta</h1>
-  <p id="pricing-intro">Create an account and use TraceTray free while pricing and billing are finalized.</p>
-</div>
-
-<div class="pricing-grid" id="pricing-grid">
-  <div class="plan-card">
-    <div class="plan-name" id="starter-name">Beta access</div>
-    <div class="plan-price" id="starter-price">Free</div>
-    <p class="plan-desc" id="starter-desc">Use the working tracker, dashboard, and analysis tools while TraceTray is still being built.</p>
-    <ul class="plan-features" id="starter-features">
-      <li>Session tracking on desktop and mobile</li>
-      <li>Visitor pattern breakdowns</li>
-      <li>Click and scroll analysis</li>
-      <li>Analysis summaries</li>
-    </ul>
-    <button class="plan-btn outline" id="btn-starter" type="button">Try the beta</button>
+<header class="top-bar">
+  <div class="wrap top">
+    <a class="logo" href="/"><img src="/logo-mark.svg" alt="">TraceTray</a>
+    <nav>
+      <a href="/#how">How it works</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/#faq">FAQ</a>
+      <button type="button" class="theme" id="theme" aria-label="Switch theme">
+        <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+      </button>
+      <a class="btn" href="/sign-in.html">Sign in</a>
+    </nav>
   </div>
-
-  <div class="plan-card featured" id="pro-card">
-    <div class="plan-badge" id="plan-badge">Planned</div>
-    <div class="plan-name">Pro</div>
-    <div class="plan-price" id="pro-price">Coming soon</div>
-    <p class="plan-desc" id="pro-desc">Paid plans will be introduced after the beta and will include unlimited sessions.</p>
-    <ul class="plan-features" id="pro-features">
-      <li>Unlimited sessions</li>
-      <li>Full dashboard access</li>
-      <li>Click and scroll breakdowns</li>
-      <li>Analysis history</li>
-    </ul>
-    <button class="plan-btn filled" id="btn-pro" type="button" disabled>Not available yet</button>
+</header>
+<main>
+  <section class="page-head">
+    <div class="wrap">
+      <h1 id="pricing-title">Try the TraceTray beta</h1>
+      <p id="pricing-intro">Everything is free while TraceTray is in beta. Paid plans arrive after the beta, with notice before anything changes.</p>
+    </div>
+  </section>
+  <div class="wrap">
+    <div class="plans" id="pricing-grid">
+      <div class="plan">
+        <header><h2 id="starter-name">Beta access</h2></header>
+        <div class="price" id="starter-price">Free</div>
+        <p id="starter-desc">The full tracker, dashboard and analysis while TraceTray is in beta.</p>
+        <ul id="starter-features">
+          <li>Desktop and mobile tracking</li>
+          <li>Visitor groups and recommendations</li>
+          <li>Journeys, attention and clicks</li>
+          <li>Ask your analytics</li>
+        </ul>
+        <button class="btn primary" id="btn-starter" type="button">Try the beta</button>
+      </div>
+      <div class="plan featured" id="pro-card">
+        <header><h2>Pro</h2><span class="badge" id="plan-badge">Planned</span></header>
+        <div class="price" id="pro-price">Coming soon</div>
+        <p id="pro-desc">Paid plans arrive after the beta, with unlimited visits.</p>
+        <ul id="pro-features">
+          <li>Unlimited visits</li>
+          <li>Up to 5 websites</li>
+          <li>Click and scroll breakdowns</li>
+          <li>Analysis history</li>
+        </ul>
+        <button class="btn" id="btn-pro" type="button" disabled>Not available yet</button>
+      </div>
+    </div>
+    <div class="error" id="error-msg"></div>
+    <p class="pricing-note" id="pricing-note">No card needed during the beta.</p>
   </div>
-</div>
-
-<div id="error-msg"></div>
-<p class="trial-note" id="pricing-note">No card is required during the beta.</p>
-
+</main>
+<footer>
+  <div class="wrap">
+    <a class="logo" href="/"><img src="/logo-mark.svg" alt="">TraceTray</a>
+    <a href="/sign-in.html">Sign in</a><a href="mailto:support@tracetray.com">Contact</a><a href="/pricing.html">Pricing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a>
+    <span>&copy; 2026 TraceTray</span>
+  </div>
+</footer>
 <script>
 let appMode = "beta";
 
@@ -237,15 +136,15 @@ function applyProductionPricing() {
   document.getElementById("starter-price").innerHTML = "<sup>$</sup>19<span>/mo</span>";
   document.getElementById("starter-desc").textContent = "For smaller sites getting started with behavioural analytics.";
   document.getElementById("starter-features").innerHTML = `
-    <li>Up to 5,000 sessions per month</li>
+    <li>Up to 5,000 visits a month</li>
     <li>Visitor pattern breakdowns</li>
     <li>Analysis summaries</li>
-    <li>Two-line tracker install</li>`;
+    <li>One website</li>`;
   document.getElementById("plan-badge").textContent = "Most popular";
   document.getElementById("pro-price").innerHTML = "<sup>$</sup>49<span>/mo</span>";
-  document.getElementById("pro-desc").textContent = "For sites that want to analyze every session without a monthly cap.";
+  document.getElementById("pro-desc").textContent = "For sites that want every visit analyzed, with no monthly cap.";
   document.getElementById("pro-features").innerHTML = `
-    <li>Unlimited sessions</li>
+    <li>Unlimited visits</li>
     <li>Everything in Starter</li>
     <li>Click and scroll breakdowns</li>
     <li>Analysis history</li>`;
@@ -320,5 +219,6 @@ async function init() {
 
 init();
 </script>
+<script src="/assets/site.js?v=1"></script>
 </body>
 </html>

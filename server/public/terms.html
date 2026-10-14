@@ -1,316 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-CA">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="TraceTray terms of service for accounts, behavioural website analytics, acceptable use, beta access, and third-party providers.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://tracetray.com/terms.html">
-<title>Terms of Service | TraceTray</title>
-
 <link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="/favicon-32x32.png" sizes="32x32" type="image/png">
-<link rel="icon" href="/favicon-16x16.png" sizes="16x16" type="image/png">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<meta name="theme-color" content="#5b5bd6">
+<meta name="theme-color" content="#141724">
+<title>Terms of Service | TraceTray</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-
-<style>
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-:root {
-    --ink: #0d0d0f;
-    --ink-2: #2e2e35;
-    --muted: #6b6b78;
-    --muted-2: #a8a8b3;
-    --surface: #f6f6f8;
-    --surface-2: #eeeef2;
-    --border: #e2e2e8;
-    --indigo: #5b5bd6;
-    --indigo-bg: #f0f0fb;
-    --white: #ffffff;
-    --font: 'Inter', system-ui, sans-serif;
-}
-
-html {
-    scroll-behavior: smooth;
-}
-
-body {
-    min-height: 100vh;
-    background: var(--white);
-    color: var(--ink);
-    font-family: var(--font);
-    font-weight: 300;
-    line-height: 1.7;
-}
-
-body.dark {
-    --ink: #e8e8f0;
-    --ink-2: #c7c7d2;
-    --muted: #9898aa;
-    --muted-2: #737386;
-    --surface: #161619;
-    --surface-2: #1e1e23;
-    --border: rgba(255, 255, 255, 0.09);
-    --indigo: #7b7be6;
-    --indigo-bg: rgba(91, 91, 214, 0.13);
-    --white: #0f0f13;
-}
-
-a {
-    color: inherit;
-}
-
-nav {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    height: 58px;
-    padding: 0 32px;
-    border-bottom: 1px solid var(--border);
-    background: color-mix(in srgb, var(--white) 94%, transparent);
-    backdrop-filter: blur(16px);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.nav-logo {
-    color: var(--ink);
-    text-decoration: none;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-}
-
-.nav-logo span {
-    color: var(--indigo);
-}
-
-.nav-actions {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.nav-actions a,
-.theme-button {
-    color: var(--muted);
-    background: none;
-    border: 0;
-    font: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.nav-actions a:hover,
-.theme-button:hover {
-    color: var(--ink);
-}
-
-main {
-    width: min(100% - 40px, 920px);
-    margin: 0 auto;
-    padding: 80px 0 96px;
-}
-
-.hero {
-    padding-bottom: 44px;
-    border-bottom: 1px solid var(--border);
-}
-
-.kicker {
-    margin-bottom: 14px;
-    color: var(--indigo);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-}
-
-h1 {
-    color: var(--ink);
-    font-size: clamp(38px, 6vw, 64px);
-    font-weight: 600;
-    line-height: 1.05;
-    letter-spacing: -0.045em;
-}
-
-.updated {
-    margin-top: 18px;
-    color: var(--muted);
-    font-size: 14px;
-}
-
-.intro {
-    max-width: 720px;
-    margin-top: 24px;
-    color: var(--ink-2);
-    font-size: 18px;
-    line-height: 1.7;
-}
-
-.legal-content {
-    padding-top: 22px;
-}
-
-.legal-section {
-    padding: 34px 0;
-    border-bottom: 1px solid var(--border);
-}
-
-.legal-section:last-child {
-    border-bottom: 0;
-}
-
-h2 {
-    margin-bottom: 14px;
-    color: var(--ink);
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-}
-
-p + p,
-p + ul,
-ul + p {
-    margin-top: 14px;
-}
-
-p,
-li {
-    color: var(--ink-2);
-    font-size: 15px;
-}
-
-ul {
-    padding-left: 22px;
-}
-
-li + li {
-    margin-top: 8px;
-}
-
-.legal-section a {
-    color: var(--indigo);
-    font-weight: 500;
-}
-
-.notice {
-    margin-top: 28px;
-    padding: 18px 20px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--surface);
-    color: var(--muted);
-    font-size: 13px;
-}
-
-footer {
-    padding: 32px;
-    background: #0a0a0d;
-    color: #ffffff;
-}
-
-.footer-inner {
-    width: min(100%, 1120px);
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-}
-
-.footer-name {
-    color: #a8a8b3;
-    font-size: 13px;
-}
-
-.footer-links {
-    display: flex;
-    gap: 22px;
-}
-
-.footer-links a {
-    color: #d8d8e2;
-    font-size: 13px;
-    text-decoration: none;
-}
-
-.footer-links a:hover {
-    color: #ffffff;
-}
-
-@media (max-width: 640px) {
-    nav {
-        padding: 0 20px;
-    }
-
-    .nav-actions {
-        gap: 14px;
-    }
-
-    .nav-actions a {
-        display: none;
-    }
-
-    main {
-        width: min(100% - 40px, 920px);
-        padding: 56px 0 72px;
-    }
-
-    .intro {
-        font-size: 16px;
-    }
-
-    footer {
-        padding: 30px 20px;
-    }
-
-    .footer-inner {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .footer-links {
-        flex-wrap: wrap;
-    }
-}
-</style>
-
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css?v=1">
+<script>try { const t = localStorage.getItem("tt-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body>
-
-<nav>
-    <a href="/" class="nav-logo">Trace<span>Tray</span></a>
-    <div class="nav-actions">
-        <a href="/privacy.html">Privacy</a>
-        <a href="/sign-in.html">Sign in</a>
-        <button type="button" class="theme-button" id="theme-button">Dark mode</button>
-    </div>
-</nav>
-
+<header class="top-bar">
+  <div class="wrap top">
+    <a class="logo" href="/"><img src="/logo-mark.svg" alt="">TraceTray</a>
+    <nav>
+      <a href="/#how">How it works</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/#faq">FAQ</a>
+      <button type="button" class="theme" id="theme" aria-label="Switch theme">
+        <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+      </button>
+      <a class="btn" href="/sign-in.html">Sign in</a>
+    </nav>
+  </div>
+</header>
 <main>
-    <section class="hero">
-        <p class="kicker">TERMS OF SERVICE</p>
-        <h1>Terms of Service</h1>
-        <p class="updated">Last updated: September 28, 2026</p>
-        <p class="intro">These terms cover TraceTray accounts, website tracking, analysis features, beta access, acceptable use, and the responsibilities of people who install the tracker. TraceTray is operated by Nic Richard in New Brunswick, Canada.</p>
-    </section>
-
-    <div class="legal-content">
+  <section class="page-head">
+    <div class="wrap">
+      <h1>Terms of Service</h1>
+      <p class="updated">Last updated: September 28, 2026</p>
+      <p>These terms cover TraceTray accounts, website tracking, analysis features, beta access, acceptable use, and the responsibilities of people who install the tracker. TraceTray is operated by Nic Richard in New Brunswick, Canada.</p>
+    </div>
+  </section>
+  <div class="wrap legal">
         <section class="legal-section">
             <h2>1. Acceptance of these terms</h2>
             <p>By visiting TraceTray, creating an account, installing the tracker, submitting website interaction data, or using the dashboard, you agree to these terms and the Privacy Policy. If you do not agree, do not use TraceTray.</p>
@@ -428,62 +160,16 @@ footer {
             <h2>19. Contact</h2>
             <p>Questions about these terms can be sent to <a href="mailto:support@tracetray.com">support@tracetray.com</a>.</p>
         </section>
-    </div>
+    
+  </div>
 </main>
-
 <footer>
-    <div class="footer-inner">
-        <span class="footer-name">TraceTray legal</span>
-        <div class="footer-links">
-            <a href="/privacy.html">Privacy Policy</a>
-            <a href="/">Home</a>
-        </div>
-    </div>
+  <div class="wrap">
+    <a class="logo" href="/"><img src="/logo-mark.svg" alt="">TraceTray</a>
+    <a href="/sign-in.html">Sign in</a><a href="mailto:support@tracetray.com">Contact</a><a href="/pricing.html">Pricing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a>
+    <span>&copy; 2026 TraceTray</span>
+  </div>
 </footer>
-
-
-<script>
-const themeKey = "tracetray-theme";
-
-function applyTheme(theme) {
-    document.body.classList.toggle("dark", theme === "dark");
-    document.getElementById("theme-button").textContent =
-        theme === "dark" ? "Light mode" : "Dark mode";
-}
-
-function toggleTheme() {
-    const next = document.body.classList.contains("dark") ? "light" : "dark";
-    localStorage.setItem(themeKey, next);
-    applyTheme(next);
-}
-
-const savedTheme = localStorage.getItem(themeKey);
-const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-applyTheme(savedTheme || preferredTheme);
-document.getElementById("theme-button").addEventListener("click", toggleTheme);
-</script>
-
-
-<script>
-async function startTraceTrayTracker() {
-  try {
-    const config = await fetch("/api/config").then(r => r.json());
-    if (!config.site_key) return;
-
-    window.TraceTray = {
-      endpoint: `${window.location.origin}/collect`,
-      key: config.site_key
-    };
-
-    const script = document.createElement("script");
-    script.src = "/client/tracker.js?v=20260804-2";
-    script.async = true;
-    document.head.appendChild(script);
-  } catch (e) {
-  }
-}
-
-startTraceTrayTracker();
-</script>
+<script src="/assets/site.js?v=1" data-track></script>
 </body>
 </html>
