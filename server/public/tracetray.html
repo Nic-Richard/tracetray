@@ -97,7 +97,7 @@ p { margin: 0; }
 .hud span { font-size: 13.5px; color: var(--graphite-ink); }
 .hud .speed { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--graphite-ink); }
 .hud .speed i { width: 64px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--hot), var(--warm), var(--cool)); }
-.hud p { margin-left: auto; color: var(--graphite-ink); font-size: 14.5px; max-width: 34ch; text-align: right; }
+.hud p { margin-left: auto; color: var(--graphite-ink); font-size: 14.5px; max-width: 44ch; text-align: right; text-wrap: balance; }
 
 /* Steps */
 section { padding: 104px 0; }
@@ -131,6 +131,8 @@ section { padding: 104px 0; }
 .pair .frame:first-child { width: 72%; }
 .pair .frame:last-child { position: absolute; right: 0; bottom: 0; width: 74%; }
 .card-shot { max-width: 340px; justify-self: center; }
+.row.tall { grid-template-columns: minmax(0, 500px) auto; justify-content: center; gap: 96px; }
+.row.flip.tall { grid-template-columns: auto minmax(0, 500px); }
 .who-crop { max-height: 560px; overflow: hidden; max-width: 460px; justify-self: center; }
 
 /* Comparison and extras */
@@ -178,6 +180,7 @@ details p { color: var(--ink-2); margin-top: 10px; max-width: 62ch; }
 .close .wrap { display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; padding-top: 72px; padding-bottom: 72px; }
 footer { padding: 28px 0 40px; font-size: 14.5px; color: var(--muted); }
 footer .wrap { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+.top-bar .wrap, footer .wrap { max-width: none; padding: 0 32px; }
 footer a { color: var(--muted); text-decoration: none; }
 footer .logo { color: var(--ink); }
 footer span { margin-left: auto; }
@@ -185,7 +188,7 @@ footer span { margin-left: auto; }
 @media (max-width: 920px) {
   .top nav a:not(.btn) { display: none; }
   .top nav { gap: 10px; }
-  .hero-grid, .row, .row.flip, .faq { grid-template-columns: 1fr; gap: 36px; }
+  .hero-grid, .row, .row.flip, .row.tall, .row.flip.tall, .faq { grid-template-columns: 1fr; gap: 36px; }
   .row.flip .row-copy { order: 0; }
   .screen { transform: none; }
   .hud p { display: none; }
@@ -197,6 +200,7 @@ footer span { margin-left: auto; }
 }
 @media (max-width: 560px) {
   .wrap { padding: 0 16px; }
+  .top-bar .wrap, footer .wrap { padding: 0 16px; }
   .hud { gap: 20px; justify-content: space-between; }
   .hud b { font-size: 28px; }
   .hud .speed { display: none; }
@@ -244,7 +248,7 @@ footer span { margin-left: auto; }
         <div><b id="pauses">0</b><span>pauses</span></div>
         <div><b id="clicks">0</b><span>clicks and taps</span></div>
         <div class="speed"><span>Slow</span><i></i><span>Fast</span></div>
-        <p>TraceTray runs on this site. These are the signals it reads.</p>
+        <p>TraceTray runs on this site. These are a few of the signals it reads.</p>
       </div>
     </div>
   </div>
@@ -291,7 +295,7 @@ footer span { margin-left: auto; }
 
   <section class="features" id="see">
     <div class="wrap">
-      <div class="row">
+      <div class="row tall">
         <div class="row-copy">
           <h2>Who is reading and who is scanning</h2>
           <p>Every visit becomes a profile of 13 behavioural measures on desktop and 8 on phones: cursor speed, pause rate, scroll depth, hesitation before clicks, how widely attention ranges and more. Machine learning clusters similar profiles into groups.</p>
@@ -304,7 +308,7 @@ footer span { margin-left: auto; }
         <div class="frame who-crop"><img src="/assets/home/who.webp" width="766" height="1396" alt="Who visits: Quick deciders 44%, Re-checkers 38% and Content skimmers 18%, each with a description"></div>
       </div>
 
-      <div class="row flip">
+      <div class="row flip tall">
         <div class="row-copy">
           <h2>What to change, and why</h2>
           <p>Each group is matched to a known behaviour pattern and the type of page it's on, whether that's a homepage, product page or checkout. The recommendation fits both.</p>
