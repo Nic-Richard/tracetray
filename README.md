@@ -127,7 +127,32 @@ failed extraction stops the analysis before any old dataset can be reused.
 - Clerk account
 - Anthropic API key for generated summaries
 
-## Local setup
+## Local setup with Docker
+
+Docker runs MongoDB, the server with the Python analysis, and the React dashboard.
+
+1. Copy `.env.docker.example` to `.env.docker` and fill in the Clerk development instance keys
+   (`pk_test_…` and `sk_test_…`). Live keys only work on tracetray.com.
+2. Start everything:
+
+   ```bash
+   docker compose up
+   ```
+
+3. Open `http://localhost:5173/app/` and sign in. The first sign-in creates your account.
+4. Add a month of demo visits to that account's first website:
+
+   ```bash
+   docker compose exec server node scripts/seed-demo.js
+   ```
+
+The dashboard reloads as you edit. After changing server code, run `docker compose restart server`
+(on Windows, file changes don't reach the container as events).
+
+MongoDB is on port `27018` on the host, so it doesn't clash with a local install. The repository's
+own `.env` is never mounted into the containers.
+
+## Local setup without Docker
 
 Install server dependencies:
 
@@ -150,7 +175,9 @@ Start MongoDB, then run:
 npm start
 ```
 
-The server uses port `5000` unless `PORT` is set.
+The server uses port `5000` unless `PORT` is set. Refresh runs `python3` with the packages in
+`ml/requirements.txt`. On Windows, where there's no `python3` command, set `TRACETRAY_PYTHON` to the
+full path of `python.exe`.
 
 ## Environment variables
 

@@ -134,7 +134,7 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
     const extractScript = path.join(__dirname, "..", "..", "..", "analysis", "extractFeatures.js");
     async function runPythonAnalysis(device) {
         const pyScript = path.join(__dirname, "..", "..", "..", "ml", "analyze.py");
-        const { stdout } = await runProcess("python3", [pyScript, "--json-summary", "--device", device], {
+        const { stdout } = await runProcess(process.env.TRACETRAY_PYTHON || "python3", [pyScript, "--json-summary", "--device", device], {
             cwd: path.join(__dirname, "..", "..", "..", "ml"), env
         });
         const marker = "TRACETRAY_RESULT:";

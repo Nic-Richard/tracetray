@@ -11,6 +11,7 @@ server/public/app/
 .env.*
 !.env.example
 !.env.deploy.example
+!.env.docker.example
 
 # Generated analysis data
 data/features/*
