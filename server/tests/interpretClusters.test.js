@@ -92,6 +92,14 @@ test("odd or missing numbers never leak into the text", () => {
     }
 });
 
+test("groups that never click aren't described as clicking instantly", () => {
+    const result = interpretClusters({ desktop: { session_count: 60, clusters: [
+        cluster(0, 30, { dwell_before_click: 40, click_rate: 0, pause_rate: 0.1 }),
+        cluster(1, 30, { dwell_before_click: 1500, click_rate: 0.08, pause_rate: 0.6 }),
+    ] } });
+    assert.doesNotMatch(result.cluster_stories[0].body, /click after about 0\.0 s|100% less/);
+});
+
 test("page types are guessed from the address", () => {
     assert.equal(guessPageType("https://example.com/"), "homepage");
     assert.equal(guessPageType("https://example.com/plans"), "pricing");

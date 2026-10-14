@@ -10,7 +10,7 @@ function times(ratio) {
     if (ratio >= 1) return `${Math.round((ratio - 1) * 100)}% more`;
     return `${Math.round((1 - ratio) * 100)}% less`;
 }
-const asMuch = (ratio, verb) => ratio >= 1.95 ? `${verb} about ${times(ratio)} as often as average` : `${verb} about ${times(ratio)} often than average`;
+const asMuch = (ratio, verb) => ratio < 0.05 ? `hardly ever ${verb}` : ratio >= 1.95 ? `${verb} about ${times(ratio)} as often as average` : `${verb} about ${times(ratio)} often than average`;
 
 // kind: "rate" compares by ratio, "share" by percentage points, "spread" on the 0-2.2 entropy scale.
 const TRAITS = {
@@ -255,6 +255,8 @@ function clusterTraits(cluster, base, significance) {
         const value = cluster.feature_means?.[feature];
         const b = base.means[feature];
         if (typeof value !== "number" || typeof b !== "number") continue;
+        // A group that (almost) never clicks or taps has no real wait before clicking, not a zero-second one.
+        if ((feature === "dwell_before_click" || feature === "dwell_before_tap") && value < 100) continue;
         const z = strength(def.kind, value, b);
         const weight = significance.size === 0 || significance.has(feature) ? 1 : 0.5;
         const side = z > 0 ? def.up : def.down;
