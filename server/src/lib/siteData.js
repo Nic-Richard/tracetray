@@ -31,6 +31,17 @@ async function getSessionCounts(siteKey, page) {
     return { total, analysable, desktop, mobile, siteAnalysable };
 }
 
+// Signs that a page's visit count overstates its real audience.
+async function getVisitQuality(siteKey, page) {
+    const filter = { site_key: siteKey, end_time: { $ne: null }, ...(page && page !== "all" ? { page } : {}) };
+    const [total, interactive, short] = await Promise.all([
+        Session.countDocuments(filter),
+        Session.countDocuments({ ...filter, ...INTERACTION_FILTER }),
+        Session.countDocuments({ ...filter, "summary.duration_ms": { $lt: 3000 } })
+    ]);
+    return { total, without_interaction: total - interactive, under_3_seconds: short };
+}
+
 function latestAnalysis(siteKey, page) {
     return AnalysisResult.findOne({ site_key: siteKey, page: analysisPageFilter(page) }).sort({ ran_at: -1 }).lean();
 }
@@ -220,6 +231,7 @@ async function getReferrers(siteKey, { days = 30, page = null, limit = 15, ownHo
 
 module.exports = {
     getSessionCounts,
+    getVisitQuality,
     latestAnalysis,
     getTimeseries,
     getUxTrends,

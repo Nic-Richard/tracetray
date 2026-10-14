@@ -164,7 +164,7 @@ const ARCHETYPES = {
             key: "rechecking", name: "Re-checkers", traits: { direction_change_rate: 1 },
             meaning: "They scroll back up to look again, often to compare options or find something they missed.",
             suggest: {
-                default: "Keep key details like prices and options summarised near the main action so they don't have to scroll back.",
+                default: "Keep key details like prices and options summarized near the main action so they don't have to scroll back.",
                 pricing: "Add a comparison table, or keep a short plan summary in view while they scroll."
             }
         }
@@ -367,7 +367,7 @@ function deviceComparison(desktop, mobile) {
     if (dDepth != null && mDepth != null) parts.push(`Mobile visitors get ${pct(mDepth)} of the way down the page on average, versus ${pct(dDepth)} on desktop.`);
     const clicks = weightedMean(desktop, "click_rate"), taps = weightedMean(mobile, "tap_rate");
     if (clicks != null && taps != null) parts.push(`They tap about ${(taps * 60).toFixed(1)} times a minute, compared with ${(clicks * 60).toFixed(1)} clicks a minute on desktop.`);
-    return parts.join(" ") || "Mobile and desktop visitors were analysed separately; their measures aren't directly comparable on this page.";
+    return parts.join(" ") || "Mobile and desktop visitors were analyzed separately; their measures aren't directly comparable on this page.";
 }
 
 function summarise(device, label) {

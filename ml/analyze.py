@@ -276,7 +276,7 @@ def main(device, site_key):
             "reason":  "no_sessions",
             "have":    0,
             "needed":  16,
-            "message": f"No {device} sessions have been collected for this page yet."
+            "message": f"No {'desktop visits with cursor movement' if device == 'desktop' else 'phone visits with scrolling or tapping'} have been recorded on this page yet."
         }
 
     MIN_CLUSTER_SIZE = 8
@@ -291,7 +291,7 @@ def main(device, site_key):
             "reason":   "insufficient_data",
             "have":     n_sessions,
             "needed":   needed,
-            "message":  f"Only {n_sessions} sessions collected so far. At least {needed} are needed before visitor types can be reliably identified."
+            "message":  f"{n_sessions} {'desktop visit' if device == 'desktop' else 'phone visit'}{'' if n_sessions == 1 else 's'} on this page had enough {'cursor movement' if device == 'desktop' else 'scrolling or tapping'} to study. TraceTray needs at least {needed} to sort visitors into groups."
         }
 
     print("engineering features...")
@@ -355,7 +355,7 @@ if __name__ == "__main__":
     parser.add_argument("--json-summary", action="store_true",
                         help="emit a TRACETRAY_RESULT: {...} line for the dashboard API")
     parser.add_argument("--device", choices=["desktop", "mobile"], default="desktop",
-                        help="which device type's sessions to analyse")
+                        help="which device type's sessions to analyze")
     args = parser.parse_args()
 
     site_key = os.environ.get("TRACETRAY_SITE_KEY", "unknown")

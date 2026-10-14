@@ -38,7 +38,7 @@ function consumeAnalysisPermit(token, userId, siteKey) {
     }
 
     permit.remaining -= 1;
-    // A long refresh-all run keeps its permit while pages are still being analysed.
+    // A long refresh-all run keeps its permit while pages are still being analyzed.
     permit.expiresAt = Date.now() + PERMIT_IDLE_MS;
     if (permit.remaining <= 0) analysisPermits.delete(token);
     return true;
