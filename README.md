@@ -13,6 +13,8 @@ The project focuses on turning simple raw interaction data, such as cursor movem
 - page tabs for every tracked URL on a website
 - client-side route tracking for React, Vue, Angular, Next.js, and other SPA routers
 - visitor journeys and recent sessions
+- Ask: plain-English questions answered by Claude, which looks up the site's own pages, traffic, clicks,
+  journeys and analysis history through read-only tools scoped to that website
 - cursor attention, mobile reading attention, and interaction summaries
 - multiple website keys per account
 - website rename, removal, and key rotation
@@ -160,6 +162,9 @@ CLERK_SECRET_KEY
 ANTHROPIC_API_KEY
 TRACETRAY_MODE
 ```
+
+`ASK_MODEL`, `ASK_EFFORT` and `ASK_DAILY_LIMIT` tune the Ask tab (defaults: `claude-sonnet-5-5`, `medium`, 100
+questions a day across all accounts). Each account can also ask 20 questions a day.
 
 `TRACETRAY_MODE=beta` keeps beta access enabled and allows up to five websites per account.
 

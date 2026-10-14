@@ -11,12 +11,13 @@
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
+    "@clerk/express": "^2.1.29",
     "cors": "^2.8.6",
+    "dotenv": "^16.4.0",
     "express": "^5.2.1",
     "mongoose": "^9.2.3",
-    "stripe": "^22.2.1",
-    "@clerk/express": "^2.1.29",
-    "dotenv": "^16.4.0"
+    "stripe": "^22.2.1"
   },
   "type": "commonjs",
   "license": "MIT"

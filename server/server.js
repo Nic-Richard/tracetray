@@ -44,6 +44,7 @@ app.use(require("./src/routes/health"));
 app.use(require("./src/routes/collect"));
 app.use(require("./src/routes/stats"));
 app.use(require("./src/routes/analysis"));
+app.use(require("./src/routes/ask"));
 
 async function startServer() {
     try {
