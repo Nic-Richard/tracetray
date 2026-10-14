@@ -11,3 +11,14 @@ export function writeStorage(key: string, value: string | null): void {
     // Nothing to save when storage is blocked.
   }
 }
+
+// Session storage clears when the browser closes, for things that should come back next visit.
+export function readSession(key: string): string | null {
+  try { return sessionStorage.getItem(key); } catch { return null; }
+}
+
+export function writeSession(key: string, value: string): void {
+  try { sessionStorage.setItem(key, value); } catch {
+    // Nothing to save when storage is blocked.
+  }
+}

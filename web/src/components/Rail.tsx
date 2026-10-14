@@ -31,7 +31,7 @@ export default function Rail({ onReportBug }: { onReportBug: () => void }) {
 
   return (
     <nav className="rail" aria-label="Sections">
-      <a className="rail-mark" href="/" title="TraceTray home" aria-label="TraceTray home" />
+      <a className="rail-mark" href="/" title="TraceTray home"><img src="/logo-mark.svg" alt="TraceTray home" width="34" height="34" /></a>
       {SECTIONS.map(section => (
         <NavLink key={section.to} to={{ pathname: section.to, search }} title={section.label} aria-label={section.label}
           className={({ isActive }) => `rail-link${isActive ? " active" : ""}${section.desktopOnly ? " rail-desktop" : ""}`}>

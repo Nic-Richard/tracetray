@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type React from "react";
 import { Link, NavLink, useLocation, useParams } from "react-router";
-import { compactNumber, isPageGroup, pageLabel, pagePath, percent, timeAgo, type Stats, type Timeseries } from "@tracetray/shared";
+import { compactNumber, isPageGroup, pageLabel, pagePath, percent, timeAgo, type AnalysisResult, type Stats, type Timeseries } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
 import { heatColor } from "../lib/heat";
+import { readSession, writeSession } from "../lib/storage";
+import { interpretationOf, visitorTypes } from "../lib/analysis";
+import { groupColors } from "../lib/palette";
 import GroupPages from "../components/GroupPages";
 import WhoVisits from "../components/WhoVisits";
 import TrafficPanel from "../components/TrafficPanel";
@@ -56,23 +59,67 @@ function Figure({ value, label, note, accent }: { value: string; label: string; 
   );
 }
 
-function GroupingNudge() {
+function matchesPattern(path: string, pattern: string): boolean {
+  const parts = path.split("/").filter(Boolean);
+  const rule = pattern.split("/").filter(Boolean);
+  return parts.length === rule.length && rule.every((segment, i) => segment.startsWith(":") || segment === parts[i]);
+}
+
+function GroupingNudge({ page }: { page: string }) {
   const api = useApi();
   const { siteKey } = useSite();
   const { search } = useLocation();
+  const dismissKey = `tracetray.nudge-dismissed.${siteKey}`;
+  const [dismissed, setDismissed] = useState(() => readSession(dismissKey) === "1");
   const groups = useLoad(() => api.pageGroups(siteKey), [api, siteKey]);
-  const suggestions = groups.data?.suggestions || [];
-  if (!suggestions.length) return null;
-  const [first] = suggestions;
-  const pages = suggestions.reduce((sum, s) => sum + s.pages, 0);
+  const match = isPageGroup(page) ? undefined : groups.data?.suggestions.find(s => matchesPattern(pagePath(page), s.pattern));
+  if (!match || dismissed) return null;
   return (
     <div className="nudge">
       <div>
-        <b>{pages.toLocaleString()} pages could be grouped</b>
-        <p>Pages like <code>{first.pattern}</code> ({first.pages.toLocaleString()} pages) follow the same pattern. Grouping them gives you one view for each kind of page instead of one per address.</p>
+        <b>This page could be part of a group</b>
+        <p>{match.pages.toLocaleString()} pages follow the pattern <code>{match.pattern}</code>. Grouping them gives you one view of all of them, with enough visits to sort into visitor groups sooner.</p>
       </div>
-      <Link className="btn" to={{ pathname: "/setup", search }}>Review {suggestions.length === 1 ? "the suggestion" : `${suggestions.length} suggestions`}</Link>
+      <Link className="btn" to={{ pathname: "/setup", search }}>Review the suggestion</Link>
+      <button type="button" className="nudge-close" aria-label="Hide this suggestion until your next visit" onClick={() => { writeSession(dismissKey, "1"); setDismissed(true); }}>
+        <Icon name="close" size={14} />
+      </button>
     </div>
+  );
+}
+
+function DevicePanel({ timeseries, result }: { timeseries: Timeseries; result: AnalysisResult | null }) {
+  const desktop = timeseries.series.reduce((sum, d) => sum + d.desktop, 0);
+  const mobile = timeseries.series.reduce((sum, d) => sum + d.mobile, 0);
+  const total = desktop + mobile;
+  if (!total) return null;
+  const phoneTypes = visitorTypes(result, "mobile");
+  const phoneColors = groupColors(phoneTypes.map(t => t.key));
+  const comparison = interpretationOf(result)?.device_comparison;
+  return (
+    <section className="panel">
+      <div className="panel-head"><h2>Desktop and phones</h2></div>
+      <div className="panel-body devices">
+        <div className="device-split">
+          <div className="device-bar" role="img" aria-label={`${percent(desktop / total)} desktop, ${percent(mobile / total)} phones`}>
+            <span style={{ flex: desktop, background: "var(--desktop)" }} />
+            <span style={{ flex: mobile, background: "var(--mobile)" }} />
+          </div>
+          <div className="device-counts">
+            <div style={{ "--fill": "var(--desktop)" } as React.CSSProperties}><b className="num">{percent(desktop / total)}</b><span>{desktop.toLocaleString()} desktop visits</span></div>
+            <div style={{ "--fill": "var(--mobile)" } as React.CSSProperties}><b className="num">{percent(mobile / total)}</b><span>{mobile.toLocaleString()} phone visits</span></div>
+          </div>
+        </div>
+        <div className="device-notes">
+          {comparison && <p>{comparison}</p>}
+          {phoneTypes.length > 0 && (
+            <div className="group-chips" aria-label="Phone visitor groups">
+              {phoneTypes.map((type, i) => <span key={type.id}><i style={{ background: phoneColors[i] }} />{type.headline} <b className="num">{Math.round(type.share * 100)}%</b></span>)}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -84,18 +131,19 @@ function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }:
   const visits = timeseries?.total_sessions ?? 0;
   const desktopShare = visits ? timeseries!.series.reduce((sum, d) => sum + d.desktop, 0) / visits : null;
   const groups = result?.clusters?.length || 0;
+  const phoneGroups = result?.mobile?.clusters?.length || 0;
 
   return (
     <div className="content">
       <div className="figures">
         <Figure accent="var(--d1)" label="Visits, last 30 days" value={timeseries ? compactNumber(visits) : "–"} note={desktopShare === null ? undefined : `${percent(desktopShare)} on desktop`} />
         <Figure accent="var(--d2)" label="Engaged visits" value={timeseries && visits ? percent(timeseries.engagement_rate) : "–"} note="Stayed over 5 seconds and did something" />
-        <Figure accent="var(--d5)" label="Visitor groups" value={groups ? String(groups) : "–"} note={result ? `From ${result.session_count.toLocaleString()} desktop visits` : "Not analyzed yet"} />
+        <Figure accent="var(--d5)" label="Visitor groups" value={groups + phoneGroups ? String(groups + phoneGroups) : "–"} note={result ? `${groups} on desktop, ${phoneGroups} on phones` : "Not analyzed yet"} />
         {group
           ? <Figure accent="var(--d3)" label="Pages in this group" value={compactNumber(groupSize || 0)} note={pagePath(page)} />
           : <Figure accent="var(--d3)" label="Last analyzed" value={result ? timeAgo(result.ran_at) : "Never"} note={result ? "Refresh after you change the page" : undefined} />}
       </div>
-      <GroupingNudge />
+      <GroupingNudge page={page} />
       <div className="split">
         {group ? <GroupPages page={page} groupSize={groupSize || 0} /> : timeseries ? <TrafficPanel timeseries={timeseries} /> : <section className="panel"><p className="empty">Loading visits…</p></section>}
         {result ? <WhoVisits result={result} page={page} /> : (
@@ -108,6 +156,7 @@ function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }:
           </section>
         )}
       </div>
+      {timeseries && <DevicePanel timeseries={timeseries} result={result} />}
       {result && <SummaryPanel result={result} page={page} />}
     </div>
   );

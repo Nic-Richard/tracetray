@@ -80,7 +80,7 @@ export default function GroupPages({ page, groupSize }: { page: string; groupSiz
           <tbody>
             {rows.map(row => (
               <tr key={row.path}>
-                <td><span className="cell-page"><i style={{ background: heatColor(row.sessions, max) }} /><span title={row.path}>{row.path}</span></span></td>
+                <td className="page-cell"><span className="cell-page"><i style={{ background: heatColor(row.sessions, max) }} /><span title={row.path}>{row.path}</span></span></td>
                 <td className="right num"><span className="cell-bar"><i style={{ width: `${Math.max(4, (row.sessions / max) * 90)}px` }} />{row.sessions.toLocaleString()}</span></td>
                 <td className="right num hide-sm">{row.clicks.toLocaleString()}</td>
                 <td className="right num hide-sm">{row.sessions ? `${Math.round((row.desktop / row.sessions) * 100)}%` : "–"}</td>
