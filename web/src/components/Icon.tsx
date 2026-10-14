@@ -9,7 +9,8 @@ const PATHS: Record<string, string> = {
   sun: "M12 17a5 5 0 100-10 5 5 0 000 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4",
   bug: "M8 2l1.9 1.9M16 2l-1.9 1.9M9 7.1V6a3 3 0 016 0v1.1M12 20a6 6 0 01-6-6v-3a4 4 0 014-4h4a4 4 0 014 4v3a6 6 0 01-6 6zM12 20v-9M6 13H2M22 13h-4M3 21l3-3M21 21l-3-3M3 7l3 3M21 7l-3 3",
   chevron: "M6 9l6 6 6-6",
-  close: "M18 6L6 18M6 6l12 12"
+  close: "M18 6L6 18M6 6l12 12",
+  lock: "M7 11V8a5 5 0 0110 0v3M5 11h14v10H5z"
 };
 
 export default function Icon({ name, size = 18 }: { name: keyof typeof PATHS | string; size?: number }) {

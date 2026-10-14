@@ -42,10 +42,11 @@ function Row({ item, max, active, pinned, onPick, onPin }: {
   const detail = group ? `${pagePath(item.page)}, ${item.pages_in_group?.toLocaleString() ?? "many"} pages` : pagePath(item.page);
   return (
     <div className="tree-line">
-      <button type="button" className={`tree-row${active ? " active" : ""}`} onClick={onPick} aria-current={active ? "page" : undefined}>
+      <button type="button" className={`tree-row${active ? " active" : ""}${item.locked ? " locked" : ""}`} onClick={onPick} aria-current={active ? "page" : undefined}
+        title={item.locked ? "Past your plan's page limit this month" : undefined}>
         <span className="heat" style={{ background: heatColor(item.sessions, max) }} />
         <span><b>{pageLabel(item.page)}</b>{detail !== pageLabel(item.page) && <small>{detail}</small>}</span>
-        <span className="count num">{compactNumber(item.sessions)}</span>
+        <span className="count num">{item.locked ? <Icon name="lock" size={13} /> : compactNumber(item.sessions)}</span>
       </button>
       <button type="button" className={`tree-pin${pinned ? " on" : ""}`} onClick={onPin} aria-label={pinned ? `Unpin ${pageLabel(item.page)}` : `Pin ${pageLabel(item.page)}`} title={pinned ? "Unpin" : "Pin to the top"}>
         {pinned ? "●" : "○"}

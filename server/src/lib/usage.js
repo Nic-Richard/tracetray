@@ -50,4 +50,4 @@ function recordAskQuestion(accountId, month = monthOf()) {
     }], { updatePipeline: true });
 }
 
-module.exports = { getUsage, recordAskQuestion, monthOf, monthRange };
+module.exports = { getUsage, recordAskQuestion, askCount, monthOf, monthRange };

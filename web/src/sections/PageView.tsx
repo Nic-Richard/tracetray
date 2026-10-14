@@ -162,6 +162,21 @@ function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }:
   );
 }
 
+function LockedPage() {
+  const month = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1))
+    .toLocaleDateString(undefined, { month: "long", day: "numeric", timeZone: "UTC" });
+  return (
+    <div className="content">
+      <section className="panel locked-panel">
+        <Icon name="lock" size={22} />
+        <h2>This page is past your plan's page limit</h2>
+        <p>TraceTray is still collecting its visits, so nothing is lost. It opens again on {month}, or as soon as you move to a plan with more pages.</p>
+        <p><a className="btn primary" href="/pricing.html">See plans</a></p>
+      </section>
+    </div>
+  );
+}
+
 function MoreMenu({ onRefreshAll, onReset, busy }: { onRefreshAll: () => void; onReset: () => void; busy: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -193,8 +208,9 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
   const [refreshing, setRefreshing] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
 
-  const stats = useLoad(() => (page ? api.stats(siteKey, page) : null), [api, siteKey, page]);
-  const timeseries = useLoad(() => (page ? api.timeseries(siteKey, page, 30) : null), [api, siteKey, page]);
+  const locked = !!pages?.find(p => p.page === page)?.locked;
+  const stats = useLoad(() => (page && !locked ? api.stats(siteKey, page) : null), [api, siteKey, page, locked]);
+  const timeseries = useLoad(() => (page && !locked ? api.timeseries(siteKey, page, 30) : null), [api, siteKey, page, locked]);
 
   if (!pages) return <p className="loading">Loading…</p>;
   if (!page) {
@@ -233,7 +249,7 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
   }
 
   async function refreshAll() {
-    const eligible = (pages || []).filter(p => p.analysable >= MIN_SESSIONS);
+    const eligible = (pages || []).filter(p => p.analysable >= MIN_SESSIONS && !p.locked);
     if (!eligible.length) { setStatus({ text: `No page has ${MIN_SESSIONS} visits with movement, clicks or scrolling yet.`, error: true }); return; }
     setRefreshing(true);
     try {
@@ -280,11 +296,11 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
           <div className="page-top">
             <h1>{label}</h1>
             {label !== path && <code>{path}</code>}
-            <div className="page-actions">
+            {!locked && <div className="page-actions">
               {lastRun && <span className="ask-note">Analyzed {timeAgo(lastRun)}</span>}
               <MoreMenu onRefreshAll={refreshAll} onReset={() => setConfirmReset(true)} busy={refreshing} />
               <button type="button" className="btn primary" onClick={refresh} disabled={refreshing}>{refreshing ? "Analyzing…" : "Refresh analysis"}</button>
-            </div>
+            </div>}
           </div>
           {confirmReset && (
             <div className="confirm page-confirm">
@@ -295,7 +311,7 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
               </div>
             </div>
           )}
-          <p className="page-sub">{subline(timeseries.data, summary?.pages_in_group) || `${compactNumber(summary?.sessions || 0)} visits so far.`}</p>
+          <p className="page-sub">{subline(timeseries.data, summary?.pages_in_group) || `${compactNumber(summary?.sessions || 0)} visit${summary?.sessions === 1 ? "" : "s"} so far.`}</p>
           {status && <p className={`page-status${status.error ? " error" : ""}`} role="status">{status.text}</p>}
           <nav className="tabs" aria-label="Page views">
             {TABS.map(item => (
@@ -307,8 +323,9 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
         </div>
       </header>
       <div className="frame">
+        {locked && <LockedPage />}
         {stats.error && <p className="page-status error">{stats.error}</p>}
-        {!stats.data && !stats.error && <p className="loading">Loading…</p>}
+        {!locked && !stats.data && !stats.error && <p className="loading">Loading…</p>}
         {stats.data && tab === "" && (
           <Overview page={page} stats={stats.data} timeseries={timeseries.data} groupSize={summary?.pages_in_group} onRefresh={refresh} refreshing={refreshing} />
         )}

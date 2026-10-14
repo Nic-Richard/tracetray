@@ -19,6 +19,7 @@ const {
     consumeAnalysisPermit
 } = require("../lib/analysisState");
 const { TRACETRAY_MODE } = require("../config");
+const { isPageLocked } = require("../lib/limits");
 const logger = require("../lib/logger");
 
 router.post("/api/analysis-permit", requireAuth(), async (req, res) => {
@@ -125,6 +126,9 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
     }
 
     const pageFilter = typeof req.body?.page === "string" && req.body.page ? req.body.page.slice(0, 2000) : null;
+    if (pageFilter && await isPageLocked(account, siteKey, pageFilter)) {
+        return res.status(403).json({ error: "this page is past your plan's page limit for this month", limit_reached: "pages" });
+    }
 
     analysisRunning[siteKey] = true;
     logger.debug(`starting analysis  key=${siteKey}`);

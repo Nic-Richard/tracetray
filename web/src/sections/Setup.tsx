@@ -312,6 +312,11 @@ function Plan() {
             <UsageMeter label="Ask questions" used={used.askQuestions} limit={limits.askQuestions} accent="var(--d5)" />
           </div>
         ))}
+        {used && limits && mode !== "beta" && (
+          (limits.pages && used.pages > limits.pages) || (limits.visits && used.visits > limits.visits)
+        ) && (
+          <p className="note">Over a limit, TraceTray keeps collecting: extra pages are locked and extra visits keep their summary only. Both reset on the 1st, or right away on a bigger plan.</p>
+        )}
         <p><a className="link-button" href="/billing.html">Manage billing</a></p>
       </div>
     </section>

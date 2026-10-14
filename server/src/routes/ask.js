@@ -7,7 +7,8 @@ const { resolveSiteKey, getAccountSites } = require("../lib/siteAccount");
 const { askAnalytics, ASK_MODEL } = require("../lib/askAnalytics");
 const { rateLimit } = require("../lib/rateLimit");
 const { TRACETRAY_MODE } = require("../config");
-const { recordAskQuestion } = require("../lib/usage");
+const { recordAskQuestion, askCount, monthOf } = require("../lib/usage");
+const { askLimitReached, limitsFor } = require("../lib/limits");
 const logger = require("../lib/logger");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -36,6 +37,11 @@ router.post("/api/ask", requireAuth(), userLimit, siteWideLimit, async (req, res
         if (!siteKey) return res.status(403).json({ error: "website not available" });
         if (TRACETRAY_MODE === "production" && account.plan === "none") {
             return res.status(403).json({ error: "active subscription required" });
+        }
+
+        if (askLimitReached(account, askCount(account, monthOf()))) {
+            const limit = limitsFor(account).askQuestions;
+            return res.status(403).json({ error: `you've used all ${limit} Ask questions for this month; they start again on the 1st, or upgrade for more`, limit_reached: "ask" });
         }
 
         const question = String(req.body.question || "").trim();

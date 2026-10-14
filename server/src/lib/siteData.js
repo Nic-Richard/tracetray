@@ -88,12 +88,13 @@ async function getTimeseries(siteKey, { days = 14, page = null } = {}) {
 }
 
 // Uses session-weighted metrics because cluster labels can change between runs.
-async function getUxTrends(siteKey, { page = "all", runs = 10 } = {}) {
-    const results = await AnalysisResult.find({
+async function getUxTrends(siteKey, { page = "all", runs = 10, since = null } = {}) {
+    const results = (await AnalysisResult.find({
         site_key: siteKey,
         page:     analysisPageFilter(page),
-        k:        { $gt: 0 } // skip failed/insufficient-data runs, they have no feature means
-    }).sort({ ran_at: 1 }).limit(runs).lean();
+        k:        { $gt: 0 }, // skip failed/insufficient-data runs, they have no feature means
+        ...(since ? { ran_at: { $gte: since } } : {})
+    }).sort({ ran_at: -1 }).limit(runs).lean()).reverse();
 
     const points = results.map(r => {
         const clusters = r.clusters || [];

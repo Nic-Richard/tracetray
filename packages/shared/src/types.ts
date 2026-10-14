@@ -70,6 +70,8 @@ export interface PageSummary {
   analysable: number;
   last_seen: number | null;
   pages_in_group?: number;
+  /** Past the plan's page limit this month: still collected, not shown until an upgrade or next month. */
+  locked?: boolean;
 }
 
 export interface ClusterMeans {

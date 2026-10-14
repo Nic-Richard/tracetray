@@ -6,6 +6,7 @@ const { Account, Session, AnalysisResult, PageDay } = require("../db/models");
 const { getSessionCounts, latestAnalysis, getTimeseries, getUxTrends, getPages, getJourney } = require("../lib/siteData");
 const { groupSizes } = require("../lib/pageDays");
 const { resolveSiteKey } = require("../lib/siteAccount");
+const { lockedPages, isPageLocked, limitsFor } = require("../lib/limits");
 const { getClickSummary } = require("../lib/clickSummary");
 const { computeAttentionProfile } = require("../lib/attentionProfile");
 const logger = require("../lib/logger");
@@ -19,6 +20,9 @@ router.get("/api/stats", requireAuth(), async (req, res) => {
         if (!siteKey) return res.status(403).json({ error: "website not available" });
 
         const page   = req.query.page || "all";
+        if (await isPageLocked(account, siteKey, page)) {
+            return res.status(403).json({ error: "this page is past your plan's page limit for this month", limit_reached: "pages" });
+        }
         const counts = await getSessionCounts(siteKey, page);
         const lastResult = await latestAnalysis(siteKey, page);
 
@@ -87,7 +91,9 @@ router.get("/api/ux-trends", requireAuth(), async (req, res) => {
         if (!siteKey) return res.status(403).json({ error: "website not available" });
 
         const runs = Math.min(parseInt(req.query.runs) || 10, 30);
-        res.json(await getUxTrends(siteKey, { page: req.query.page || "all", runs }));
+        const historyDays = limitsFor(account)?.historyDays;
+        const since = historyDays ? new Date(Date.now() - historyDays * 24 * 60 * 60 * 1000) : null;
+        res.json(await getUxTrends(siteKey, { page: req.query.page || "all", runs, since }));
     } catch (err) {
         logger.error("ux-trends error:", err);
         res.status(500).json({ error: "failed to fetch UX trends" });
@@ -102,8 +108,12 @@ router.get("/api/pages", requireAuth(), async (req, res) => {
         const siteKey = resolveSiteKey(req, account);
         if (!siteKey) return res.status(403).json({ error: "website not available" });
 
-        const [pages, sizes] = await Promise.all([getPages(siteKey), groupSizes(siteKey)]);
-        res.json(pages.map(p => (sizes[p.page] ? { ...p, pages_in_group: sizes[p.page] } : p)));
+        const [pages, sizes, locked] = await Promise.all([getPages(siteKey), groupSizes(siteKey), lockedPages(account)]);
+        res.json(pages.map(p => ({
+            ...p,
+            ...(sizes[p.page] ? { pages_in_group: sizes[p.page] } : {}),
+            ...(locked.has(`${siteKey}|${p.page}`) ? { locked: true } : {})
+        })));
     } catch (err) {
         logger.error("pages error:", err);
         res.status(500).json({ error: "failed to fetch pages" });
