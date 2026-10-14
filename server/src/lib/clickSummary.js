@@ -1,5 +1,6 @@
 const { Session } = require("../db/models");
 const logger = require("./logger");
+const { RECENT_SESSION_LIMIT } = require("../config");
 
 // Click summaries use desktop sessions because mobile sessions record taps.
 async function getClickSummary(siteKey, page, limit = 15) {
@@ -8,7 +9,7 @@ async function getClickSummary(siteKey, page, limit = 15) {
         const sessions = await Session.find(
             { site_key: siteKey, ...pageFilter, end_time: { $ne: null }, "summary.mouse_moves": { $gt: 0 } },
             { events: 1, _id: 0 }
-        ).lean();
+        ).sort({ start_time: -1 }).limit(RECENT_SESSION_LIMIT).lean();
 
         const counts = {};
         for (const s of sessions) {

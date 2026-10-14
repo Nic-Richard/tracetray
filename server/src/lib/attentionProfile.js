@@ -1,4 +1,5 @@
 const { Session } = require("../db/models");
+const { RECENT_SESSION_LIMIT } = require("../config");
 
 // Builds a desktop attention profile from cursor depth and early-session movement.
 async function computeAttentionProfile(siteKey, page) {
@@ -9,7 +10,8 @@ async function computeAttentionProfile(siteKey, page) {
         ...(page ? { page } : {})
     };
 
-    const sessions = await Session.find(sessionFilter, { events: 1, start_time: 1, _id: 0 }).lean();
+    const sessions = await Session.find(sessionFilter, { events: 1, start_time: 1, _id: 0 })
+        .sort({ start_time: -1 }).limit(RECENT_SESSION_LIMIT).lean();
 
     const BANDS               = 20;
     const FIRST_IMPRESSION_MS = 5000; // window counted as the start of a visit

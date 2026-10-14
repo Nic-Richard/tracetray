@@ -16,9 +16,14 @@ require.cache[dbPath] = {
     Account: {},
     Session: {
       deleteMany: async () => ({ deletedCount: 0 }),
-      find: (query) => ({
-        lean: async () => mockClickSessions.filter(s => !query.page || s.page === query.page),
-      }),
+      find: (query) => {
+        const cursor = {
+          sort: () => cursor,
+          limit: () => cursor,
+          lean: async () => mockClickSessions.filter(s => !query.page || s.page === query.page),
+        };
+        return cursor;
+      },
     },
     AnalysisResult: { deleteMany: async () => ({ deletedCount: 0 }) },
     BugReport: { deleteMany: async () => ({ deletedCount: 0 }) },

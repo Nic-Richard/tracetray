@@ -9,6 +9,7 @@ const { clerkMiddleware } = require("@clerk/express");
 
 const { MONGODB_URI, PORT } = require("./src/config");
 const { startSessionCleanupJob } = require("./src/jobs/sessionCleanup");
+const { startEventRetentionJob } = require("./src/jobs/eventRetention");
 
 const app = express();
 // nginx is the only proxy in front, so req.ip is the address it saw.
@@ -59,3 +60,4 @@ async function startServer() {
 
 startServer();
 startSessionCleanupJob();
+startEventRetentionJob();

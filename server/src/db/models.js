@@ -21,12 +21,14 @@ const Account = mongoose.model("Account", new mongoose.Schema({
     created_at:        Date
 }, { strict: false }), "accounts");
 
-const Session = mongoose.model("Session", new mongoose.Schema({
+const sessionSchema = new mongoose.Schema({
     site_key:    { type: String, index: true },
     visitor_id:  { type: String, index: true },
     device_type: { type: String, enum: ["desktop", "mobile"], default: "desktop", index: true },
     referrer:    String
-}, { strict: false }), "sessions");
+}, { strict: false });
+sessionSchema.index({ site_key: 1, start_time: -1 });
+const Session = mongoose.model("Session", sessionSchema, "sessions");
 
 const AnalysisResult = mongoose.model("AnalysisResult", new mongoose.Schema({
     site_key:            { type: String, index: true },
