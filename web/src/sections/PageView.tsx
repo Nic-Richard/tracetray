@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useParams } from "react-router";
 import { compactNumber, isPageGroup, pageLabel, pagePath, timeAgo, type Stats, type Timeseries } from "@tracetray/shared";
 import { useApi } from "../api";
@@ -10,14 +10,19 @@ import WhoVisits from "../components/WhoVisits";
 import TrafficPanel from "../components/TrafficPanel";
 import SummaryPanel from "../components/SummaryPanel";
 import Icon from "../components/Icon";
-import NotMovedYet from "../components/NotMovedYet";
+import VisitorsTab from "../tabs/VisitorsTab";
+import AttentionTab from "../tabs/AttentionTab";
+import ClicksTab from "../tabs/ClicksTab";
+import TrendsTab from "../tabs/TrendsTab";
+import DetailsTab from "../tabs/DetailsTab";
 
 const TABS = [
   { key: "", label: "Overview" },
   { key: "visitors", label: "Visitors" },
   { key: "attention", label: "Attention" },
   { key: "clicks", label: "Clicks" },
-  { key: "trends", label: "Trends" }
+  { key: "trends", label: "Trends" },
+  { key: "details", label: "Details" }
 ];
 
 function subline(timeseries: Timeseries | null, groupSize: number | undefined): string {
@@ -55,6 +60,30 @@ function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }:
   );
 }
 
+const MIN_SESSIONS = 16;
+
+function MoreMenu({ onRefreshAll, onReset, busy }: { onRefreshAll: () => void; onReset: () => void; busy: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent) => { if (!ref.current?.contains(event.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+  return (
+    <div className="more" ref={ref}>
+      <button type="button" className="btn" onClick={() => setOpen(o => !o)} aria-expanded={open} disabled={busy}>More</button>
+      {open && (
+        <div className="menu menu-right" role="menu">
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); onRefreshAll(); }}>Refresh all pages</button>
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); onReset(); }}>Clear this page's history</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PageView({ onPickPage }: { onPickPage: () => void }) {
   const api = useApi();
   const { siteKey, page, pages, reloadPages } = useSite();
@@ -62,6 +91,7 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
   const { search } = useLocation();
   const [status, setStatus] = useState<{ text: string; error?: boolean } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const stats = useLoad(() => (page ? api.stats(siteKey, page) : null), [api, siteKey, page]);
   const timeseries = useLoad(() => (page ? api.timeseries(siteKey, page, 30) : null), [api, siteKey, page]);
@@ -101,6 +131,41 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
     }
   }
 
+  async function refreshAll() {
+    const eligible = (pages || []).filter(p => p.analysable >= MIN_SESSIONS);
+    if (!eligible.length) { setStatus({ text: `No page has ${MIN_SESSIONS} visits with interaction yet.`, error: true }); return; }
+    setRefreshing(true);
+    try {
+      const permit = await api.analysisPermit(siteKey, "all", eligible.length);
+      for (let i = 0; i < eligible.length; i++) {
+        setStatus({ text: `Analysing ${i + 1} of ${eligible.length}: ${pageLabel(eligible[i].page)}` });
+        await api.runAnalysis(siteKey, permit.permit_token, eligible[i].page);
+      }
+      setStatus({ text: `Refreshed ${eligible.length} page${eligible.length === 1 ? "" : "s"}.` });
+      stats.reload();
+      reloadPages();
+    } catch (err) {
+      setStatus({ text: err instanceof Error ? err.message.charAt(0).toUpperCase() + err.message.slice(1) : "The refresh stopped.", error: true });
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  async function resetHistory() {
+    if (!page) return;
+    setRefreshing(true);
+    try {
+      const result = await api.resetPage(siteKey, page);
+      setStatus({ text: `Cleared ${result.deleted_sessions.toLocaleString()} visits from ${label}. New visits start a fresh history.` });
+      setConfirmReset(false);
+      reloadPages();
+    } catch (err) {
+      setStatus({ text: err instanceof Error ? err.message : "The history wasn't cleared.", error: true });
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   const lastRun = stats.data?.last_analysis?.ran_at;
   return (
     <>
@@ -114,9 +179,19 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
         {label !== path && <code>{path}</code>}
         <div className="page-actions">
           {lastRun && <span className="ask-note">Analysed {timeAgo(lastRun)}</span>}
+          <MoreMenu onRefreshAll={refreshAll} onReset={() => setConfirmReset(true)} busy={refreshing} />
           <button type="button" className="btn primary" onClick={refresh} disabled={refreshing}>{refreshing ? "Analysing…" : "Refresh analysis"}</button>
         </div>
       </div>
+      {confirmReset && (
+        <div className="confirm page-confirm">
+          <p>Clear every visit and analysis recorded for {label}? Do this after a redesign so old behaviour doesn't mix with new. It can't be undone.</p>
+          <div className="site-actions">
+            <button type="button" className="btn danger" onClick={resetHistory} disabled={refreshing}>Clear history</button>
+            <button type="button" className="btn" onClick={() => setConfirmReset(false)} disabled={refreshing}>Keep it</button>
+          </div>
+        </div>
+      )}
       <p className="page-sub">{subline(timeseries.data, summary?.pages_in_group) || `${compactNumber(summary?.sessions || 0)} visits so far.`}</p>
       {status && <p className={`page-status${status.error ? " error" : ""}`} role="status">{status.text}</p>}
       <nav className="tabs" aria-label="Page views">
@@ -131,7 +206,14 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
       {stats.data && tab === "" && (
         <Overview page={page} stats={stats.data} timeseries={timeseries.data} groupSize={summary?.pages_in_group} onRefresh={refresh} refreshing={refreshing} />
       )}
-      {stats.data && tab !== "" && <NotMovedYet title={TABS.find(t => t.key === tab)?.label || "This view"} />}
+      {stats.data && (tab === "visitors" || tab === "details") && !stats.data.last_analysis && (
+        <div className="content"><section className="panel"><div className="empty"><b>No analysis yet</b><p>Refresh the analysis to sort this page's visitors into groups.</p></div></section></div>
+      )}
+      {stats.data?.last_analysis && tab === "visitors" && <VisitorsTab result={stats.data.last_analysis} page={page} />}
+      {stats.data?.last_analysis && tab === "details" && <DetailsTab result={stats.data.last_analysis} />}
+      {stats.data && tab === "attention" && <AttentionTab page={page} result={stats.data.last_analysis} />}
+      {stats.data && tab === "clicks" && <ClicksTab clicks={stats.data.click_summary} page={page} />}
+      {stats.data && tab === "trends" && <TrendsTab page={page} />}
     </>
   );
 }

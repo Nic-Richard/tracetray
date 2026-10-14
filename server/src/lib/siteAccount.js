@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
-const { Account, Session, AnalysisResult, BugReport } = require("../db/models");
+const { Account, Session, AnalysisResult, BugReport, PageDay } = require("../db/models");
 const { TRACETRAY_MODE, MAX_SITES_PER_ACCOUNT } = require("../config");
 const { analysisRunning } = require("./analysisState");
 
@@ -44,7 +44,8 @@ async function deleteSiteData(siteKey) {
     const [sessions, analyses, reports] = await Promise.all([
         Session.deleteMany({ site_key: siteKey }),
         AnalysisResult.deleteMany({ site_key: siteKey }),
-        BugReport.deleteMany({ site_key: siteKey })
+        BugReport.deleteMany({ site_key: siteKey }),
+        PageDay.deleteMany({ site_key: siteKey })
     ]);
 
     delete analysisRunning[siteKey];

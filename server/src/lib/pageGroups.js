@@ -7,8 +7,9 @@ const ID_PATTERNS = [
     /^\d+$/,
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     /^[0-9a-f]{12,}$/i,
-    // Base62 ids such as nanoid or Mongo-style tokens; needs digits so ordinary words are left alone.
-    /^(?=(?:.*\d){2})(?=.*[A-Za-z])[A-Za-z0-9]{10,}$/
+    // Random tokens like nanoid: mixed case with digits, or long enough that no slug looks like one.
+    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[A-Za-z0-9_-]{10,}$/,
+    /^(?=(?:.*\d){3})[A-Za-z0-9]{16,}$/
 ];
 
 function isIdSegment(segment) {

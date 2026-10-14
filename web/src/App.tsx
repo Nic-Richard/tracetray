@@ -7,9 +7,11 @@ import Rail from "./components/Rail";
 import PageTree from "./components/PageTree";
 import BugReport from "./components/BugReport";
 import Icon from "./components/Icon";
-import NotMovedYet from "./components/NotMovedYet";
 import PageView from "./sections/PageView";
 import Ask from "./sections/Ask";
+import Setup from "./sections/Setup";
+import Journeys from "./sections/Journeys";
+import Sessions from "./sections/Sessions";
 
 function Shell() {
   const { pathname } = useLocation();
@@ -28,9 +30,9 @@ function Shell() {
           <Route path="/" element={<Navigate to={{ pathname: "/pages", search: window.location.search }} replace />} />
           <Route path="/pages/:tab?" element={<PageView onPickPage={() => setSheetOpen(true)} />} />
           <Route path="/ask" element={<Ask />} />
-          <Route path="/journeys" element={<NotMovedYet title="Journeys" body="Where visitors enter, move between pages and leave. This view is still being moved into the new dashboard." />} />
-          <Route path="/sessions" element={<NotMovedYet title="Sessions" body="Recent visits one by one. This view is still being moved into the new dashboard." />} />
-          <Route path="/setup" element={<NotMovedYet title="Setup" body="Tracking snippet, websites and page groups. This view is still being moved into the new dashboard." />} />
+          <Route path="/journeys" element={<Journeys />} />
+          <Route path="/sessions" element={<Sessions />} />
+          <Route path="/setup" element={<Setup />} />
           <Route path="*" element={<Navigate to="/pages" replace />} />
         </Routes>
       </main>

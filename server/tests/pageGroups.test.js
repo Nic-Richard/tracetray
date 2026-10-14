@@ -8,6 +8,8 @@ test("ids in paths are grouped automatically and ordinary words are not", () => 
     assert.equal(groupPath("/p/3f2a9c1e-55b1-4c7e-9a0d-2b8e1c4d5f60/reviews"), "/p/:id/reviews");
     assert.equal(groupPath("/items/V1StGXR8Z5jdHi6B"), "/items/:id");
     assert.equal(groupPath("/blog/introducing-portlore"), "/blog/introducing-portlore");
+    assert.equal(groupPath("/users/collector12"), "/users/collector12");
+    assert.equal(groupPath("/shop/iphone15pro"), "/shop/iphone15pro");
     assert.equal(groupPath("/"), "/");
 });
 

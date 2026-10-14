@@ -77,9 +77,11 @@ export function SiteProvider({ account, mode, children }: { account: Account; mo
     });
   }, [siteKey]);
 
+  const reloadPages = useCallback(() => setReloadCount(n => n + 1), []);
+
   const value: SiteState = {
     mode, account, sites, site, siteKey, setSite, setSites,
-    pages, pagesError, reloadPages: () => setReloadCount(n => n + 1),
+    pages, pagesError, reloadPages,
     page, setPage, pins, togglePin
   };
   return <SiteContext.Provider value={value}>{children}</SiteContext.Provider>;

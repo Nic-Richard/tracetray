@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router";
+import { UserButton } from "@clerk/clerk-react";
 import Icon from "./Icon";
 import { readStorage, writeStorage } from "../lib/storage";
 import { useState } from "react";
@@ -44,6 +45,13 @@ export default function Rail({ onReportBug }: { onReportBug: () => void }) {
       <button type="button" className="rail-link rail-desktop" onClick={toggleTheme} title={theme === "dark" ? "Light theme" : "Dark theme"} aria-label={theme === "dark" ? "Use light theme" : "Use dark theme"}>
         <Icon name={theme === "dark" ? "sun" : "moon"} />
       </button>
+      <div className="rail-user">
+        <UserButton>
+          <UserButton.MenuItems>
+            <UserButton.Link label="Billing" labelIcon={<Icon name="setup" size={14} />} href="/billing.html" />
+          </UserButton.MenuItems>
+        </UserButton>
+      </div>
     </nav>
   );
 }

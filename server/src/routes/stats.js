@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { getAuth } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
-const { Account, Session, AnalysisResult } = require("../db/models");
+const { Account, Session, AnalysisResult, PageDay } = require("../db/models");
 const { getSessionCounts, latestAnalysis, getTimeseries, getUxTrends, getPages, getJourney } = require("../lib/siteData");
 const { groupSizes } = require("../lib/pageDays");
 const { resolveSiteKey } = require("../lib/siteAccount");
@@ -22,9 +22,7 @@ router.get("/api/stats", requireAuth(), async (req, res) => {
         const counts = await getSessionCounts(siteKey, page);
         const lastResult = await latestAnalysis(siteKey, page);
 
-        const clickSummary = lastResult
-            ? await getClickSummary(siteKey, page, 15)
-            : [];
+        const clickSummary = await getClickSummary(siteKey, page, 15);
 
         res.json({
             total_sessions:          counts.total,
@@ -125,6 +123,7 @@ router.post("/api/pages/reset", requireAuth(), async (req, res) => {
 
         const result = await Session.deleteMany({ site_key: siteKey, page });
         await AnalysisResult.deleteMany({ site_key: siteKey, page });
+        await PageDay.deleteMany({ site_key: siteKey, page });
 
         res.json({ deleted_sessions: result.deletedCount });
     } catch (err) {
