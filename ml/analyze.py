@@ -1,6 +1,7 @@
 # Clusters desktop and mobile interaction features separately.
 
 import json
+import math
 import glob
 import os
 import sys
@@ -224,6 +225,17 @@ def label_mobile_clusters(df, labels):
 
 
 
+def json_safe(value):
+    # NaN is not valid JSON, and the server parses this output with JSON.parse.
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return None
+    if isinstance(value, dict):
+        return {k: json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(v) for v in value]
+    return value
+
+
 def run_kruskal_wallis(df, labels, feature_cols):
     df = df.copy()
     df["cluster"] = labels
@@ -353,7 +365,7 @@ if __name__ == "__main__":
     if args.json_summary:
         if df_out is None:
             info = failure_info or {"reason": "unknown", "message": "Clustering could not be completed."}
-            print(f"TRACETRAY_RESULT: {json.dumps({'session_count': info.get('have', 0), 'k': 0, 'silhouette_score': None, 'clusters': [], 'kruskal_wallis': [], 'k_rationale': {}, 'device': args.device, 'failure': info})}")
+            print(f"TRACETRAY_RESULT: {json.dumps(json_safe({'session_count': info.get('have', 0), 'k': 0, 'silhouette_score': None, 'clusters': [], 'kruskal_wallis': [], 'k_rationale': {}, 'device': args.device, 'failure': info}), allow_nan=False)}")
             sys.exit(0)
 
         engineered = DESKTOP_ENGINEERED_FEATURES if args.device == "desktop" else MOBILE_ENGINEERED_FEATURES
@@ -398,4 +410,4 @@ if __name__ == "__main__":
             "k_rationale":         k_rationale
         }
 
-        print(f"TRACETRAY_RESULT: {json.dumps(summary)}")
+        print(f"TRACETRAY_RESULT: {json.dumps(json_safe(summary), allow_nan=False)}")

@@ -60,8 +60,9 @@ export interface Cluster {
 
 export interface KruskalWallis {
   feature: string;
-  H_statistic: number;
-  p_value: number;
+  /** Empty when every value of the feature was the same, so the test couldn't run. */
+  H_statistic: number | null;
+  p_value: number | null;
   significant: "yes" | "no";
 }
 

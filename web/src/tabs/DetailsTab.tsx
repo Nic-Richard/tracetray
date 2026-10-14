@@ -30,7 +30,7 @@ function Model({ title, data, result, device }: { title: string; data: DeviceAna
                 <tr key={feature}>
                   <td className={significant.has(feature) ? "strong" : ""}>{feature}</td>
                   {data.clusters.map(c => <td key={c.id} className="right num">{typeof c.feature_means[feature] === "number" ? fixed(c.feature_means[feature] as number) : "–"}</td>)}
-                  <td className="right num">{test ? `H ${test.H_statistic.toFixed(1)}, p ${test.p_value < 0.001 ? "<0.001" : test.p_value.toFixed(3)}` : "–"}</td>
+                  <td className="right num">{test?.H_statistic != null && test.p_value != null ? `H ${test.H_statistic.toFixed(1)}, p ${test.p_value < 0.001 ? "<0.001" : test.p_value.toFixed(3)}` : "–"}</td>
                 </tr>
               );
             })}
