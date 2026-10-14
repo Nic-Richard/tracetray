@@ -1,0 +1,13 @@
+{
+  "name": "tracetray",
+  "private": true,
+  "workspaces": [
+    "web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w web",
+    "build:web": "npm run build -w web",
+    "check:web": "npm run check -w web"
+  }
+}

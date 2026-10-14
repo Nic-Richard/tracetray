@@ -1,6 +1,10 @@
 # Dependencies
+node_modules/
 server/node_modules/
 analysis/node_modules/
+
+# Built React dashboard (built by scripts/deploy.sh)
+server/public/app/
 
 # Environment files
 .env

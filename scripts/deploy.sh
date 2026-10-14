@@ -25,6 +25,13 @@ for file in "$ROOT_DIR/.env" "$ROOT_DIR/server/package.json" "$ROOT_DIR/analysis
 done
 
 node --check "$ROOT_DIR/server/server.js"
+
+echo "Building the React dashboard..."
+(cd "$ROOT_DIR" && npm ci --silent && npm run build:web)
+if [[ ! -f "$ROOT_DIR/server/public/app/index.html" ]]; then
+  echo "The React dashboard build is missing."
+  exit 1
+fi
 node --check "$ROOT_DIR/analysis/extractFeatures.js"
 
 if command -v python >/dev/null 2>&1; then

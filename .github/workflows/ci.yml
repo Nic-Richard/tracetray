@@ -15,6 +15,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: |
+            package-lock.json
             server/package-lock.json
             analysis/package-lock.json
       - run: npm ci --prefix server
@@ -23,5 +24,8 @@ jobs:
         run: git ls-files -z '*.js' | xargs -0 -n 1 node --check
       - run: npm run smoke --prefix server
       - run: npm test --prefix server
+      - run: npm ci
+      - name: Dashboard types and build
+        run: npm run build:web
       - name: Python syntax
         run: python3 -m compileall -q ml

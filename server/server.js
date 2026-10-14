@@ -34,6 +34,8 @@ app.use("/webhook/stripe", express.raw({ type: "application/json" }));
 app.use("/collect", express.json({ limit: "5mb", type: "text/plain" }));
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static(path.join(__dirname, "public")));
+// The React dashboard routes on the client, so any /app address loads its page.
+app.get(/^\/app(\/.*)?$/, (req, res) => res.sendFile(path.join(__dirname, "public", "app", "index.html")));
 app.use("/client", express.static(path.join(__dirname, "..", "client")));
 
 mongoose.connection.on("error", err => logger.error("MongoDB error:", err.message));
