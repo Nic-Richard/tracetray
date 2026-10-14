@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const siteData = require("../src/lib/siteData");
+const pageDays = require("../src/lib/pageDays");
 const { askAnalytics, runTool, cleanHistory } = require("../src/lib/askAnalytics");
 
 function fakeClient(responses) {
@@ -26,6 +27,7 @@ test("tools always use the signed-in site, never one from the model", async (t) 
 
 test("a question runs the requested lookups and returns the final answer", async (t) => {
     t.mock.method(siteData, "getPages", async () => [{ page: "/", sessions: 42 }]);
+    t.mock.method(pageDays, "groupSizes", async () => ({}));
     const client = fakeClient([
         { stop_reason: "tool_use", usage, content: [{ type: "text", text: "Checking." }, toolCall("call_1", "list_pages")] },
         { stop_reason: "end_turn", usage, content: [{ type: "text", text: "Your homepage had 42 sessions." }] },
@@ -59,6 +61,7 @@ test("a failing lookup is reported to the model instead of ending the question",
 
 test("the last round must answer without more lookups", async (t) => {
     t.mock.method(siteData, "getPages", async () => []);
+    t.mock.method(pageDays, "groupSizes", async () => ({}));
     const looping = Array.from({ length: 6 }, (_, i) => ({ stop_reason: "tool_use", usage, content: [toolCall(`call_${i}`, "list_pages")] }));
     const client = fakeClient(looping);
 

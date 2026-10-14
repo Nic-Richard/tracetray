@@ -2,6 +2,8 @@ const { Anthropic } = require("@anthropic-ai/sdk");
 const siteData = require("./siteData");
 const { getClickSummary } = require("./clickSummary");
 const { computeAttentionProfile } = require("./attentionProfile");
+const pageDays = require("./pageDays");
+const { isGroup } = require("./pageGroups");
 const logger = require("./logger");
 
 const ASK_MODEL   = process.env.ASK_MODEL || "claude-sonnet-5-5";
@@ -17,8 +19,22 @@ const pageProperty = {
 const TOOLS = [
     {
         name: "list_pages",
-        description: "Every tracked page on the site with its session count, how many sessions had real interaction, and when it was last visited. Call this first when the question mentions a page, so you use its exact path.",
+        description: "Every tracked page on the site with its session count, how many sessions had real interaction, and when it was last visited. Paths with placeholders like /products/:product are groups of many similar pages, with pages_in_group saying how many. Call this first when the question mentions a page, so you use its exact path.",
         input_schema: { type: "object", properties: {}, additionalProperties: false }
+    },
+    {
+        name: "get_pages_in_group",
+        description: "For a page group (a path with placeholders like /products/:product, as list_pages returns it), the individual pages inside it with their visits and clicks, busiest first. Use it to answer which specific products, profiles or posts get the most attention.",
+        input_schema: {
+            type: "object",
+            properties: {
+                page: { type: "string", description: "The group exactly as list_pages returns it." },
+                sort: { type: "string", enum: ["sessions", "clicks"], description: "Defaults to sessions." },
+                days: { type: "integer", enum: [7, 30, 90], description: "Limit to recent days. Leave out for all time." }
+            },
+            required: ["page"],
+            additionalProperties: false
+        }
     },
     {
         name: "get_overview",
@@ -135,8 +151,15 @@ function summariseAnalysis(result) {
 async function runTool(siteKey, name, input = {}, { siteHost = null } = {}) {
     const page = pageArg(input);
     switch (name) {
-        case "list_pages":
-            return (await siteData.getPages(siteKey)).slice(0, 100);
+        case "list_pages": {
+            const [pages, sizes] = await Promise.all([siteData.getPages(siteKey), pageDays.groupSizes(siteKey)]);
+            return pages.slice(0, 100).map(p => (sizes[p.page] ? { ...p, pages_in_group: sizes[p.page] } : p));
+        }
+        case "get_pages_in_group": {
+            if (!page || !isGroup(page)) throw new Error("that page isn't a group; use list_pages to find groups");
+            const { total, rows } = await pageDays.pageMembers(siteKey, page, { sort: input.sort === "clicks" ? "clicks" : "sessions", limit: 15, days: [7, 30, 90].includes(input.days) ? input.days : null });
+            return { pages_in_group: total, busiest: rows };
+        }
         case "get_overview": {
             const [counts, analysis] = await Promise.all([
                 siteData.getSessionCounts(siteKey, page || "all"),

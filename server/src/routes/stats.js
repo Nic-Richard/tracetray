@@ -4,6 +4,7 @@ const { getAuth } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
 const { Account, Session, AnalysisResult } = require("../db/models");
 const { getSessionCounts, latestAnalysis, getTimeseries, getUxTrends, getPages, getJourney } = require("../lib/siteData");
+const { groupSizes } = require("../lib/pageDays");
 const { resolveSiteKey } = require("../lib/siteAccount");
 const { getClickSummary } = require("../lib/clickSummary");
 const { computeAttentionProfile } = require("../lib/attentionProfile");
@@ -103,7 +104,8 @@ router.get("/api/pages", requireAuth(), async (req, res) => {
         const siteKey = resolveSiteKey(req, account);
         if (!siteKey) return res.status(403).json({ error: "website not available" });
 
-        res.json(await getPages(siteKey));
+        const [pages, sizes] = await Promise.all([getPages(siteKey), groupSizes(siteKey)]);
+        res.json(pages.map(p => (sizes[p.page] ? { ...p, pages_in_group: sizes[p.page] } : p)));
     } catch (err) {
         logger.error("pages error:", err);
         res.status(500).json({ error: "failed to fetch pages" });

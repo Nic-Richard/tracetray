@@ -4,6 +4,8 @@ const { Account, Session } = require("../db/models");
 const { ensureAccountSites } = require("../lib/siteAccount");
 const { normalizeTrackingDomain } = require("../lib/tracking");
 const logger = require("../lib/logger");
+const { groupPage } = require("../lib/pageGroups");
+const { countSession } = require("../lib/pageDays");
 
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT = 240;
@@ -88,15 +90,19 @@ router.post("/collect", async (req, res) => {
             ? logger.debug(`final  key=${siteKey}  session=${sessionId}  duration=${data.summary?.duration_ms}ms`)
             : logger.debug(`batch  key=${siteKey}  session=${sessionId}  events=${data.events?.length}`);
 
-        await Session.updateOne(
+        const { page, path } = groupPage(text(data.page, 2000), site.page_groups || []);
+        const deviceType = data.device_type === "mobile" ? "mobile" : "desktop";
+
+        const write = await Session.updateOne(
             { site_key: siteKey, session_id: sessionId },
             {
                 $set: {
                     site_key: siteKey,
                     visitor_id: text(data.visitor_id, 100),
-                    device_type: data.device_type === "mobile" ? "mobile" : "desktop",
+                    device_type: deviceType,
                     referrer: text(data.referrer, 2000),
-                    page: text(data.page, 2000),
+                    page,
+                    page_path: path,
                     start_time: data.start_time,
                     end_time: data.end_time,
                     summary: data.summary,
@@ -107,6 +113,12 @@ router.post("/collect", async (req, res) => {
             },
             { upsert: true }
         );
+
+        await countSession({
+            siteKey, page, path, startTime: data.start_time, deviceType,
+            clicks: events.filter(e => e?.type === "click").length,
+            newSession: write.upsertedCount === 1
+        });
 
         res.sendStatus(200);
     } catch (err) {

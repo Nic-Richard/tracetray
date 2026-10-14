@@ -46,6 +46,7 @@ app.use(require("./src/routes/collect"));
 app.use(require("./src/routes/stats"));
 app.use(require("./src/routes/analysis"));
 app.use(require("./src/routes/ask"));
+app.use(require("./src/routes/pageGroups"));
 
 async function startServer() {
     try {

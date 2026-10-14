@@ -10,7 +10,9 @@ The project focuses on turning simple raw interaction data, such as cursor movem
 
 - cursor movement, clicks, taps, pauses, scrolling, page depth, and page tracking
 - separate desktop and mobile session analysis
-- page tabs for every tracked URL on a website
+- page groups: addresses that share a pattern (`/products/:product`) count as one page, IDs are grouped
+  automatically, patterns with many pages are suggested, and each group lists its individual pages with
+  daily visit and click counts (full search on Pro)
 - client-side route tracking for React, Vue, Angular, Next.js, and other SPA routers
 - visitor journeys and recent sessions
 - visitor types named from a fixed set of archetypes by comparing each group with its page's average,
@@ -211,6 +213,13 @@ From the project root:
 
 ```bash
 bash scripts/deploy.sh
+```
+
+After the first deploy with page groups, or after restoring a backup, rebuild the grouped pages and daily
+counts once on the server:
+
+```bash
+cd /var/www/tracetray/server && node scripts/rebuild-page-days.js
 ```
 
 The production server expects TraceTray at:

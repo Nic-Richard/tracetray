@@ -14,6 +14,8 @@ const Account = mongoose.model("Account", new mongoose.Schema({
         page_refresh_count: { type: Number, default: 0 },
         last_page_refresh_at: Date,
         last_all_refresh_at: Date,
+        page_groups: [String],
+        regrouping_at: Date,
         created_at: Date
     }],
     stripe_customer_id: String,
@@ -81,4 +83,19 @@ const BugReport = mongoose.model("BugReport", new mongoose.Schema({
     created_at:    { type: Date, default: Date.now, index: true }
 }), "bug_reports");
 
-module.exports = { Account, Session, AnalysisResult, BugReport };
+// Daily visit and click counts per real page path, kept small so per-page lists work at any size.
+const pageDaySchema = new mongoose.Schema({
+    site_key: { type: String, required: true },
+    page:     { type: String, required: true },
+    path:     { type: String, required: true },
+    day:      { type: String, required: true },
+    sessions: { type: Number, default: 0 },
+    desktop:  { type: Number, default: 0 },
+    mobile:   { type: Number, default: 0 },
+    clicks:   { type: Number, default: 0 }
+}, { versionKey: false });
+pageDaySchema.index({ site_key: 1, page: 1, path: 1, day: 1 }, { unique: true });
+pageDaySchema.index({ site_key: 1, day: 1 });
+const PageDay = mongoose.model("PageDay", pageDaySchema, "page_days");
+
+module.exports = { Account, Session, AnalysisResult, BugReport, PageDay };
