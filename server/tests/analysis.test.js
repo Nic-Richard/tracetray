@@ -54,7 +54,7 @@ for (const stage of ["connect", "query", "write"]) {
 }
 
 function analysisHandler({ failProcess = false, failSave = false, busy = false, mobileFails = false } = {}) {
-    const state = { running: { tt_test: busy }, processes: 0, permits: 0, saves: 0, ai: 0 };
+    const state = { running: { tt_test: busy }, processes: 0, permits: 0, saves: 0, ai: 0, interpreted: 0 };
     let handler;
     const code = fs.readFileSync(path.resolve(__dirname, "../src/routes/analysis.js"), "utf8");
     const cluster = { session_count: 10, clusters: [] };
@@ -72,18 +72,19 @@ function analysisHandler({ failProcess = false, failSave = false, busy = false, 
             } };
             if (name === "../db/models") return {
                 Account: { findOne: () => ({ lean: async () => ({ plan: "pro" }) }) },
+                Session: { findOne: () => ({ sort: () => ({ lean: async () => null }) }) },
                 AnalysisResult: {
                     findOne: () => ({ sort: () => ({ lean: async () => null }) }),
                     async create() { state.saves++; if (failSave) throw new Error("save failed"); },
                 },
             };
             if (name === "../lib/siteAccount") return { resolveSiteKey: () => "tt_test" };
+            if (name === "../lib/attentionProfile") return { computeAttentionProfile: async () => ({}) };
             if (name === "../lib/clickSummary") return { getClickSummary: async () => ({}) };
-            if (name === "../lib/aiInterpretation") return { callAI() { state.ai++; throw new Error("unexpected paid call"); } };
+            if (name === "../lib/aiInterpretation") { state.ai++; return {}; }
+            if (name === "../lib/interpretClusters") return { interpretClusters() { state.interpreted++; return { source: "rules" }; } };
             if (name === "../lib/analysisState") return {
                 analysisRunning: state.running,
-                lastAICallByUser: { [`${userId}::tt_test::all`]: Date.now() },
-                AI_COOLDOWN_MS: 60 * 1000,
                 consumeAnalysisPermit() { state.permits++; return true; },
             };
             if (name === "../config") return { TRACETRAY_MODE: "beta" };
@@ -136,6 +137,7 @@ test("desktop results are saved when optional mobile analysis fails", async () =
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.ok, true);
     assert.equal(state.saves, 1);
+    assert.equal(state.interpreted, 1);
     assert.equal(state.ai, 0);
     assert.equal(state.running.tt_test, false);
 });

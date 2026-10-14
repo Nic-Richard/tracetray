@@ -249,6 +249,8 @@ body { background: var(--surface); color: var(--text); font-family: var(--font-b
 .ask-form:focus-within { border-color: var(--accent); }
 .ask-form .run-btn { padding: 9px 16px; }
 .ask-note { font-size: 11.5px; color: var(--muted); }
+.ask-about { align-self: flex-start; background: none; border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-family: var(--font-ui); font-size: 12px; color: var(--accent); cursor: pointer; }
+.ask-about:hover { border-color: var(--accent); }
 @media (max-width: 720px) { .ask-question { max-width: 90%; } }
 
 </style>
@@ -399,6 +401,7 @@ body { background: var(--surface); color: var(--text); font-family: var(--font-b
             </div>
             <div class="ai-summary-text" id="ai-summary-text"></div>
             <div id="ai-suggestions" class="suggestions-list"></div>
+            <button type="button" class="ask-about" id="overview-ask">Ask about this page</button>
           </div>
           <div class="panel" id="device-comparison-panel" style="display:none;">
             <div class="panel-header">
@@ -541,7 +544,7 @@ body { background: var(--surface); color: var(--text); font-family: var(--font-b
             </div>
           </div>
           <div class="panel">
-            <div class="panel-header"><span class="panel-title">Most clicked elements</span><span class="panel-meta">across all sessions</span></div>
+            <div class="panel-header"><span class="panel-title">Most clicked elements</span><span class="panel-meta">desktop, newest 2,000 sessions</span></div>
             <div class="panel-body">
               <div class="chart-wrap" style="height:260px;">
                 <canvas id="clicks-chart"></canvas>
@@ -934,6 +937,7 @@ function makePageTab(label, count, page, active) {
 }
 
 const PAGE_TAB_LIMIT = 15;
+const MIN_ANALYSIS_SESSIONS = 16;
 
 function renderMorePages(rest) {
   const more = document.getElementById("page-more");
@@ -1120,10 +1124,28 @@ async function loadTrendChart() {
   }
 }
 
+function interpretationOf(result) {
+  return result?.interpretation || result?.ai_interpretation || null;
+}
+
+function storiesFor(result, device) {
+  const interpretation = interpretationOf(result);
+  return (device === "mobile" ? interpretation?.mobile_cluster_stories : interpretation?.cluster_stories) || {};
+}
+
+function askAboutButton(question) {
+  return `<button type="button" class="ask-about" data-question="${escapeHtml(question)}">Ask about this</button>`;
+}
+
+function pagePath(page) {
+  try { return new URL(page).pathname; } catch (e) { return page || "this page"; }
+}
+
 function renderOverview(result) {
   document.getElementById("overview-placeholder").style.display = "none";
   document.getElementById("overview-content").style.display = "flex";
-  const ai = result.ai_interpretation;
+  const ai = interpretationOf(result);
+  document.getElementById("overview-ask").dataset.question = `What stands out about how people use ${pagePath(currentPage)}, and what should I change first?`;
 
   const badge = document.getElementById("page-type-badge");
   if (ai?.page_type && ai.page_type !== "Unclear") {
@@ -1174,7 +1196,7 @@ function renderVisitors(result) {
   const source   = device === "mobile" ? (result.mobile || {}) : result;
   const clusters = source.clusters || [];
   const total    = clusters.reduce((s,c) => s+(c.n||0), 0);
-  const ai = device === "desktop" ? result.ai_interpretation : null;
+  const stories = storiesFor(result, device);
   const hasAnyData = (result.clusters?.length > 0) || (result.mobile?.clusters?.length > 0);
   document.getElementById("visitors-device-toggle").style.display = hasAnyData ? "flex" : "none";
 
@@ -1195,23 +1217,24 @@ function renderVisitors(result) {
   donutChart = new Chart(ctx, {
     type: "doughnut",
     data: {
-      labels:   clusters.map(c => ai?.cluster_stories?.[c.id]?.headline || c.label),
+      labels:   clusters.map(c => stories[c.id]?.headline || c.label),
       datasets: [{ data: clusters.map(c => c.n), backgroundColor: clusters.map(c => COLORS[c.id % COLORS.length]), borderWidth: 2, borderColor: "#ffffff" }]
     },
     options: { maintainAspectRatio: false, cutout: "72%", plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} sessions (${((ctx.raw/total)*100).toFixed(0)}%)` } } }, animation: { duration: 600 } }
   });
   document.getElementById("donut-legend").innerHTML = clusters.map(c => {
     const pct      = total > 0 ? ((c.n/total)*100).toFixed(0) : 0;
-    const headline = ai?.cluster_stories?.[c.id]?.headline || c.label;
+    const headline = stories[c.id]?.headline || c.label;
     const color    = COLORS[c.id % COLORS.length];
     return `<div class="legend-item"><div class="legend-dot" style="background:${color}"></div><div class="legend-label">${escapeHtml(headline)}</div><div class="legend-pct">${pct}%</div></div>`;
   }).join("");
   document.getElementById("visitor-grid").innerHTML = clusters.map(c => {
     const pct   = total > 0 ? ((c.n/total)*100).toFixed(0) : 0;
     const color = COLORS[c.id % COLORS.length];
-    const story = ai?.cluster_stories?.[c.id] || ai?.cluster_stories?.[String(c.id)] || null;
+    const story = stories[c.id] || null;
     const headline = story?.headline || c.label;
     const body     = story?.body     || "";
+    const question = `On ${pagePath(currentPage)}, what does the "${headline}" group (${pct}% of ${device} visitors) tell me, and what should I change?`;
     return `<div class="visitor-card">
       <div class="visitor-card-top">
         <div class="visitor-color-bar" style="background:${color}"></div>
@@ -1225,6 +1248,7 @@ function renderVisitors(result) {
         <div class="visitor-pct">${pct}%</div>
       </div>
       ${body ? `<div class="visitor-body">${fmt(body)}</div>` : ""}
+      ${askAboutButton(question)}
     </div>`;
   }).join("");
 }
@@ -1233,7 +1257,7 @@ function renderInsights(result, clickSummary) {
   const device   = activeDevice.insights;
   const source   = device === "mobile" ? (result.mobile || {}) : result;
   const clusters = source.clusters || [];
-  const ai       = device === "desktop" ? result.ai_interpretation : null;
+  const stories  = storiesFor(result, device);
   const hasAnyData = (result.clusters?.length > 0) || (result.mobile?.clusters?.length > 0);
   document.getElementById("insights-device-toggle").style.display = hasAnyData ? "flex" : "none";
 
@@ -1247,7 +1271,7 @@ function renderInsights(result, clickSummary) {
   }
   document.getElementById("insight-group").innerHTML = clusters.map(c => {
     const color = COLORS[c.id % COLORS.length];
-    const story = ai?.cluster_stories?.[c.id] || ai?.cluster_stories?.[String(c.id)] || null;
+    const story = stories[c.id] || null;
     const headline = story?.headline || c.label;
     const body     = story?.body     || (device === "mobile" ? mobileFeatureSummary(c) : "");
     const suggs    = story?.suggestions || [];
@@ -1259,6 +1283,7 @@ function renderInsights(result, clickSummary) {
       </div>
       ${body ? `<div class="insight-body">${fmt(body)}</div>` : ""}
       ${suggs.length ? `<div class="insight-suggestions">${suggs.map(s=>`<div class="insight-suggestion">${fmt(s)}</div>`).join("")}</div>` : ""}
+      ${askAboutButton(`What should I change on ${pagePath(currentPage)} for the "${headline}" ${device} visitors, and why?`)}
     </div>`;
   }).join("");
   const clicksPanel = document.getElementById("clicks-chart").closest(".panel");
@@ -1579,7 +1604,7 @@ async function loadAttentionProfile() {
     document.getElementById("fi-zone").textContent = dominantZone
       ? dominantZone[0].charAt(0).toUpperCase() + dominantZone[0].slice(1)
       : "-";
-    const aiNote = lastAnalysisResult?.ai_interpretation?.first_impression_note;
+    const aiNote = interpretationOf(lastAnalysisResult)?.first_impression_note;
     const fiBox  = document.getElementById("fi-insight-box");
     if (aiNote) {
       document.getElementById("fi-insight-text").textContent = aiNote;
@@ -1722,12 +1747,6 @@ async function runAnalysis() {
         failure.message || `Not enough sessions to identify visitor types yet (have ${failure.have ?? 0}, need ${failure.needed ?? 16}).`,
         ""
       );
-    } else if (data.ai_cooldown_remaining_ms > 0) {
-      showToast(
-        "Numbers updated. AI commentary refreshes again in " +
-        Math.ceil(data.ai_cooldown_remaining_ms / 60000) + " min.",
-        ""
-      );
     } else {
       const remaining = permit.remaining_free_today;
       showToast(
@@ -1759,11 +1778,12 @@ async function runAllAnalysis() {
     const pagesResponse = await fetch(siteUrl("/api/pages"), {
       headers: await authHeaders()
     });
-    const pages = await pagesResponse.json().catch(() => null);
+    let pages = await pagesResponse.json().catch(() => null);
     if (!pagesResponse.ok || !Array.isArray(pages)) {
       throw new Error(pages?.error || "Could not load tracked pages");
     }
-    if (!pages.length) throw new Error("No tracked pages to refresh");
+    pages = pages.filter(page => page.analysable >= MIN_ANALYSIS_SESSIONS);
+    if (!pages.length) throw new Error(`No page has ${MIN_ANALYSIS_SESSIONS} sessions with interaction yet`);
 
     const permit = await requestAnalysisPermit("all", pages.length);
 
@@ -1988,6 +2008,12 @@ document.getElementById("ask-input").addEventListener("input", event => {
   event.target.style.height = `${event.target.scrollHeight}px`;
 });
 document.querySelectorAll(".ask-starter").forEach(btn => btn.addEventListener("click", () => askQuestion(btn.textContent)));
+document.addEventListener("click", event => {
+  const button = event.target.closest(".ask-about");
+  if (!button) return;
+  nav("ask", document.querySelector("[data-section=ask]"));
+  askQuestion(button.dataset.question);
+});
 
 function escapeHtml(value) {
   return String(value)

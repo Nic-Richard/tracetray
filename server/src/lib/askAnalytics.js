@@ -22,7 +22,7 @@ const TOOLS = [
     },
     {
         name: "get_overview",
-        description: "Session counts (total, desktop, mobile) and the latest behaviour analysis for a page or the whole site: visitor types with their share of sessions, the written summary, suggestions, and when the analysis last ran.",
+        description: "Session counts (total, desktop, mobile) and the latest behaviour analysis for a page or the whole site: desktop and mobile visitor types with their share of sessions, how each differs from the page average, the summary, suggestions, and when the analysis last ran.",
         input_schema: { type: "object", properties: { page: pageProperty }, additionalProperties: false }
     },
     {
@@ -104,24 +104,30 @@ function pageArg(input) {
     return typeof input.page === "string" && input.page.trim() ? input.page.trim().slice(0, 500) : null;
 }
 
+function visitorTypes(clusters, stories) {
+    const total = (clusters || []).reduce((s, c) => s + (c.n || 0), 0);
+    return (clusters || []).map(c => ({
+        label: stories?.[c.id]?.headline || c.label,
+        share: total ? Math.round((c.n / total) * 100) / 100 : null,
+        sessions: c.n,
+        description: stories?.[c.id]?.body || null,
+        compared_with_page_average: stories?.[c.id]?.traits?.map(t => t.description) || []
+    }));
+}
+
 function summariseAnalysis(result) {
     if (!result) return null;
-    const total = (result.clusters || []).reduce((s, c) => s + (c.n || 0), 0);
-    const stories = result.ai_interpretation?.cluster_stories || {};
+    const interpretation = result.interpretation || result.ai_interpretation || {};
     return {
         ran_at: result.ran_at,
         sessions_analysed: result.session_count,
-        visitor_types: (result.clusters || []).map(c => ({
-            label: stories[c.id]?.headline || c.label,
-            share: total ? Math.round((c.n / total) * 100) / 100 : null,
-            sessions: c.n,
-            description: stories[c.id]?.body || null
-        })),
-        page_type: result.ai_interpretation?.page_type || null,
-        summary: result.ai_interpretation?.site_summary || null,
-        suggestions: result.ai_interpretation?.top_suggestions || [],
-        first_impression: result.ai_interpretation?.first_impression_note || null,
-        device_comparison: result.ai_interpretation?.device_comparison || null
+        desktop_visitor_types: visitorTypes(result.clusters, interpretation.cluster_stories),
+        mobile_visitor_types: visitorTypes(result.mobile?.clusters, interpretation.mobile_cluster_stories),
+        page_type: interpretation.page_type || null,
+        summary: interpretation.site_summary || null,
+        suggestions: interpretation.top_suggestions || [],
+        first_impression: interpretation.first_impression_note || null,
+        device_comparison: interpretation.device_comparison || null
     };
 }
 

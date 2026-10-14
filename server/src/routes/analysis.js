@@ -8,11 +8,10 @@ const { Account, Session, AnalysisResult } = require("../db/models");
 const { resolveSiteKey } = require("../lib/siteAccount");
 const { getClickSummary } = require("../lib/clickSummary");
 const { computeAttentionProfile } = require("../lib/attentionProfile");
-const { buildInterpretationPrompt, callAI } = require("../lib/aiInterpretation");
+const { interpretClusters } = require("../lib/interpretClusters");
 const {
     analysisRunning,
-    lastAICallByUser,
-    AI_COOLDOWN_MS,
+    PAGE_REFRESHES_PER_DAY,
     PAGE_REFRESH_COOLDOWN_MS,
     ALL_REFRESH_COOLDOWN_MS,
     utcDayKey,
@@ -61,7 +60,7 @@ router.post("/api/analysis-permit", requireAuth(), async (req, res) => {
             return res.json({
                 permit_token: createAnalysisPermit(userId, siteKey, "all", pageCount),
                 scope,
-                remaining_free_today: Math.max(0, 3 - (site.page_refresh_count || 0))
+                remaining_free_today: Math.max(0, PAGE_REFRESHES_PER_DAY - (site.page_refresh_count || 0))
             });
         }
 
@@ -73,7 +72,7 @@ router.post("/api/analysis-permit", requireAuth(), async (req, res) => {
         }
 
         const usedToday = site.page_refresh_count || 0;
-        if (usedToday >= 3) {
+        if (usedToday >= PAGE_REFRESHES_PER_DAY) {
             const lastPage = site.last_page_refresh_at
                 ? new Date(site.last_page_refresh_at).getTime()
                 : 0;
@@ -95,7 +94,7 @@ router.post("/api/analysis-permit", requireAuth(), async (req, res) => {
         res.json({
             permit_token: createAnalysisPermit(userId, siteKey, "page", 1),
             scope,
-            remaining_free_today: Math.max(0, 3 - site.page_refresh_count)
+            remaining_free_today: Math.max(0, PAGE_REFRESHES_PER_DAY - site.page_refresh_count)
         });
     } catch (err) {
         logger.error("analysis permit error:", err);
@@ -175,58 +174,30 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
             };
         }
 
-        const aiKey           = `${getAuth(req).userId}::${siteKey}::${pageFilter || "all"}`;
-        const lastAICall      = lastAICallByUser[aiKey] || 0;
-        const msSinceLast     = Date.now() - lastAICall;
-        const aiAllowed       = msSinceLast >= AI_COOLDOWN_MS;
-
-        // Save click history even when model interpretation is rate-limited.
         const clickSummary = await getClickSummary(siteKey, pageFilter, 15);
         clusterResult.click_summary = clickSummary;
 
-        if (!aiAllowed) {
-            logger.debug(`interpretation rate-limited  key=${siteKey}  wait=${Math.ceil((AI_COOLDOWN_MS - msSinceLast)/1000)}s`);
-            const prev = await AnalysisResult.findOne({ site_key: siteKey, page: pageFilter || "all", "ai_interpretation": { $ne: null } }).sort({ ran_at: -1 }).lean();
-            if (prev?.ai_interpretation) clusterResult.ai_interpretation = prev.ai_interpretation;
-        } else {
-            try {
-                let pageUrl = pageFilter;
-                if (!pageUrl) {
-                    const recentSess = await Session.findOne({ site_key: siteKey, end_time: { $ne: null } }).sort({ start_time: -1 }).lean();
-                    pageUrl = recentSess?.page || null;
-                }
-                const attentionResult = await computeAttentionProfile(siteKey, pageFilter || null);
-                const prompt          = buildInterpretationPrompt({
-                    clusters:        clusterResult.clusters || [],
-                    kwResults:       clusterResult.kruskal_wallis || [],
-                    clickSummary,
-                    kRationale:      clusterResult.k_rationale || {},
-                    sessionCount:    clusterResult.session_count || 0,
-                    pageUrl,
-                    firstImpression: attentionResult.first_impression,
-                    mobileResult:    clusterResult.mobile || null
-                });
-                const interpretation = await callAI(prompt);
-                if (interpretation) {
-                    clusterResult.ai_interpretation = interpretation;
-                    lastAICallByUser[aiKey] = Date.now();
-                    logger.debug("interpretation complete");
-                }
-            } catch (aiErr) {
-                logger.error("interpretation failed:", aiErr.message);
+        try {
+            let pageUrl = pageFilter;
+            if (!pageUrl) {
+                const recentSess = await Session.findOne({ site_key: siteKey, end_time: { $ne: null } }).sort({ start_time: -1 }).lean();
+                pageUrl = recentSess?.page || null;
             }
+            const attentionResult = await computeAttentionProfile(siteKey, pageFilter || null);
+            clusterResult.interpretation = interpretClusters({
+                desktop:         clusterResult,
+                mobile:          clusterResult.mobile || null,
+                pageUrl,
+                firstImpression: attentionResult.first_impression
+            });
+        } catch (err) {
+            logger.error("interpretation failed:", err);
         }
 
         await AnalysisResult.create(clusterResult);
         logger.info(`analysis saved  key=${siteKey}  k=${clusterResult.k}  n=${clusterResult.session_count}  mobile_n=${mobileResult?.session_count ?? 0}`);
 
-        res.json({
-            ok:                       true,
-            result:                   clusterResult,
-            ai_used:                  aiAllowed && !!clusterResult.ai_interpretation,
-            ai_cooldown_remaining_ms: aiAllowed ? 0 : Math.max(0, AI_COOLDOWN_MS - msSinceLast),
-            next_ai_allowed_in_ms:    aiAllowed ? AI_COOLDOWN_MS : Math.max(0, AI_COOLDOWN_MS - msSinceLast)
-        });
+        res.json({ ok: true, result: clusterResult });
     } catch (err) {
         logger.error("analysis error:", err);
         if (!res.headersSent) res.status(500).json({ error: "analysis failed" });

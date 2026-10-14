@@ -1,9 +1,10 @@
 const crypto = require("crypto");
-const { AI_COOLDOWN_MS, PAGE_REFRESH_COOLDOWN_MS, ALL_REFRESH_COOLDOWN_MS } = require("../config");
+const { PAGE_REFRESHES_PER_DAY, PAGE_REFRESH_COOLDOWN_MS, ALL_REFRESH_COOLDOWN_MS } = require("../config");
+
+const PERMIT_IDLE_MS = 10 * 60 * 1000;
 
 const analysisRunning = {};
 const analysisPermits = new Map();
-const lastAICallByUser = {};
 
 function utcDayKey(date = new Date()) {
     return date.toISOString().slice(0, 10);
@@ -20,7 +21,7 @@ function createAnalysisPermit(userId, siteKey, scope, remaining) {
         siteKey,
         scope,
         remaining,
-        expiresAt: Date.now() + 10 * 60 * 1000
+        expiresAt: Date.now() + PERMIT_IDLE_MS
     });
     return token;
 }
@@ -37,6 +38,8 @@ function consumeAnalysisPermit(token, userId, siteKey) {
     }
 
     permit.remaining -= 1;
+    // A long refresh-all run keeps its permit while pages are still being analysed.
+    permit.expiresAt = Date.now() + PERMIT_IDLE_MS;
     if (permit.remaining <= 0) analysisPermits.delete(token);
     return true;
 }
@@ -44,8 +47,7 @@ function consumeAnalysisPermit(token, userId, siteKey) {
 module.exports = {
     analysisRunning,
     analysisPermits,
-    lastAICallByUser,
-    AI_COOLDOWN_MS,
+    PAGE_REFRESHES_PER_DAY,
     PAGE_REFRESH_COOLDOWN_MS,
     ALL_REFRESH_COOLDOWN_MS,
     utcDayKey,
