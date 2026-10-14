@@ -1,7 +1,7 @@
 // Groups URLs that share a pattern ("/sets/:set") so a site with millions of pages gets a few groups.
 
 const MAX_RULES = 50;
-const SUGGEST_MIN_PAGES = 20;
+const SUGGEST_MIN_PAGES = 10;
 
 const ID_PATTERNS = [
     /^\d+$/,

@@ -37,11 +37,13 @@ test("suggestions find patterns with many pages, including nested ones", () => {
     for (let i = 0; i < 90; i++) paths.push(`/sets/set-x${i % 30}/cards/${i}`);
     for (let i = 0; i < 25; i++) paths.push(`/lounge/6f1c${String(i).padStart(20, "0")}`);
     for (let i = 0; i < 5; i++) paths.push(`/about/team-${i}`);
+    for (let i = 0; i < 12; i++) paths.push(`/blog/post-number-${String.fromCharCode(97 + i)}`);
     const found = suggestRules(paths).map(s => s.pattern);
     assert.ok(found.includes("/sets/:set"));
     assert.ok(found.includes("/users/:user"));
     assert.ok(found.includes("/sets/:set/cards/:id"));
     assert.ok(!found.some(p => p.startsWith("/lounge")), "ids are already grouped automatically");
     assert.ok(!found.some(p => p.startsWith("/about")), "too few pages to suggest");
+    assert.ok(found.includes("/blog/:blog"), "ten or more pages are enough");
     assert.ok(!suggestRules(paths, ["/sets/:set"]).some(s => s.pattern === "/sets/:set"));
 });
