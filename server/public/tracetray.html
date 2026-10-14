@@ -464,7 +464,7 @@ footer span { margin-left: auto; }
   const FADE_MS = 2600;
   const points = [], rings = [];
   let moves = 0, pauses = 0, clicks = 0, w = 0, h = 0;
-  let target = null, pos = null, lastMove = 0, pausedAt = null, demo = true, demoStart = null;
+  let target = null, pos = null, ring = null, lastMove = 0, pausedAt = null, demo = true, demoStart = null;
   const el = id => document.getElementById(id);
 
   function resize() {
@@ -518,8 +518,8 @@ footer span { margin-left: auto; }
     if (demo) playDemo(now);
     follow(now);
     if (pos && now - lastMove > 700) {
-      if (pausedAt === null) { pausedAt = now; rings.push({ x: pos.x, y: pos.y, t: now, held: 0 }); if (!demo) pauses++; }
-      else rings[rings.length - 1].held = now - pausedAt;
+      if (pausedAt === null) { pausedAt = now; ring = { x: pos.x, y: pos.y, t: now, held: 0 }; rings.push(ring); if (!demo) pauses++; }
+      else ring.held = now - pausedAt;
     }
     draw(now);
     requestAnimationFrame(tick);
