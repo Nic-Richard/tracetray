@@ -1,7 +1,7 @@
 import type {
   Account, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, Config,
   GroupMembers, Journey, MemberSort, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
-  SitesResponse, Stats, Timeseries, UxTrends
+  SitesResponse, Stats, Timeseries, UsageResponse, UxTrends
 } from "./types";
 
 export class ApiError extends Error {
@@ -48,6 +48,7 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
   return {
     config: () => request<Config>("GET", "/api/config"),
     account: () => request<Account>("POST", "/api/account"),
+    usage: () => request<UsageResponse>("GET", "/api/usage"),
 
     sites: () => request<SitesResponse>("GET", "/api/sites"),
     createSite: (name: string, url?: string) => request<SitesResponse & { site: Site }>("POST", "/api/sites", { body: { name, url } }),

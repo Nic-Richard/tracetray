@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { pageLabel, type PageGroups, type Site } from "@tracetray/shared";
+import type React from "react";
+import { useLoad } from "../lib/useLoad";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 
@@ -269,14 +271,47 @@ function PageGroupRules() {
   );
 }
 
+function UsageMeter({ label, used, limit, accent }: { label: string; used: number; limit: number | null; accent: string }) {
+  const share = limit ? Math.min(1, used / limit) : null;
+  return (
+    <div className="usage-row" style={{ "--fill": limit && used > limit ? "var(--danger)" : accent } as React.CSSProperties}>
+      <span>{label}</span>
+      <div className="meter">{share !== null && <i style={{ width: `${Math.max(share * 100, used ? 1.5 : 0)}%` }} />}</div>
+      <b className="num">{used.toLocaleString()}<small>{limit ? ` of ${limit.toLocaleString()}` : " no limit"}</small></b>
+    </div>
+  );
+}
+
 function Plan() {
-  const { account, mode } = useSite();
-  const name = { starter: "Starter", pro: "Pro", none: "No plan" }[account.plan];
+  const api = useApi();
+  const { account, mode: siteMode } = useSite();
+  const usage = useLoad(() => api.usage(), [api]);
+  const mode = usage.data?.mode ?? siteMode;
+  const name = { starter: "Starter", pro: "Pro", enterprise: "Enterprise", none: "No plan" }[usage.data?.plan ?? account.plan];
+  const limits = usage.data?.limits;
+  const used = usage.data?.usage;
+  const month = used ? new Date(`${used.month}-01T00:00:00Z`).toLocaleDateString(undefined, { month: "long", timeZone: "UTC" }) : "";
   return (
     <section className="panel">
-      <div className="panel-head"><h2>Plan</h2></div>
+      <div className="panel-head"><h2>Plan and usage</h2>{month && <div className="end"><span className="ask-note">{month} so far</span></div>}</div>
       <div className="panel-body setup-copy">
-        <p>{mode === "beta" ? "TraceTray is in beta, so every feature is open while it lasts." : `You're on ${name}.`}</p>
+        <p>{mode === "beta" ? "TraceTray is in beta, so nothing is limited while it lasts. This is what you've used this month." : `You're on ${name}.`}</p>
+        {usage.error && <p className="page-status error" style={{ padding: 0 }}>{usage.error}</p>}
+        {used && (mode === "beta" || !limits ? (
+          <div className="usage-figures">
+            <div style={{ "--fill": "var(--d1)" } as React.CSSProperties}><b className="num">{used.visits.toLocaleString()}</b><span>visits</span></div>
+            <div style={{ "--fill": "var(--d2)" } as React.CSSProperties}><b className="num">{used.pages.toLocaleString()}</b><span>pages tracked</span></div>
+            <div style={{ "--fill": "var(--d3)" } as React.CSSProperties}><b className="num">{used.sites.toLocaleString()}</b><span>{used.sites === 1 ? "website" : "websites"}</span></div>
+            <div style={{ "--fill": "var(--d5)" } as React.CSSProperties}><b className="num">{used.askQuestions.toLocaleString()}</b><span>Ask questions</span></div>
+          </div>
+        ) : (
+          <div className="usage">
+            <UsageMeter label="Visits" used={used.visits} limit={limits.visits} accent="var(--d1)" />
+            <UsageMeter label="Pages tracked" used={used.pages} limit={limits.pages} accent="var(--d2)" />
+            <UsageMeter label="Websites" used={used.sites} limit={limits.sites} accent="var(--d3)" />
+            <UsageMeter label="Ask questions" used={used.askQuestions} limit={limits.askQuestions} accent="var(--d5)" />
+          </div>
+        ))}
         <p><a className="link-button" href="/billing.html">Manage billing</a></p>
       </div>
     </section>

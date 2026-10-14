@@ -7,6 +7,7 @@ const { resolveSiteKey, getAccountSites } = require("../lib/siteAccount");
 const { askAnalytics, ASK_MODEL } = require("../lib/askAnalytics");
 const { rateLimit } = require("../lib/rateLimit");
 const { TRACETRAY_MODE } = require("../config");
+const { recordAskQuestion } = require("../lib/usage");
 const logger = require("../lib/logger");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -54,6 +55,7 @@ router.post("/api/ask", requireAuth(), userLimit, siteWideLimit, async (req, res
             history: req.body.history
         });
 
+        await recordAskQuestion(account._id);
         logger.info(`ask ${siteKey}: ${toolsUsed.length} lookups, ${usage.input_tokens} in / ${usage.cache_read_input_tokens} cached / ${usage.output_tokens} out on ${ASK_MODEL}`);
         res.json({ answer, lookups: [...new Set(toolsUsed)] });
     } catch (err) {

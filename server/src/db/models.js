@@ -19,7 +19,7 @@ const Account = mongoose.model("Account", new mongoose.Schema({
         created_at: Date
     }],
     stripe_customer_id: String,
-    plan:              { type: String, enum: ["starter", "pro", "none"], default: "none" },
+    plan:              { type: String, enum: ["starter", "pro", "enterprise", "none"], default: "none" },
     created_at:        Date
 }, { strict: false }), "accounts");
 

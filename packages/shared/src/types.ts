@@ -1,4 +1,29 @@
-export type Plan = "starter" | "pro" | "none";
+export type Plan = "starter" | "pro" | "enterprise" | "none";
+
+/** null = no limit. Visits and Ask questions are per calendar month. */
+export interface PlanLimits {
+  name: string;
+  visits: number | null;
+  pages: number | null;
+  sites: number | null;
+  historyDays: number | null;
+  askQuestions: number | null;
+}
+
+export interface Usage {
+  month: string;
+  visits: number;
+  pages: number;
+  sites: number;
+  askQuestions: number;
+}
+
+export interface UsageResponse {
+  mode: "beta" | "production";
+  plan: Plan;
+  limits: PlanLimits | null;
+  usage: Usage;
+}
 export type Mode = "beta" | "production";
 export type Device = "desktop" | "mobile";
 
