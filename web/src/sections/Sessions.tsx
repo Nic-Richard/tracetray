@@ -16,8 +16,10 @@ export default function Sessions() {
 
   return (
     <div className="content">
-      <h1 className="section-title">Sessions</h1>
-      <p className="tab-intro">The 50 most recent visits to {site.name}, newest first. Each visit to a page counts once.</p>
+      <div className="section-head">
+        <h1 className="section-title">Recent visits</h1>
+        <p className="tab-intro">The 50 most recent visits to {site.name}, newest first. Each visit to a page counts once.</p>
+      </div>
       {sessions.error && <p className="page-status error" style={{ padding: 0 }}>{sessions.error}</p>}
       {!sessions.data && !sessions.error && <p className="loading">Loading…</p>}
       {sessions.data && (
@@ -31,7 +33,7 @@ export default function Sessions() {
                     <tr key={s.session_id}>
                       <td>{timeAgo(s.start_time)}</td>
                       <td><span className="cell-page"><span title={s.page}>{pageLabel(s.page)}</span></span></td>
-                      <td>{s.device_type === "mobile" ? "Phone" : "Desktop"}</td>
+                      <td><span className="device"><span className="dot" style={{ background: s.device_type === "mobile" ? "var(--mobile)" : "var(--desktop)" }} />{s.device_type === "mobile" ? "Phone" : "Desktop"}</span></td>
                       <td className="right num">{duration(s.summary?.duration_ms)}</td>
                       <td className="right num hide-sm">{(s.device_type === "mobile" ? s.summary?.taps : s.summary?.clicks) ?? 0}</td>
                     </tr>

@@ -100,7 +100,7 @@ export default function Ask() {
 
   return (
     <div className="content ask">
-      <h1 className="section-title">Ask</h1>
+      <div className="section-head"><h1 className="section-title">Ask</h1></div>
       <p className="ask-intro">Ask about visitors to {site.name} in plain English. TraceTray looks up the numbers (pages, traffic, clicks, journeys and past analyses) and explains what they show. It can't see sales, sign-ups or who your visitors are.</p>
       {entries.length === 0 && (
         <div className="ask-starters">

@@ -6,6 +6,7 @@ export function interpretationOf(result: AnalysisResult | null | undefined): Int
 
 export interface VisitorType {
   id: number;
+  key?: string;
   share: number;
   sessions: number;
   story: ClusterStory | null;
@@ -20,5 +21,5 @@ export function visitorTypes(result: AnalysisResult | null | undefined, device: 
   const stories = (device === "mobile" ? interpretation?.mobile_cluster_stories : interpretation?.cluster_stories) || {};
   return [...clusters]
     .sort((a, b) => b.n - a.n)
-    .map(c => ({ id: c.id, share: c.n / total, sessions: c.n, story: stories[c.id] || null, headline: stories[c.id]?.headline || c.label }));
+    .map(c => ({ id: c.id, key: stories[c.id]?.key, share: c.n / total, sessions: c.n, story: stories[c.id] || null, headline: stories[c.id]?.headline || c.label }));
 }

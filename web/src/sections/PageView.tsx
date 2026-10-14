@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { NavLink, useLocation, useParams } from "react-router";
-import { compactNumber, isPageGroup, pageLabel, pagePath, timeAgo, type Stats, type Timeseries } from "@tracetray/shared";
+import type React from "react";
+import { Link, NavLink, useLocation, useParams } from "react-router";
+import { compactNumber, isPageGroup, pageLabel, pagePath, percent, timeAgo, type Stats, type Timeseries } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
@@ -16,6 +17,8 @@ import ClicksTab from "../tabs/ClicksTab";
 import TrendsTab from "../tabs/TrendsTab";
 import DetailsTab from "../tabs/DetailsTab";
 
+const MIN_SESSIONS = 16;
+
 const TABS = [
   { key: "", label: "Overview" },
   { key: "visitors", label: "Visitors" },
@@ -28,10 +31,49 @@ const TABS = [
 function subline(timeseries: Timeseries | null, groupSize: number | undefined): string {
   if (!timeseries) return "";
   const visits = timeseries.total_sessions;
-  const desktop = timeseries.series.reduce((sum, day) => sum + day.desktop, 0);
   const across = groupSize ? ` across ${groupSize.toLocaleString()} pages` : "";
   if (!visits) return `No visits in the last 30 days${across}.`;
-  return `${visits.toLocaleString()} visit${visits === 1 ? "" : "s"} in the last 30 days${across}. ${Math.round((desktop / visits) * 100)}% on desktop.`;
+  return `${visits.toLocaleString()} visit${visits === 1 ? "" : "s"} in the last 30 days${across}.`;
+}
+
+/** Why a page can't be sorted into visitor groups yet, in the page's own numbers. */
+function readiness(stats: Stats): string {
+  const total = stats.total_sessions;
+  const active = stats.analysable_sessions;
+  if (total === 0) return "Nobody has visited this page yet.";
+  const counted = `${total.toLocaleString()} visit${total === 1 ? "" : "s"} so far, and ${active === total ? "all" : active.toLocaleString()} of them involved moving the cursor, clicking, tapping or scrolling`;
+  if (active >= MIN_SESSIONS) return `This page has ${counted}. That's enough to sort visitors into groups.`;
+  return `This page has ${counted}. TraceTray studies those to sort visitors into groups, and needs at least ${MIN_SESSIONS}.`;
+}
+
+function Figure({ value, label, note, accent }: { value: string; label: string; note?: string; accent: string }) {
+  return (
+    <div className="figure" style={{ "--accent": accent } as React.CSSProperties}>
+      <span>{label}</span>
+      <b className="num">{value}</b>
+      {note && <small>{note}</small>}
+    </div>
+  );
+}
+
+function GroupingNudge() {
+  const api = useApi();
+  const { siteKey } = useSite();
+  const { search } = useLocation();
+  const groups = useLoad(() => api.pageGroups(siteKey), [api, siteKey]);
+  const suggestions = groups.data?.suggestions || [];
+  if (!suggestions.length) return null;
+  const [first] = suggestions;
+  const pages = suggestions.reduce((sum, s) => sum + s.pages, 0);
+  return (
+    <div className="nudge">
+      <div>
+        <b>{pages.toLocaleString()} pages could be grouped</b>
+        <p>Pages like <code>{first.pattern}</code> ({first.pages.toLocaleString()} pages) follow the same pattern. Grouping them gives you one view for each kind of page instead of one per address.</p>
+      </div>
+      <Link className="btn" to={{ pathname: "/setup", search }}>Review {suggestions.length === 1 ? "the suggestion" : `${suggestions.length} suggestions`}</Link>
+    </div>
+  );
 }
 
 function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }: {
@@ -39,18 +81,29 @@ function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }:
 }) {
   const result = stats.last_analysis;
   const group = isPageGroup(page);
+  const visits = timeseries?.total_sessions ?? 0;
+  const desktopShare = visits ? timeseries!.series.reduce((sum, d) => sum + d.desktop, 0) / visits : null;
+  const groups = result?.clusters?.length || 0;
+
   return (
     <div className="content">
+      <div className="figures">
+        <Figure accent="var(--d1)" label="Visits, last 30 days" value={timeseries ? compactNumber(visits) : "–"} note={desktopShare === null ? undefined : `${percent(desktopShare)} on desktop`} />
+        <Figure accent="var(--d2)" label="Engaged visits" value={timeseries && visits ? percent(timeseries.engagement_rate) : "–"} note="Stayed over 5 seconds and did something" />
+        <Figure accent="var(--d5)" label="Visitor groups" value={groups ? String(groups) : "–"} note={result ? `From ${result.session_count.toLocaleString()} desktop visits` : "Not analyzed yet"} />
+        {group
+          ? <Figure accent="var(--d3)" label="Pages in this group" value={compactNumber(groupSize || 0)} note={pagePath(page)} />
+          : <Figure accent="var(--d3)" label="Last analyzed" value={result ? timeAgo(result.ran_at) : "Never"} note={result ? "Refresh after you change the page" : undefined} />}
+      </div>
+      <GroupingNudge />
       <div className="split">
         {group ? <GroupPages page={page} groupSize={groupSize || 0} /> : timeseries ? <TrafficPanel timeseries={timeseries} /> : <section className="panel"><p className="empty">Loading visits…</p></section>}
         {result ? <WhoVisits result={result} page={page} /> : (
           <section className="panel">
             <div className="empty">
-              <b>No analysis yet</b>
-              <p>{stats.analysable_sessions >= 16
-                ? "Refresh the analysis to sort this page's visitors into groups."
-                : `TraceTray needs 16 visits with real interaction to sort visitors into groups. This page has ${stats.analysable_sessions}.`}</p>
-              {stats.analysable_sessions >= 16 && <p style={{ marginTop: 12 }}><button type="button" className="btn primary" onClick={onRefresh} disabled={refreshing}>Refresh analysis</button></p>}
+              <b>No visitor groups yet</b>
+              <p>{readiness(stats)}</p>
+              {stats.analysable_sessions >= MIN_SESSIONS && <p style={{ marginTop: 14 }}><button type="button" className="btn primary" onClick={onRefresh} disabled={refreshing}>Analyze this page</button></p>}
             </div>
           </section>
         )}
@@ -59,8 +112,6 @@ function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }:
     </div>
   );
 }
-
-const MIN_SESSIONS = 16;
 
 function MoreMenu({ onRefreshAll, onReset, busy }: { onRefreshAll: () => void; onReset: () => void; busy: boolean }) {
   const [open, setOpen] = useState(false);
@@ -102,6 +153,7 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
       <div className="placeholder-section">
         <h1>No pages yet</h1>
         <p>Add the tracking snippet from Setup to your site. Pages show up here as soon as someone visits.</p>
+        <p><Link className="btn primary" to={{ pathname: "/setup", search }}>Get the snippet</Link></p>
       </div>
     );
   }
@@ -114,13 +166,13 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
   async function refresh() {
     if (!page) return;
     setRefreshing(true);
-    setStatus({ text: "Analysing visits…" });
+    setStatus({ text: "Analyzing visits…" });
     try {
       const permit = await api.analysisPermit(siteKey, "page");
       const run = await api.runAnalysis(siteKey, permit.permit_token, page);
       const failure = run.result.failure;
       setStatus(failure
-        ? { text: failure.message || `Not enough visits to sort into groups yet (have ${failure.have ?? 0}, need ${failure.needed ?? 16}).` }
+        ? { text: failure.message || `Not enough visits to sort into groups yet (${failure.have ?? 0} of the ${failure.needed ?? MIN_SESSIONS} needed).` }
         : { text: `Updated. ${permit.remaining_free_today} more refresh${permit.remaining_free_today === 1 ? "" : "es"} for this site today.` });
       stats.reload();
       reloadPages();
@@ -133,12 +185,12 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
 
   async function refreshAll() {
     const eligible = (pages || []).filter(p => p.analysable >= MIN_SESSIONS);
-    if (!eligible.length) { setStatus({ text: `No page has ${MIN_SESSIONS} visits with interaction yet.`, error: true }); return; }
+    if (!eligible.length) { setStatus({ text: `No page has ${MIN_SESSIONS} visits with movement, clicks or scrolling yet.`, error: true }); return; }
     setRefreshing(true);
     try {
       const permit = await api.analysisPermit(siteKey, "all", eligible.length);
       for (let i = 0; i < eligible.length; i++) {
-        setStatus({ text: `Analysing ${i + 1} of ${eligible.length}: ${pageLabel(eligible[i].page)}` });
+        setStatus({ text: `Analyzing ${i + 1} of ${eligible.length}: ${pageLabel(eligible[i].page)}` });
         await api.runAnalysis(siteKey, permit.permit_token, eligible[i].page);
       }
       setStatus({ text: `Refreshed ${eligible.length} page${eligible.length === 1 ? "" : "s"}.` });
@@ -169,51 +221,57 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
   const lastRun = stats.data?.last_analysis?.ran_at;
   return (
     <>
-      <button type="button" className="page-pick" onClick={onPickPage}>
-        <span className="heat" style={{ background: heatColor(summary?.sessions || 0, max) }} />
-        <div><b>{label}</b><small>{summary?.pages_in_group ? `${path}, ${summary.pages_in_group.toLocaleString()} pages` : path}</small></div>
-        <Icon name="chevron" size={14} />
-      </button>
-      <div className="page-top">
-        <h1>{label}</h1>
-        {label !== path && <code>{path}</code>}
-        <div className="page-actions">
-          {lastRun && <span className="ask-note">Analysed {timeAgo(lastRun)}</span>}
-          <MoreMenu onRefreshAll={refreshAll} onReset={() => setConfirmReset(true)} busy={refreshing} />
-          <button type="button" className="btn primary" onClick={refresh} disabled={refreshing}>{refreshing ? "Analysing…" : "Refresh analysis"}</button>
-        </div>
-      </div>
-      {confirmReset && (
-        <div className="confirm page-confirm">
-          <p>Clear every visit and analysis recorded for {label}? Do this after a redesign so old behaviour doesn't mix with new. It can't be undone.</p>
-          <div className="site-actions">
-            <button type="button" className="btn danger" onClick={resetHistory} disabled={refreshing}>Clear history</button>
-            <button type="button" className="btn" onClick={() => setConfirmReset(false)} disabled={refreshing}>Keep it</button>
+      <header className="masthead">
+        <div className="frame">
+          <button type="button" className="page-pick" onClick={onPickPage}>
+            <span className="heat" style={{ background: heatColor(summary?.sessions || 0, max) }} />
+            <div><b>{label}</b><small>{summary?.pages_in_group ? `${path}, ${summary.pages_in_group.toLocaleString()} pages` : path}</small></div>
+            <Icon name="chevron" size={14} />
+          </button>
+          <div className="page-top">
+            <h1>{label}</h1>
+            {label !== path && <code>{path}</code>}
+            <div className="page-actions">
+              {lastRun && <span className="ask-note">Analyzed {timeAgo(lastRun)}</span>}
+              <MoreMenu onRefreshAll={refreshAll} onReset={() => setConfirmReset(true)} busy={refreshing} />
+              <button type="button" className="btn primary" onClick={refresh} disabled={refreshing}>{refreshing ? "Analyzing…" : "Refresh analysis"}</button>
+            </div>
           </div>
+          {confirmReset && (
+            <div className="confirm page-confirm">
+              <p>Clear every visit and analysis recorded for {label}? Do this after a redesign so old behaviour doesn't mix with new. It can't be undone.</p>
+              <div className="site-actions">
+                <button type="button" className="btn danger" onClick={resetHistory} disabled={refreshing}>Clear history</button>
+                <button type="button" className="btn" onClick={() => setConfirmReset(false)} disabled={refreshing}>Keep it</button>
+              </div>
+            </div>
+          )}
+          <p className="page-sub">{subline(timeseries.data, summary?.pages_in_group) || `${compactNumber(summary?.sessions || 0)} visits so far.`}</p>
+          {status && <p className={`page-status${status.error ? " error" : ""}`} role="status">{status.text}</p>}
+          <nav className="tabs" aria-label="Page views">
+            {TABS.map(item => (
+              <NavLink key={item.key} end to={{ pathname: `/pages${item.key ? `/${item.key}` : ""}`, search }} className={({ isActive }) => `tab${isActive ? " active" : ""}`}>
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
         </div>
-      )}
-      <p className="page-sub">{subline(timeseries.data, summary?.pages_in_group) || `${compactNumber(summary?.sessions || 0)} visits so far.`}</p>
-      {status && <p className={`page-status${status.error ? " error" : ""}`} role="status">{status.text}</p>}
-      <nav className="tabs" aria-label="Page views">
-        {TABS.map(item => (
-          <NavLink key={item.key} end to={{ pathname: `/pages${item.key ? `/${item.key}` : ""}`, search }} className={({ isActive }) => `tab${isActive ? " active" : ""}`}>
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-      {stats.error && <p className="page-status error">{stats.error}</p>}
-      {!stats.data && !stats.error && <p className="loading">Loading…</p>}
-      {stats.data && tab === "" && (
-        <Overview page={page} stats={stats.data} timeseries={timeseries.data} groupSize={summary?.pages_in_group} onRefresh={refresh} refreshing={refreshing} />
-      )}
-      {stats.data && (tab === "visitors" || tab === "details") && !stats.data.last_analysis && (
-        <div className="content"><section className="panel"><div className="empty"><b>No analysis yet</b><p>Refresh the analysis to sort this page's visitors into groups.</p></div></section></div>
-      )}
-      {stats.data?.last_analysis && tab === "visitors" && <VisitorsTab result={stats.data.last_analysis} page={page} />}
-      {stats.data?.last_analysis && tab === "details" && <DetailsTab result={stats.data.last_analysis} />}
-      {stats.data && tab === "attention" && <AttentionTab page={page} result={stats.data.last_analysis} />}
-      {stats.data && tab === "clicks" && <ClicksTab clicks={stats.data.click_summary} page={page} />}
-      {stats.data && tab === "trends" && <TrendsTab page={page} />}
+      </header>
+      <div className="frame">
+        {stats.error && <p className="page-status error">{stats.error}</p>}
+        {!stats.data && !stats.error && <p className="loading">Loading…</p>}
+        {stats.data && tab === "" && (
+          <Overview page={page} stats={stats.data} timeseries={timeseries.data} groupSize={summary?.pages_in_group} onRefresh={refresh} refreshing={refreshing} />
+        )}
+        {stats.data && (tab === "visitors" || tab === "details") && !stats.data.last_analysis && (
+          <div className="content"><section className="panel"><div className="empty"><b>No visitor groups yet</b><p>{readiness(stats.data)}</p></div></section></div>
+        )}
+        {stats.data?.last_analysis && tab === "visitors" && <VisitorsTab result={stats.data.last_analysis} page={page} />}
+        {stats.data?.last_analysis && tab === "details" && <DetailsTab result={stats.data.last_analysis} />}
+        {stats.data && tab === "attention" && <AttentionTab page={page} result={stats.data.last_analysis} />}
+        {stats.data && tab === "clicks" && <ClicksTab clicks={stats.data.click_summary} page={page} />}
+        {stats.data && tab === "trends" && <TrendsTab page={page} />}
+      </div>
     </>
   );
 }

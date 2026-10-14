@@ -8,7 +8,7 @@ const SECTIONS = [
   { to: "/pages", icon: "pages", label: "Pages" },
   { to: "/ask", icon: "ask", label: "Ask" },
   { to: "/journeys", icon: "journeys", label: "Journeys" },
-  { to: "/sessions", icon: "sessions", label: "Sessions", desktopOnly: true },
+  { to: "/sessions", icon: "sessions", label: "Recent visits", desktopOnly: true },
   { to: "/setup", icon: "setup", label: "Setup" }
 ];
 
@@ -31,7 +31,7 @@ export default function Rail({ onReportBug }: { onReportBug: () => void }) {
 
   return (
     <nav className="rail" aria-label="Sections">
-      <div className="rail-mark" aria-hidden="true" />
+      <a className="rail-mark" href="/" title="TraceTray home" aria-label="TraceTray home" />
       {SECTIONS.map(section => (
         <NavLink key={section.to} to={{ pathname: section.to, search }} title={section.label} aria-label={section.label}
           className={({ isActive }) => `rail-link${isActive ? " active" : ""}${section.desktopOnly ? " rail-desktop" : ""}`}>

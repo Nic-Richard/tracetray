@@ -1,3 +1,4 @@
+import type React from "react";
 import { pagePath, type ClickCount } from "@tracetray/shared";
 import { useAskAbout } from "../lib/askLink";
 
@@ -17,7 +18,7 @@ export default function ClicksTab({ clicks, page }: { clicks: ClickCount[]; page
         {clicks.length === 0 ? (
           <p className="empty">No clicks recorded on this page yet. Clicks on elements without visible text aren't listed.</p>
         ) : (
-          <ol className="click-list">
+          <ol className="click-list" style={{ "--fill": "var(--d3)" } as React.CSSProperties}>
             {clicks.map(click => (
               <li key={`${click.tag}:${click.text}`}>
                 <span className="click-text"><b title={click.text}>{click.text}</b><small>{TAGS[click.tag?.toLowerCase()] || click.tag}</small></span>

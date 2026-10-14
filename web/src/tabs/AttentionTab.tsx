@@ -1,3 +1,4 @@
+import type React from "react";
 import { percent, type AnalysisResult } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
@@ -57,9 +58,9 @@ export default function AttentionTab({ page, result }: { page: string; result: A
         <section className="panel">
           <div className="panel-head"><h2>First five seconds</h2></div>
           <div className="panel-body facts">
-            <div><b className="num">{fi?.velocity_delta_pct == null ? "–" : `${Math.abs(fi.velocity_delta_pct).toFixed(0)}% ${fi.velocity_delta_pct > 0 ? "faster" : "slower"}`}</b><span>cursor speed than the rest of the visit</span></div>
-            <div><b className="num">{fi?.early_pause_count ?? "–"}</b><span>pauses, against {fi?.rest_pause_count ?? "–"} in the rest of the visit</span></div>
-            <div><b>{earlyZone ? `${earlyZone.charAt(0).toUpperCase()}${earlyZone.slice(1)} of the page` : "–"}</b><span>where early movement concentrates</span></div>
+            <div style={{ "--fill": "var(--d1)" } as React.CSSProperties}><b className="num">{fi?.velocity_delta_pct == null ? "–" : `${Math.abs(fi.velocity_delta_pct).toFixed(0)}% ${fi.velocity_delta_pct > 0 ? "faster" : "slower"}`}</b><span>cursor speed than the rest of the visit</span></div>
+            <div style={{ "--fill": "var(--d2)" } as React.CSSProperties}><b className="num">{fi?.early_pause_count ?? "–"}</b><span>pauses, against {fi?.rest_pause_count ?? "–"} in the rest of the visit</span></div>
+            <div style={{ "--fill": "var(--d3)" } as React.CSSProperties}><b>{earlyZone ? `${earlyZone.charAt(0).toUpperCase()}${earlyZone.slice(1)} of the page` : "–"}</b><span>where early movement concentrates</span></div>
             {note && <p className="muted">{note}</p>}
           </div>
         </section>
@@ -67,7 +68,10 @@ export default function AttentionTab({ page, result }: { page: string; result: A
       {phoneDepth !== null && (
         <section className="panel">
           <div className="panel-head"><h2>On phones</h2></div>
-          <div className="panel-body"><p>Mobile visitors get {percent(phoneDepth)} of the way down this page on average. Phones don't have a cursor, so this comes from scrolling.</p></div>
+          <div className="panel-body attention-phone">
+            <div className="meter" style={{ "--fill": "var(--mobile)" } as React.CSSProperties}><i style={{ width: percent(phoneDepth) }} /></div>
+            <p>Phone visitors get <b>{percent(phoneDepth)}</b> of the way down this page on average. Phones don't have a cursor, so this comes from scrolling.</p>
+          </div>
         </section>
       )}
     </div>

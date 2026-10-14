@@ -3,6 +3,17 @@ import { pageLabel, type PageGroups, type Site } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 
+// Lightly coloured copy of the snippet; the plain text is what gets copied.
+function SnippetCode({ origin, siteKey }: { origin: string; siteKey: string }) {
+  const tag = (name: string, close = false) => <><span className="punct">{close ? "</" : "<"}</span><span className="tag-name">{name}</span>{close && <span className="punct">&gt;</span>}</>;
+  return (
+    <pre className="code" id="snippet-code">
+      {tag("script")}<span className="punct">&gt;</span>{"\n  window."}<span className="prop">TraceTray</span>{" = { "}<span className="prop">endpoint</span>{": "}<span className="str">"{origin}/collect"</span>{", "}<span className="prop">key</span>{": "}<span className="str">"{siteKey}"</span>{" };\n"}{tag("script", true)}{"\n"}
+      {tag("script")}{" "}<span className="prop">src</span><span className="punct">=</span><span className="str">"{origin}/client/tracker.js"</span><span className="punct">&gt;</span>{tag("script", true)}
+    </pre>
+  );
+}
+
 function snippetFor(siteKey: string): string {
   const origin = window.location.origin;
   return `<script>\n  window.TraceTray = { endpoint: "${origin}/collect", key: "${siteKey}" };\n</script>\n<script src="${origin}/client/tracker.js"></script>`;
@@ -33,7 +44,7 @@ function Snippet() {
       </div>
       <div className="panel-body setup-copy">
         <p>Paste these lines just before the closing <code>&lt;/body&gt;</code> tag on every page you want to track.</p>
-        <pre className="code" id="snippet-code">{code}</pre>
+        <SnippetCode origin={window.location.origin} siteKey={site.key} />
         <p>Use this key on this website only. Add another website below to get a separate key.</p>
         <p className="muted">TraceTray records cursor movement, clicks, taps, reading pauses and scrolling. It never records keystrokes or form contents.</p>
       </div>
@@ -275,11 +286,20 @@ function Plan() {
 export default function Setup() {
   return (
     <div className="content setup">
-      <h1 className="section-title">Setup</h1>
+      <div className="section-head">
+        <h1 className="section-title">Setup</h1>
+        <p className="tab-intro">Add TraceTray to your site, group similar pages, and manage your websites and plan.</p>
+      </div>
       <Snippet />
       <PageGroupRules />
       <Websites />
       <Plan />
+      <nav className="site-footer" aria-label="TraceTray">
+        <a href="/">TraceTray home</a>
+        <a href="/pricing.html">Pricing</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/terms.html">Terms</a>
+      </nav>
     </div>
   );
 }
