@@ -33,7 +33,7 @@ router.post("/api/create-checkout-session", requireAuth(), async (req, res) => {
             line_items: [{ price: priceId, quantity: 1 }],
             customer_email:     account.email,
             client_reference_id: clerkUserId,
-            success_url:        `${host}/dashboard.html?checkout=success`,
+            success_url:        `${host}/app/?checkout=success`,
             cancel_url:         `${host}/pricing.html`
         });
 
@@ -135,7 +135,7 @@ router.post("/api/billing-portal", requireAuth(), async (req, res) => {
         const host    = `${req.protocol}://${req.get("host")}`;
         const session = await stripe.billingPortal.sessions.create({
             customer:   account.stripe_customer_id,
-            return_url: `${host}/dashboard.html`
+            return_url: `${host}/app/`
         });
 
         res.json({ url: session.url });

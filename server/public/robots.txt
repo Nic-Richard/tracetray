@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /collect
-Disallow: /dashboard.html
+Disallow: /app/
 Disallow: /billing.html
 Disallow: /sign-in.html
 

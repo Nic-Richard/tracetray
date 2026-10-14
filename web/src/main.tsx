@@ -15,10 +15,25 @@ function SignedInOnly({ children }: { children: ReactNode }) {
   return isLoaded && isSignedIn ? <>{children}</> : null;
 }
 
+declare global {
+  interface Window { TraceTray?: { endpoint: string; key: string } }
+}
+
+// TraceTray tracks its own dashboard when TRACETRAY_OWN_SITE_KEY is set, as a live field test.
+function trackOwnDashboard(siteKey: string | null) {
+  if (!siteKey) return;
+  window.TraceTray = { endpoint: `${window.location.origin}/collect`, key: siteKey };
+  const script = document.createElement("script");
+  script.src = "/client/tracker.js";
+  script.async = true;
+  document.head.appendChild(script);
+}
+
 const root = createRoot(document.getElementById("root")!);
 
 createApi({ getToken: async () => null }).config()
   .then(config => {
+    trackOwnDashboard(config.site_key);
     root.render(
       <StrictMode>
         <ClerkProvider publishableKey={config.clerk_publishable_key} afterSignOutUrl="/">

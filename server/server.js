@@ -33,7 +33,13 @@ app.use(clerkMiddleware());
 app.use("/webhook/stripe", express.raw({ type: "application/json" }));
 app.use("/collect", express.json({ limit: "5mb", type: "text/plain" }));
 app.use(express.json({ limit: "5mb" }));
+// Express 5 leaves req.body undefined when a request has no body; routes expect an object.
+app.use((req, res, next) => { if (req.body === undefined) req.body = {}; next(); });
 app.use(express.static(path.join(__dirname, "public")));
+app.get("/dashboard.html", (req, res) => {
+    const query = req.originalUrl.indexOf("?");
+    res.redirect(301, `/app/${query === -1 ? "" : req.originalUrl.slice(query)}`);
+});
 // The React dashboard routes on the client, so any /app address loads its page.
 app.get(/^\/app(\/.*)?$/, (req, res) => res.sendFile(path.join(__dirname, "public", "app", "index.html")));
 app.use("/client", express.static(path.join(__dirname, "..", "client")));

@@ -126,6 +126,8 @@ h1, h2, h3, p { margin: 0; }
 .menu-right { left: auto; right: 0; top: 42px; width: 230px; }
 .page-confirm { margin: 12px 28px 0; }
 
+.notice { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 14px 28px 0; padding: 10px 14px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); }
+
 /* Content */
 .content { padding: 22px 28px 40px; display: grid; gap: 22px; max-width: 1200px; width: 100%; }
 .split { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 22px; align-items: start; }
@@ -286,6 +288,7 @@ td.strong { font-weight: 700; }
   .page-actions { margin-left: 0; width: 100%; }
   .page-sub, .page-status { padding-left: 16px; padding-right: 16px; }
   .page-confirm { margin: 12px 16px 0; }
+  .notice { margin: 12px 16px 0; }
   .tabs { padding: 12px 16px 0; }
   .content { padding: 16px; }
   .split, .split.even { grid-template-columns: 1fr; }

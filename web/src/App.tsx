@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router";
+import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router";
 import type { Account, Mode } from "@tracetray/shared";
 import { useApi } from "./api";
 import { SiteProvider } from "./state/site";
@@ -17,7 +17,15 @@ function Shell() {
   const { pathname } = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const [notice, setNotice] = useState("");
   const onPages = pathname.startsWith("/pages");
+
+  useEffect(() => {
+    if (params.get("checkout") !== "success") return;
+    setNotice("Subscription activated. Welcome to TraceTray.");
+    setParams(prev => { const next = new URLSearchParams(prev); next.delete("checkout"); return next; }, { replace: true });
+  }, [params, setParams]);
 
   useEffect(() => { setSheetOpen(false); }, [pathname]);
 
@@ -26,6 +34,12 @@ function Shell() {
       <Rail onReportBug={() => setReporting(true)} />
       {onPages && <PageTree />}
       <main className="main">
+        {notice && (
+          <div className="notice" role="status">
+            <span>{notice}</span>
+            <button type="button" className="muted-button" onClick={() => setNotice("")} aria-label="Dismiss">Dismiss</button>
+          </div>
+        )}
         <Routes>
           <Route path="/" element={<Navigate to={{ pathname: "/pages", search: window.location.search }} replace />} />
           <Route path="/pages/:tab?" element={<PageView onPickPage={() => setSheetOpen(true)} />} />

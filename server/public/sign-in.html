@@ -92,14 +92,14 @@
       });
 
       if (window.Clerk.isSignedIn) {
-        window.location.replace("/dashboard.html");
+        window.location.replace("/app/");
         return;
       }
 
       window.Clerk.mountSignIn(document.getElementById("clerk-mount"), {
         routing: "hash",
-        fallbackRedirectUrl: "/dashboard.html",
-        signUpFallbackRedirectUrl: "/dashboard.html"
+        fallbackRedirectUrl: "/app/",
+        signUpFallbackRedirectUrl: "/app/"
       });
     }
 
