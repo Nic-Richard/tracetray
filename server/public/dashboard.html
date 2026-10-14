@@ -53,7 +53,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body { background: var(--surface); color: var(--text); font-family: var(--font-body); font-weight: 300; line-height: 1.6; min-height: 100vh; }
-.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; visibility: hidden; }
+.shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; visibility: hidden; }
 .sidebar { background: var(--bg); border-right: 1px solid var(--border); padding: 28px 0; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 .sidebar-logo { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
 .sidebar-logo span { color: var(--accent); }
@@ -172,6 +172,9 @@ body { background: var(--surface); color: var(--text); font-family: var(--font-b
 .copy-btn.copied { color: #a5f3c4; border-color: #a5f3c4; }
 .note-box { background: rgba(217,119,6,0.06); border: 1px solid rgba(217,119,6,0.2); border-radius: 7px; padding: 12px 16px; font-size: 13px; color: #92400e; line-height: 1.6; }
 .data-note { background: rgba(217,119,6,0.06); border: 1px solid rgba(217,119,6,0.2); border-radius: 7px; padding: 12px 16px; font-size: 13px; color: #92400e; line-height: 1.6; }
+.page-tabs { display: flex; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
+.page-more { flex-shrink: 0; margin: 0 12px; max-width: 220px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--muted); font-family: var(--font-ui); font-size: 12.5px; padding: 6px 8px; cursor: pointer; }
+.page-more.active { color: var(--accent); border-color: var(--accent); }
 .page-tab { display: inline-flex; align-items: center; padding: 12px 18px; font-size: 12.5px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font-ui); }
 .page-tab:hover { color: var(--text); }
 .page-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
@@ -349,7 +352,8 @@ body { background: var(--surface); color: var(--text); font-family: var(--font-b
       </div>
     </div>
     <div id="page-selector-bar" style="display:none;padding:0 32px;background:var(--bg);border-bottom:1px solid var(--border);align-items:center;justify-content:space-between;">
-      <div id="page-tabs" style="display:flex;gap:0;"></div>
+      <div id="page-tabs" class="page-tabs"></div>
+      <select id="page-more" class="page-more" aria-label="More pages" style="display:none;" onchange="selectMorePage(this)"></select>
       <button onclick="resetCurrentPage()" title="Clear collected sessions for this page after a redesign" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:8px 4px;flex-shrink:0;display:flex;align-items:center;gap:5px;">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>
         Reset page history
@@ -862,6 +866,7 @@ async function loadPages() {
   const bar = document.getElementById("page-selector-bar");
   const tabs = document.getElementById("page-tabs");
   tabs.innerHTML = "";
+  renderMorePages([]);
 
   try {
     const response = await fetch(siteUrl("/api/pages"), { headers: await authHeaders() });
@@ -880,11 +885,12 @@ async function loadPages() {
       return true;
     }
 
-    data.forEach((page, index) => {
+    data.slice(0, PAGE_TAB_LIMIT).forEach((page, index) => {
       const label = formatPageLabel(page.page);
       const tab = makePageTab(label, page.analysable, page.page, index === 0);
       tabs.appendChild(tab);
     });
+    renderMorePages(data.slice(PAGE_TAB_LIMIT));
 
     currentPage = data[0].page;
     return true;
@@ -927,9 +933,29 @@ function makePageTab(label, count, page, active) {
   return btn;
 }
 
+const PAGE_TAB_LIMIT = 15;
+
+function renderMorePages(rest) {
+  const more = document.getElementById("page-more");
+  more.classList.remove("active");
+  more.style.display = rest.length ? "" : "none";
+  more.innerHTML = `<option value="">More pages (${rest.length})</option>` + rest
+    .map(page => `<option value="${escapeHtml(page.page)}">${escapeHtml(formatPageLabel(page.page))} (${escapeHtml(page.analysable)})</option>`)
+    .join("");
+}
+
+function selectMorePage(select) {
+  if (select.value) selectPage(select.value, null);
+}
+
 async function selectPage(page, btn) {
   document.querySelectorAll(".page-tab").forEach(t => t.classList.remove("active"));
-  btn.classList.add("active");
+  const more = document.getElementById("page-more");
+  if (btn) {
+    btn.classList.add("active");
+    more.value = "";
+  }
+  more.classList.toggle("active", !btn);
   currentPage   = page;
   attentionProfileLoaded = false;
   trendsLoaded   = false;
