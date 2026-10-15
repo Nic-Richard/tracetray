@@ -89,7 +89,7 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
 
     reportBug: (siteKey: string, report: { category: BugCategory; description: string; dashboard_section?: string; page_url?: string }) =>
       request<{ id: string; created_at: string }>("POST", "/api/bug-reports", { siteKey, body: report }),
-    checkout: (plan: "starter" | "pro") => request<{ url: string }>("POST", "/api/create-checkout-session", { body: { plan } }),
+    checkout: (plan: "starter" | "pro" | "ultra") => request<{ url: string }>("POST", "/api/create-checkout-session", { body: { plan } }),
     billingPortal: () => request<{ url: string }>("POST", "/api/billing-portal")
   };
 }

@@ -6,6 +6,7 @@ const { TRACETRAY_MODE } = require("../config");
 const { getAccountSites } = require("../lib/siteAccount");
 const { getPages } = require("../lib/siteData");
 const { lockedPages } = require("../lib/limits");
+const { PLANS, planLimits } = require("../lib/plans");
 const { runAnalysis } = require("../lib/runAnalysis");
 const { biggestShift } = require("../lib/groupShifts");
 const { wantsEmail } = require("../lib/emailPrefs");
@@ -19,13 +20,12 @@ const RUN_DAY_UTC = 0;
 const RUN_HOUR_UTC = 6;
 const MIN_ANALYSABLE = 16;
 const ALERT_SHIFT = 0.10;
-const PAGES_PER_WEEK = { starter: 10, pro: 25, enterprise: 100 };
 const DAY_MS = 24 * 60 * 60 * 1000;
 let running = false;
 
 function weeklyPageCap(account, mode = TRACETRAY_MODE) {
-    if (mode !== "production") return PAGES_PER_WEEK.pro;
-    return PAGES_PER_WEEK[account.plan] || 0;
+    if (mode !== "production") return PLANS.pro.weeklyPages;
+    return planLimits(account.plan)?.weeklyPages || 0;
 }
 
 // Busiest pages first, skipping locked pages, pages with too few active visits and pages with

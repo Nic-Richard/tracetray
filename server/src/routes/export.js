@@ -6,7 +6,7 @@ const { Account, PageDay, AnalysisResult } = require("../db/models");
 const { resolveSiteKey, getAccountSites } = require("../lib/siteAccount");
 const { groupShares } = require("../lib/groupShifts");
 const { toCsv } = require("../lib/csv");
-const { TRACETRAY_MODE } = require("../config");
+const { hasFeature } = require("../lib/limits");
 const logger = require("../lib/logger");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -17,8 +17,8 @@ async function loadSite(req, res) {
     const siteKey = resolveSiteKey(req, account);
     const site = siteKey && getAccountSites(account).find(item => item.key === siteKey);
     if (!site) { res.status(403).json({ error: "website not available" }); return null; }
-    if (TRACETRAY_MODE === "production" && !["pro", "enterprise"].includes(account.plan)) {
-        res.status(403).json({ error: "exports are part of Pro", limit_reached: "plan" });
+    if (!hasFeature(account, "csvExport")) {
+        res.status(403).json({ error: "exports are part of Pro and Ultra", limit_reached: "plan" });
         return null;
     }
     return site;

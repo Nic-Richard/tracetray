@@ -6,7 +6,7 @@ const { Account } = require("../db/models");
 const { resolveSiteKey } = require("../lib/siteAccount");
 const { parseRule, suggestRules, isGroup, MAX_RULES } = require("../lib/pageGroups");
 const { pageMembers, knownPaths, regroupSite } = require("../lib/pageDays");
-const { TRACETRAY_MODE } = require("../config");
+const { hasFeature } = require("../lib/limits");
 const logger = require("../lib/logger");
 
 const PREVIEW_ROWS = 10;
@@ -77,7 +77,7 @@ router.get("/api/pages/members", requireAuth(), async (req, res) => {
         if (!isGroup(page)) return res.status(400).json({ error: "choose a page group" });
 
         // The full searchable list is a paid feature; everyone sees the busiest pages.
-        const full = TRACETRAY_MODE === "beta" || found.account.plan === "pro";
+        const full = hasFeature(found.account, "fullGroupSearch");
         const days = [7, 30, 90].includes(Number(req.query.days)) ? Number(req.query.days) : null;
         const result = await pageMembers(found.siteKey, page, {
             q:      full ? String(req.query.q || "").trim() : "",

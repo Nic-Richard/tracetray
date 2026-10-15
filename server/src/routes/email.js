@@ -51,7 +51,7 @@ router.get("/api/email-prefs", requireAuth(), async (req, res) => {
     res.json({
         weekly_summary: wantsEmail(account, "weekly_summary"),
         shift_alerts: wantsEmail(account, "shift_alerts"),
-        available: emailAvailable(account)
+        available: Object.fromEntries(EMAIL_LISTS.map(list => [list, emailAvailable(account, list)]))
     });
 });
 

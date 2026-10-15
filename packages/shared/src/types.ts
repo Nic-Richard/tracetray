@@ -1,4 +1,4 @@
-export type Plan = "starter" | "pro" | "enterprise" | "none";
+export type Plan = "starter" | "pro" | "ultra" | "enterprise" | "none";
 
 /** null = no limit. Visits and Ask questions are per calendar month. */
 export interface PlanLimits {
@@ -49,8 +49,8 @@ export type EmailList = "weekly_summary" | "shift_alerts";
 export interface EmailPrefs {
   weekly_summary: boolean;
   shift_alerts: boolean;
-  /** False on plans without these emails. */
-  available: boolean;
+  /** False for an email the plan doesn't include. */
+  available: Record<EmailList, boolean>;
 }
 
 export interface UsageResponse {

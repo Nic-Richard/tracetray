@@ -7,6 +7,7 @@ const { Account } = require("../db/models");
 const { resolveSiteKey } = require("../lib/siteAccount");
 const { compareAroundChange } = require("../lib/compare");
 const { isPageLocked } = require("../lib/limits");
+const { planLimits } = require("../lib/plans");
 const { TRACETRAY_MODE } = require("../config");
 const logger = require("../lib/logger");
 
@@ -18,8 +19,8 @@ async function loadSite(req, res) {
     const siteKey = resolveSiteKey(req, account);
     const site = siteKey && account.sites.find(item => item.key === siteKey);
     if (!site) { res.status(403).json({ error: "website not available" }); return null; }
-    if (TRACETRAY_MODE === "production" && !["pro", "enterprise"].includes(account.plan)) {
-        res.status(403).json({ error: "before-and-after comparisons are part of Pro", limit_reached: "plan" });
+    if (TRACETRAY_MODE === "production" && !planLimits(account.plan)) {
+        res.status(403).json({ error: "before-and-after comparisons need a plan", limit_reached: "plan" });
         return null;
     }
     return { account, site };

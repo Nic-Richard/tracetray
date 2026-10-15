@@ -32,6 +32,7 @@ test("Stripe prices map to plans by lookup key, and old prices still map by thei
     const { planForPrice } = require("../src/lib/plans");
     assert.equal(planForPrice({ lookup_key: "tracetray_pro_yearly" }), "pro");
     assert.equal(planForPrice({ lookup_key: "tracetray_starter_monthly" }), "starter");
+    assert.equal(planForPrice({ lookup_key: "tracetray_ultra_yearly" }), "ultra");
     process.env.STRIPE_PRO_PRICE_ID = "price_old_pro";
     assert.equal(planForPrice({ id: "price_old_pro", lookup_key: null }), "pro");
     assert.equal(planForPrice({ id: "price_old_starter", lookup_key: null }), "starter");
@@ -47,4 +48,16 @@ test("busy pages keep full detail for a sample of visits, the same one for every
     assert.ok(kept > 850 && kept < 1150, `kept ${kept} of 4000`);
     assert.ok(ids.every(id => inSample(id, 0.25) === inSample(id, 0.25)));
     assert.ok(ids.every(id => inSample(id, 1)));
+});
+
+test("the weekly summary comes with every plan, shift alerts and exports from Pro up", () => {
+    const { wantsEmail, emailAvailable } = require("../src/lib/emailPrefs");
+    const { hasFeature } = require("../src/lib/limits");
+    assert.equal(wantsEmail({ plan: "starter" }, "weekly_summary", "production"), true);
+    assert.equal(emailAvailable({ plan: "starter" }, "shift_alerts", "production"), false);
+    assert.equal(emailAvailable({ plan: "ultra" }, "shift_alerts", "production"), true);
+    assert.equal(emailAvailable({ plan: "none" }, "weekly_summary", "production"), false);
+    assert.equal(hasFeature({ plan: "starter" }, "csvExport", "production"), false);
+    assert.equal(hasFeature({ plan: "pro" }, "csvExport", "production"), true);
+    assert.equal(hasFeature({ plan: "starter" }, "csvExport", "beta"), true);
 });

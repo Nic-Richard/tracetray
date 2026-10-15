@@ -287,7 +287,7 @@ function Plan() {
   const { account, mode: siteMode } = useSite();
   const usage = useLoad(() => api.usage(), [api]);
   const mode = usage.data?.mode ?? siteMode;
-  const name = { starter: "Starter", pro: "Pro", enterprise: "Enterprise", none: "No plan" }[usage.data?.plan ?? account.plan];
+  const name = { starter: "Starter", pro: "Pro", ultra: "Ultra", enterprise: "Enterprise", none: "No plan" }[usage.data?.plan ?? account.plan];
   const limits = usage.data?.limits;
   const used = usage.data?.usage;
   const month = used ? new Date(`${used.month}-01T00:00:00Z`).toLocaleDateString(undefined, { month: "long", timeZone: "UTC" }) : "";
@@ -348,7 +348,7 @@ function Export() {
 
   return (
     <section className="panel">
-      <div className="panel-head"><h2>Export</h2>{mode === "production" && <div className="end"><span className="ask-note">Pro</span></div>}</div>
+      <div className="panel-head"><h2>Export</h2>{mode === "production" && <div className="end"><span className="ask-note">Pro and Ultra</span></div>}</div>
       <div className="panel-body setup-copy exports">
         <p>Download this website's data as CSV, for a spreadsheet or your own reports.</p>
         <div className="export-row">
@@ -379,7 +379,6 @@ function Emails() {
   const prefs = useLoad(() => api.emailPrefs(), [api]);
   const [saving, setSaving] = useState<EmailList | null>(null);
   const [error, setError] = useState("");
-  const available = prefs.data?.available !== false;
 
   async function toggle(list: EmailList) {
     if (!prefs.data) return;
@@ -397,14 +396,17 @@ function Emails() {
 
   return (
     <section className="panel">
-      <div className="panel-head"><h2>Emails</h2>{!available && <div className="end"><span className="ask-note">Included with Pro</span></div>}</div>
+      <div className="panel-head"><h2>Emails</h2></div>
       <div className="panel-body setup-copy emails">
-        {EMAILS.map(email => (
-          <label key={email.list} className="toggle-row">
-            <input type="checkbox" checked={prefs.data?.[email.list] ?? false} onChange={() => toggle(email.list)} disabled={!prefs.data || saving !== null || !available} />
-            <span><b>{email.name}</b><small>{email.about}</small></span>
-          </label>
-        ))}
+        {EMAILS.map(email => {
+          const available = prefs.data?.available[email.list] !== false;
+          return (
+            <label key={email.list} className="toggle-row">
+              <input type="checkbox" checked={prefs.data?.[email.list] ?? false} onChange={() => toggle(email.list)} disabled={!prefs.data || saving !== null || !available} />
+              <span><b>{email.name}</b><small>{email.about}{!available && " Included with Pro and Ultra."}</small></span>
+            </label>
+          );
+        })}
         {error && <p className="page-status error" style={{ padding: 0 }}>{error}</p>}
       </div>
     </section>
