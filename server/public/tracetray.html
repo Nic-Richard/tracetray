@@ -162,6 +162,7 @@ section { padding: 104px 0; }
 .plan { border: 1px solid var(--line); border-radius: 18px; padding: 32px; display: grid; gap: 16px; align-content: start; background: var(--paper); }
 .plan.pro { background: linear-gradient(var(--paper), var(--paper)) padding-box, var(--heat) border-box; border: 2px solid transparent; }
 .plan header { display: flex; align-items: baseline; justify-content: space-between; }
+.plans-note { margin-top: 20px; color: var(--muted); font-size: 15.5px; }
 .plan .soon { font-size: 14px; color: var(--muted); }
 .plan .price { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
 .plan .price small { font-size: 16px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
@@ -382,32 +383,35 @@ footer span { margin-left: auto; }
   <section id="pricing">
     <div class="wrap">
       <div class="section-head">
-        <h2>Free during the beta</h2>
-        <p>Paid plans arrive after the beta, with notice before anything changes.</p>
+        <h2 id="pricing-title">Free during the beta</h2>
+        <p id="pricing-intro">Everything is free while TraceTray is in beta. After the beta, every plan starts with a 30-day free trial.</p>
       </div>
       <div class="plans">
         <div class="plan">
-          <header><h3>Starter</h3><span class="soon">Coming soon</span></header>
-          <div class="price">Free <small>during the beta</small></div>
+          <header><h3>Starter</h3><span class="soon">After the beta</span></header>
+          <div class="price">$12 <small>a month</small></div>
           <ul>
-            <li>Up to 5,000 visits a month</li>
-            <li>Visitor groups and summaries</li>
-            <li>One website</li>
+            <li>10,000 visits a month</li>
+            <li>50 pages tracked</li>
+            <li>One website, 6 months of history</li>
+            <li>50 Ask questions a month</li>
           </ul>
           <a class="btn primary" href="/sign-in.html" data-auth-cta="pricing">Start free</a>
         </div>
         <div class="plan pro">
-          <header><h3>Pro</h3><span class="soon">Coming soon</span></header>
-          <div class="price">Free <small>during the beta</small></div>
+          <header><h3>Pro</h3><span class="soon">After the beta</span></header>
+          <div class="price">$24 <small>a month</small></div>
           <ul>
-            <li>Unlimited visits</li>
-            <li>Everything in Starter</li>
-            <li>Up to 5 websites</li>
-            <li>Click and scroll breakdowns</li>
+            <li>100,000 visits a month</li>
+            <li>500 pages tracked</li>
+            <li>Five websites, 2 years of history</li>
+            <li>300 Ask questions a month</li>
+            <li>Full search across grouped pages</li>
           </ul>
           <a class="btn" href="/sign-in.html" data-auth-cta="pricing">Try Pro</a>
         </div>
       </div>
+      <p class="plans-note">Need more than five websites or 100,000 visits? Enterprise starts at $299 a month. <a href="mailto:support@tracetray.com">Get in touch</a>.</p>
     </div>
   </section>
 
@@ -418,6 +422,7 @@ footer span { margin-left: auto; }
         <details open><summary>How is this different from other analytics?</summary><p>Pageview tools count visits. Heatmaps and recordings show where people clicked. TraceTray compares every visit, groups visitors by behaviour and tells you what each group needs, with no proxy or server setup to keep data flowing.</p></details>
         <details><summary>What does the tracker collect?</summary><p>Cursor movement, pauses, clicks, taps, scrolling, page depth, timing and the text of clicked elements. Never keystrokes, form values, screenshots or video.</p></details>
         <details><summary>Who is it for?</summary><p>Site owners, marketers and product teams who want to know how their pages perform: stores, SaaS sites, portfolios and blogs. No analytics background needed.</p></details>
+        <details><summary>What happens after the beta?</summary><p>Plans start at $12 a month, and every plan begins with a 30-day free trial. Accounts from the beta keep their data and get the trial too.</p></details>
         <details><summary>How many visits do I need?</summary><p>Fewer than you'd think. Groups appear once a page has a modest number of active visits, and each analysis shows how many it used.</p></details>
         <details><summary>Does it work on phones?</summary><p>Yes. Taps, scrolling and reading pauses are tracked on phones, and mobile is analyzed separately.</p></details>
         <details><summary>Can I track a whole site?</summary><p>Yes. Add the snippet site-wide and group pages that share a URL pattern.</p></details>
@@ -579,6 +584,15 @@ async function startTraceTrayTracker() {
   document.head.appendChild(script);
 }
 startTraceTrayTracker();
+
+// Once the beta ends the same cards sell the trial.
+fetch("/api/config").then(r => r.json()).then(config => {
+  if (config.mode !== "production") return;
+  document.getElementById("pricing-title").textContent = "Try any plan free for 30 days";
+  document.getElementById("pricing-intro").textContent = "Add a card to start. You're charged when the trial ends, unless you cancel first.";
+  document.querySelectorAll(".plan .soon").forEach(el => el.remove());
+  document.querySelectorAll('[data-auth-cta="pricing"]').forEach(el => { el.textContent = "Start free trial"; el.href = "/pricing.html"; });
+}).catch(() => {});
 
 async function checkAuth() {
   try {
