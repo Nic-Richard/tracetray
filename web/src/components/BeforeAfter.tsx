@@ -15,8 +15,8 @@ interface Row {
 const ROWS: Row[] = [
   { key: "visitsPerDay", label: "Visits a day", format: v => v.toFixed(v >= 10 ? 0 : 1), better: null },
   { key: "engaged", label: "Engaged visits", format: v => percent(v), better: "up" },
-  { key: "actionsPerVisit", label: "Clicks or taps per visit", format: v => v.toFixed(2), better: "up" },
-  { key: "scrollDepth", label: "Scroll depth", format: v => percent(v), better: "up" },
+  { key: "actionsPerVisit", label: "Clicks or taps per visit", format: v => v.toFixed(2), better: null },
+  { key: "scrollDepth", label: "Scroll depth", format: v => percent(v), better: null },
   { key: "timeOnPage", label: "Time on page", format: v => `${Math.round(v / 1000)} s`, better: null },
   { key: "phoneShare", label: "On phones", format: v => percent(v), better: null }
 ];
@@ -69,6 +69,7 @@ function Comparison({ page, day }: { page: string; day: string }) {
           })}
         </tbody>
       </table>
+      <p className="muted">Scroll depth and clicks don't get a verdict because either direction can be good: shallower scrolling or fewer clicks can mean people find what they need sooner, or that they give up earlier.</p>
       {!judged && <p className="muted">Fewer than {MIN_VISITS} visits on one side, so these differences could easily be chance. They get more reliable as visits come in.</p>}
       {judged && mixShift && <p className="muted">The share of visits on phones moved from {percent(before.phoneShare!)} to {percent(after.phoneShare!)}. Phone visitors tap and scroll differently, so that alone can move these numbers.</p>}
       <div className="compare-groups">

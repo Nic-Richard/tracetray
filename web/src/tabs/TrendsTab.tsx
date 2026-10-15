@@ -14,15 +14,16 @@ interface Measure {
   title: string;
   explain: string;
   format: (value: number) => string;
-  better: "up" | "down";
+  /** Which way is an improvement; null when either direction can be good. */
+  better: "up" | "down" | null;
   color: string;
 }
 
 const MEASURES: Measure[] = [
   { key: "hesitation_ms", title: "Hesitation", explain: "Wait before clicking or tapping", format: v => `${(v / 1000).toFixed(2)} s`, better: "down", color: "--d4" },
-  { key: "scroll_depth", title: "Scroll depth", explain: "How far down the page visitors get", format: v => percent(v), better: "up", color: "--d2" },
-  { key: "reading_pauses", title: "Reading pauses", explain: "Pauses per second while engaged", format: v => v.toFixed(2), better: "up", color: "--d1" },
-  { key: "ctr", title: "Top element clicks", explain: "Share of visits that click the most clicked element", format: v => percent(v), better: "up", color: "--d3" }
+  { key: "scroll_depth", title: "Scroll depth", explain: "How far down the page visitors get. Lower isn't always worse: they may find what they need sooner", format: v => percent(v), better: null, color: "--d2" },
+  { key: "reading_pauses", title: "Reading pauses", explain: "Pauses per second while engaged. More can mean reading closely, or looking for something", format: v => v.toFixed(2), better: null, color: "--d1" },
+  { key: "ctr", title: "Top element clicks", explain: "Share of visits that click the most clicked element. Whether more is better depends on what that element is", format: v => percent(v), better: null, color: "--d3" }
 ];
 
 function MeasureCard({ measure, points, theme }: { measure: Measure; points: UxTrendPoint[]; theme: number }) {
@@ -33,17 +34,20 @@ function MeasureCard({ measure, points, theme }: { measure: Measure; points: UxT
   const first = series[0][measure.key] as number;
   const last = series[series.length - 1][measure.key] as number;
   const change = first ? (last - first) / first : 0;
-  const improved = measure.better === "up" ? change > 0.02 : change < -0.02;
-  const worse = measure.better === "up" ? change < -0.02 : change > 0.02;
+  const moved = Math.abs(change) > 0.02;
+  const improved = moved && (measure.better === "up" ? change > 0 : measure.better === "down" && change < 0);
+  const worse = moved && measure.better !== null && !improved;
   const color = cssVar(measure.color);
   const verdict = series.length < 2 ? null : improved ? "better" : worse ? "worse" : "same";
+  const label = verdict === "better" ? "Better" : verdict === "worse" ? "Worse"
+    : moved ? `${change > 0 ? "Up" : "Down"} ${Math.round(Math.abs(change) * 100)}%` : "About the same";
 
   return (
     <section className="panel trend">
       <div className="panel-head">
         <h2>{measure.title}</h2>
         <div className="end">
-          {verdict && <span className={`verdict ${verdict}`}>{verdict === "better" ? "Better" : verdict === "worse" ? "Worse" : "About the same"}</span>}
+          {verdict && <span className={`verdict ${verdict}`}>{label}</span>}
           <b className="num trend-value" style={{ color }}>{measure.format(last)}</b>
         </div>
       </div>
