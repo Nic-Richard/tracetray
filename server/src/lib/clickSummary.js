@@ -7,7 +7,7 @@ async function getClickSummary(siteKey, page, limit = 15) {
     try {
         const pageFilter = page && page !== "all" ? { page } : {};
         const sessions = await Session.find(
-            { site_key: siteKey, ...pageFilter, end_time: { $ne: null }, "summary.mouse_moves": { $gt: 0 } },
+            { site_key: siteKey, ...pageFilter, end_time: { $ne: null }, events_trimmed_at: { $exists: false }, "summary.mouse_moves": { $gt: 0 } },
             { events: 1, _id: 0 }
         ).sort({ start_time: -1 }).limit(RECENT_SESSION_LIMIT).lean();
 

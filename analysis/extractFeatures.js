@@ -28,6 +28,8 @@ async function run() {
             ...siteKeyFilter,
             ...pageFilter,
             end_time: { $ne: null },
+            // Visits whose raw events were trimmed have nothing left to measure.
+            events_trimmed_at: { $exists: false },
             $or: [
                 { "summary.mouse_moves": { $gt: 0 } },
                 { "summary.taps": { $gt: 0 } },

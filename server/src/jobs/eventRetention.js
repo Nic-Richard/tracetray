@@ -4,10 +4,18 @@ const logger = require("../lib/logger");
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Drops raw events from old sessions and keeps their summaries. Off unless RAW_EVENT_RETENTION_DAYS is set.
+// Visits recorded before max_scroll_depth existed get it filled in from their events first.
 async function trimOldEvents(days, now = Date.now()) {
     const result = await Session.updateMany(
         { start_time: { $lt: now - days * DAY_MS }, "events.0": { $exists: true } },
-        { $unset: { events: "" }, $set: { events_trimmed_at: new Date(now) } }
+        [
+            { $set: {
+                max_scroll_depth: { $ifNull: ["$max_scroll_depth", { $max: "$events.scroll_depth" }] },
+                events_trimmed_at: new Date(now)
+            } },
+            { $unset: "events" }
+        ],
+        { updatePipeline: true }
     );
     return result.modifiedCount || 0;
 }
