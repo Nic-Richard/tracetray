@@ -48,7 +48,7 @@ A different root domain needs another key.
 
 Do not reuse one key across unrelated websites.
 
-Accounts can keep up to five websites during the beta. Outside beta mode, Starter supports one website and Pro supports up to five.
+In production, Starter supports one website, Pro up to five and Ultra up to ten; Enterprise is set per account. In beta mode (`TRACETRAY_MODE=beta`) every account can keep up to five.
 
 Removing a website deletes its sessions, analyses, reports, generated feature data, and site key. Removing the last website resets it to `My website` and generates a new key.
 
@@ -271,4 +271,4 @@ python3 -m py_compile ml/analyze.py
 
 ## Status
 
-TraceTray is in beta. Beta accounts can use tracking, desktop and mobile analysis, dashboard reporting, multiple website management, and domain-locked site keys without an active subscription.
+TraceTray runs in production mode with paid plans (Starter, Pro, Ultra, and Enterprise set by hand), each with a 30-day trial. Plan limits and features live in `server/src/lib/plans.js`. Beta mode, still used for local development, lifts every limit and needs no subscription.
