@@ -305,6 +305,10 @@ p.tab-intro { max-width: 80ch; }
 .compare-groups { display: grid; gap: 6px; font-size: 14.5px; }
 .compare-groups ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; color: var(--ink-2); }
 .emails { display: grid; gap: 14px; }
+.exports { display: grid; gap: 14px; }
+.export-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px; align-items: center; padding-top: 14px; border-top: 1px solid var(--line); }
+.export-row > div:first-child { display: grid; gap: 2px; }
+.export-row small { color: var(--muted); font-size: 14px; }
 .toggle-row { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px; align-items: start; cursor: pointer; }
 .toggle-row input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--d1); }
 .toggle-row span { display: grid; gap: 2px; }
@@ -417,6 +421,7 @@ td.strong { font-weight: 700; }
   .attention, .devices { grid-template-columns: 1fr; }
   .usage-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .change-form { grid-template-columns: 1fr; }
+  .export-row { grid-template-columns: 1fr; justify-items: start; }
   .usage-row { grid-template-columns: 100px minmax(0, 1fr) 120px; }
   .phone-attention { grid-template-columns: 70px minmax(0, 1fr); gap: 18px; }
   .depth { height: 150px; }

@@ -323,6 +323,52 @@ function Plan() {
   );
 }
 
+function Export() {
+  const api = useApi();
+  const { siteKey, mode } = useSite();
+  const [days, setDays] = useState(30);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  async function download(kind: "daily" | "groups") {
+    setBusy(kind);
+    setError("");
+    try {
+      const { blob, filename } = await api.exportCsv(siteKey, kind, kind === "daily" ? days : undefined);
+      const url = URL.createObjectURL(blob);
+      const link = Object.assign(document.createElement("a"), { href: url, download: filename });
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The export didn't download");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <section className="panel">
+      <div className="panel-head"><h2>Export</h2>{mode === "production" && <div className="end"><span className="ask-note">Pro</span></div>}</div>
+      <div className="panel-body setup-copy exports">
+        <p>Download this website's data as CSV, for a spreadsheet or your own reports.</p>
+        <div className="export-row">
+          <div><b>Daily visits per page</b><small>Visits, desktop, phones and clicks for every address, day by day.</small></div>
+          <div className="seg" role="group" aria-label="Days">
+            {[30, 90, 365].map(value => <button key={value} type="button" className={days === value ? "on" : ""} onClick={() => setDays(value)}>{value === 365 ? "1 year" : `${value} days`}</button>)}
+          </div>
+          <button type="button" className="btn" onClick={() => download("daily")} disabled={busy !== null}>{busy === "daily" ? "Preparing…" : "Download"}</button>
+        </div>
+        <div className="export-row">
+          <div><b>Visitor groups</b><small>Each page's groups from its latest analysis, on desktop and phones.</small></div>
+          <span />
+          <button type="button" className="btn" onClick={() => download("groups")} disabled={busy !== null}>{busy === "groups" ? "Preparing…" : "Download"}</button>
+        </div>
+        {error && <p className="page-status error" style={{ padding: 0 }}>{error}</p>}
+      </div>
+    </section>
+  );
+}
+
 const EMAILS: { list: EmailList; name: string; about: string }[] = [
   { list: "weekly_summary", name: "Weekly summary", about: "Every Monday: last week's visits, busiest pages, what moved most and any shifts in visitor groups." },
   { list: "shift_alerts", name: "Behaviour-shift alerts", about: "After the weekly analysis, when a page's visitor groups move 10 points or more." }
@@ -377,6 +423,7 @@ export default function Setup() {
       <Websites />
       <Plan />
       <Emails />
+      <Export />
       <nav className="site-footer" aria-label="TraceTray">
         <a href="/">TraceTray home</a>
         <a href="/pricing.html">Pricing</a>

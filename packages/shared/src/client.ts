@@ -19,7 +19,7 @@ export interface ApiOptions {
 type Query = Record<string, string | number | null | undefined>;
 
 export function createApi({ baseUrl = "", getToken }: ApiOptions) {
-  async function request<T>(method: string, path: string, { query, body, siteKey }: { query?: Query; body?: unknown; siteKey?: string | null } = {}): Promise<T> {
+  async function request<T>(method: string, path: string, { query, body, siteKey, raw = false }: { query?: Query; body?: unknown; siteKey?: string | null; raw?: boolean } = {}): Promise<T> {
     const params = new URLSearchParams();
     if (siteKey) params.set("site_key", siteKey);
     for (const [key, value] of Object.entries(query || {})) {
@@ -39,6 +39,9 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
       });
     } catch {
       throw new ApiError("couldn't reach TraceTray, check your connection", 0);
+    }
+    if (raw) {
+      if (response.ok) return { blob: await response.blob(), filename: /filename="([^"]+)"/.exec(response.headers.get("Content-Disposition") || "")?.[1] || "tracetray.csv" } as T;
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new ApiError(String(data.error || `request failed (${response.status})`), response.status, data);
@@ -65,6 +68,8 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     pageChanges: (siteKey: string, page: string) => request<PageChange[]>("GET", "/api/page-changes", { siteKey, query: { page } }),
     addPageChange: (siteKey: string, change: { page: string; day: string; note: string }) => request<PageChange>("POST", "/api/page-changes", { siteKey, body: change }),
     deletePageChange: (siteKey: string, id: string) => request<{ deleted: boolean }>("DELETE", `/api/page-changes/${encodeURIComponent(id)}`, { siteKey }),
+    exportCsv: (siteKey: string, kind: "daily" | "groups", days?: number) =>
+      request<{ blob: Blob; filename: string }>("GET", `/api/export/${kind}`, { siteKey, query: { days }, raw: true }),
     compare: (siteKey: string, page: string, day: string) => request<ChangeComparison>("GET", "/api/compare", { siteKey, query: { page, day } }),
     recentSessions: (siteKey: string, limit = 50) => request<RecentSession[]>("GET", "/api/sessions/recent", { siteKey, query: { limit } }),
     journey: (siteKey: string) => request<Journey>("GET", "/api/journey", { siteKey }),

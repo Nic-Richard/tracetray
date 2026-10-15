@@ -60,6 +60,7 @@ app.use(require("./src/routes/ask"));
 app.use(require("./src/routes/pageGroups"));
 app.use(require("./src/routes/email"));
 app.use(require("./src/routes/compare"));
+app.use(require("./src/routes/export"));
 
 async function startServer() {
     try {

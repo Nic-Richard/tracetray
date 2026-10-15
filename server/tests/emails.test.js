@@ -72,3 +72,14 @@ test("shift alerts name the page the way the dashboard does", () => {
     assert.match(mail.text, /Product pages on Shop: Re-checkers went from 20% to 35% of visitors/);
 });
 
+test("CSV cells are quoted when needed and can't start a spreadsheet formula", () => {
+    const { toCsv, cell } = require("../src/lib/csv");
+    assert.equal(cell("/products/a,b"), '"/products/a,b"');
+    assert.equal(cell('say "hi"'), '"say ""hi"""');
+    assert.equal(cell("=HYPERLINK(\"http://x\")"), '"\'=HYPERLINK(""http://x"")"');
+    assert.equal(cell("+1 page"), "'+1 page");
+    assert.equal(cell("@sum"), "'@sum");
+    assert.equal(cell(-3), "-3");
+    assert.equal(cell(null), "");
+    assert.equal(toCsv(["a", "b"], [[1, "x"]]), "a,b\r\n1,x\r\n");
+});
