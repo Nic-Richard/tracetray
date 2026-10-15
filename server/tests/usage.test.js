@@ -27,3 +27,12 @@ test("pages are allowed in order by address count, and a group that doesn't fit 
     assert.deepEqual([...lockUnits(units, 36)], ["checkout"]);
     assert.deepEqual([...lockUnits(units, 5)], ["collections", "posts", "products"]);
 });
+
+test("Stripe prices map to plans by lookup key, and old prices still map by their ID", () => {
+    const { planForPrice } = require("../src/lib/plans");
+    assert.equal(planForPrice({ lookup_key: "tracetray_pro_yearly" }), "pro");
+    assert.equal(planForPrice({ lookup_key: "tracetray_starter_monthly" }), "starter");
+    process.env.STRIPE_PRO_PRICE_ID = "price_old_pro";
+    assert.equal(planForPrice({ id: "price_old_pro", lookup_key: null }), "pro");
+    assert.equal(planForPrice({ id: "price_old_starter", lookup_key: null }), "starter");
+});

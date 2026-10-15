@@ -7,6 +7,41 @@ const { Account } = require("../db/models");
 const { TRACETRAY_MODE } = require("../config");
 const logger = require("../lib/logger");
 const { sendAlert } = require("../lib/alerts");
+const { PRICE_KEYS, planForPrice } = require("../lib/plans");
+
+const TRIAL_DAYS = 30;
+const DATA_HOLD_DAYS = 30;
+const ENDED = ["canceled", "unpaid", "incomplete_expired"];
+
+// Keeps the account's plan, subscription details and data hold in step with Stripe.
+// past_due keeps the plan while Stripe retries the payment.
+async function syncSubscription(filter, sub, extra = {}) {
+    const item = sub.items?.data?.[0];
+    const ended = ENDED.includes(sub.status);
+    const plan = ended ? "none" : planForPrice(item?.price);
+    const subscription = {
+        id: sub.id,
+        status: sub.status,
+        interval: item?.price?.recurring?.interval || null,
+        trial_end: sub.trial_end ? new Date(sub.trial_end * 1000) : null,
+        current_period_end: item?.current_period_end ? new Date(item.current_period_end * 1000) : null,
+        cancel_at_period_end: !!sub.cancel_at_period_end
+    };
+    const update = ended
+        ? [{ $set: { ...extra, plan, subscription, delete_after: { $ifNull: ["$delete_after", new Date(Date.now() + DATA_HOLD_DAYS * 86400000)] } } }]
+        : [{ $set: { ...extra, plan, subscription } }, { $unset: "delete_after" }];
+    const result = await Account.updateOne(filter, update, { updatePipeline: true });
+    return { plan, matched: result.matchedCount };
+}
+
+// Events for customers TraceTray doesn't know (tests, other apps on the same Stripe account) stay quiet.
+async function alertAccount(title, customerId) {
+    const account = await Account.findOne({ stripe_customer_id: customerId }, { email: 1 }).lean();
+    sendAlert("billing", {
+        title,
+        fields: [{ name: "Account", value: account?.email || "unknown" }, { name: "Customer", value: customerId }],
+    });
+}
 
 router.post("/api/create-checkout-session", requireAuth(), async (req, res) => {
     try {
@@ -15,24 +50,28 @@ router.post("/api/create-checkout-session", requireAuth(), async (req, res) => {
         }
 
         const clerkUserId = getAuth(req).userId;
-        const { plan } = req.body;
-
-        const priceId = plan === "pro"
-            ? process.env.STRIPE_PRO_PRICE_ID
-            : process.env.STRIPE_STARTER_PRICE_ID;
-
-        if (!priceId) return res.status(400).json({ error: "invalid plan" });
+        const lookupKey = PRICE_KEYS[req.body.plan]?.[req.body.interval === "year" ? "year" : "month"];
+        if (!lookupKey) return res.status(400).json({ error: "invalid plan" });
 
         const account = await Account.findOne({ clerk_user_id: clerkUserId });
         if (!account)  return res.status(404).json({ error: "account not found" });
+        if (account.subscription && !ENDED.includes(account.subscription.status)) {
+            return res.status(409).json({ error: "you already have a plan; change it from billing" });
+        }
 
+        const [price] = (await stripe.prices.list({ lookup_keys: [lookupKey], active: true, limit: 1 })).data;
+        if (!price) return res.status(500).json({ error: "that plan isn't available right now" });
+
+        // One trial per account; the card is taken up front and charged when the trial ends.
+        const trial   = !account.trial_used;
         const host    = `${req.protocol}://${req.get("host")}`;
         const session = await stripe.checkout.sessions.create({
             mode:               "subscription",
-            payment_method_types: ["card"],
-            line_items: [{ price: priceId, quantity: 1 }],
-            customer_email:     account.email,
+            line_items: [{ price: price.id, quantity: 1 }],
+            ...(account.stripe_customer_id ? { customer: account.stripe_customer_id } : { customer_email: account.email }),
             client_reference_id: clerkUserId,
+            payment_method_collection: "always",
+            ...(trial ? { subscription_data: { trial_period_days: TRIAL_DAYS } } : {}),
             success_url:        `${host}/app/?checkout=success`,
             cancel_url:         `${host}/pricing.html`
         });
@@ -67,20 +106,18 @@ router.post("/webhook/stripe", async (req, res) => {
                 const session  = event.data.object;
                 const ref      = session.client_reference_id;
                 const cusId    = session.customer;
-                const subId    = session.subscription;
-                const sub      = await stripe.subscriptions.retrieve(subId);
-                const priceId  = sub.items.data[0]?.price?.id;
-                const plan     = priceId === process.env.STRIPE_PRO_PRICE_ID ? "pro" : "starter";
+                const sub      = await stripe.subscriptions.retrieve(session.subscription);
 
                 // Older checkouts used the account's site key, which changes when its last site is deleted.
-                const result = await Account.updateOne(
+                const { plan, matched } = await syncSubscription(
                     { $or: [{ clerk_user_id: ref }, { site_key: ref }] },
-                    { $set: { stripe_customer_id: cusId, plan } }
+                    sub,
+                    { stripe_customer_id: cusId, trial_used: true }
                 );
-                if (!result.matchedCount) throw new Error(`no account for checkout reference ${ref}`);
-                logger.info(`subscription activated  ref=${ref}  plan=${plan}`);
+                if (!matched) throw new Error(`no account for checkout reference ${ref}`);
+                logger.info(`subscription activated  ref=${ref}  plan=${plan}  status=${sub.status}`);
                 sendAlert("billing", {
-                    title: `Subscription started: ${plan}`,
+                    title: sub.status === "trialing" ? `Trial started: ${plan}` : `Subscription started: ${plan}`,
                     fields: [{ name: "Customer", value: cusId }, { name: "Account", value: ref }],
                 });
                 break;
@@ -89,32 +126,17 @@ router.post("/webhook/stripe", async (req, res) => {
             case "customer.subscription.updated": {
                 const sub     = event.data.object;
                 const cusId   = sub.customer;
-                const priceId = sub.items.data[0]?.price?.id;
-                // past_due keeps the plan while Stripe retries the payment.
-                const plan    = ["canceled", "unpaid", "incomplete_expired"].includes(sub.status)
-                    ? "none"
-                    : priceId === process.env.STRIPE_PRO_PRICE_ID ? "pro" : "starter";
-
-                await Account.updateOne(
-                    { stripe_customer_id: cusId },
-                    { $set: { plan } }
-                );
-                logger.info(`subscription updated  customer=${cusId}  plan=${plan}`);
-                sendAlert("billing", {
-                    title: `Subscription updated: ${plan} (${sub.status})`,
-                    fields: [{ name: "Customer", value: cusId }],
-                });
+                const { plan, matched } = await syncSubscription({ stripe_customer_id: cusId }, sub);
+                logger.info(`subscription updated  customer=${cusId}  plan=${plan}  matched=${matched}`);
+                if (matched) await alertAccount(`Subscription updated: ${plan} (${sub.status})`, cusId);
                 break;
             }
 
             case "customer.subscription.deleted": {
                 const cusId = event.data.object.customer;
-                await Account.updateOne({ stripe_customer_id: cusId }, { $set: { plan: "none" } });
-                logger.info(`subscription ended  customer=${cusId}`);
-                sendAlert("billing", {
-                    title: "Subscription ended",
-                    fields: [{ name: "Customer", value: cusId }],
-                });
+                const { matched } = await syncSubscription({ stripe_customer_id: cusId }, event.data.object);
+                logger.info(`subscription ended  customer=${cusId}  matched=${matched}`);
+                if (matched) await alertAccount("Subscription ended", cusId);
                 break;
             }
         }
