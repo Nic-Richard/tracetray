@@ -9,6 +9,8 @@ The project focuses on turning simple raw interaction data, such as cursor movem
 ## Features
 
 - cursor movement, clicks, taps, pauses, scrolling, page depth, and page tracking
+- no cookies and nothing stored on visitors' devices: the server groups a visit's pages with an ID
+  hashed from a daily random salt, the site key, IP and browser; the IP isn't stored and old salts are deleted
 - separate desktop and mobile session analysis
 - page groups: addresses that share a pattern (`/products/:product`) count as one page, IDs are grouped
   automatically, patterns with many pages are suggested, and each group lists its individual pages with

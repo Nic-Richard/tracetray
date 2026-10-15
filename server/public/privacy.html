@@ -38,7 +38,7 @@
   <section class="page-head">
     <div class="wrap narrow">
       <h1>Privacy Policy</h1>
-      <p class="updated">Last updated: October 14, 2026</p>
+      <p class="updated">Last updated: October 15, 2026</p>
       <p>This policy explains what TraceTray collects, how behavioural website data is used, how account information is handled, and where third-party services fit in. TraceTray is operated by Nic Richard in New Brunswick, Canada.</p>
     </div>
   </section>
@@ -49,7 +49,7 @@
             <ul>
                 <li>account information from Clerk or a connected sign-in provider, such as your Clerk user ID, email address, name, profile image, account timestamps, and authentication status;</li>
                 <li>account settings, including your generated TraceTray site key, website URL, selected plan, and account creation date;</li>
-                <li>website interaction data sent through the TraceTray tracker, including cursor coordinates, cursor movement timing, pauses, clicks, taps, scrolling, page URLs, referrer URLs, session timing, device category, and randomly generated visitor and session identifiers;</li>
+                <li>website interaction data sent through the TraceTray tracker, including cursor coordinates, cursor movement timing, pauses, clicks, taps, scrolling, page URLs, referrer URLs, session timing, device category, a randomly generated session identifier, and a daily visitor identifier described in section 8;</li>
                 <li>limited information about clicked or tapped page elements, such as the element tag, ID, CSS classes, and up to 50 characters of visible element text;</li>
                 <li>analysis data, including calculated interaction features, browsing-pattern groups, statistical results, summaries, suggestions, and historical analysis results;</li>
                 <li>bug reports, including the category, description, dashboard section, page URL, browser user agent, account identifiers, and submission time;</li>
@@ -103,8 +103,9 @@
         </section>
 
         <section class="legal-section">
-            <h2>8. Cookies, local storage, and session identifiers</h2>
-            <p>Clerk may use cookies or similar browser storage needed for authentication, sessions, and security. The TraceTray tracker stores a randomly generated visitor identifier in local storage so separate page visits can be grouped into a browsing journey. TraceTray also uses browser storage for preferences such as light or dark mode.</p>
+            <h2>8. Cookies, local storage, and visitor identifiers</h2>
+            <p>The TraceTray tracker does not set cookies or store anything on a website visitor's device. To group one person's page views into a browsing journey, TraceTray's server creates a visitor identifier by hashing a random value that changes every day together with the website's key, the visitor's IP address and browser details. The IP address is not stored, and each day's random value is deleted once the next day begins, so identifiers from different days cannot be linked to each other or traced back to a person. Visitors are not recognized from one day to the next.</p>
+            <p>Older versions of the tracker kept a visitor identifier in the browser's local storage; the current tracker removes it. On TraceTray's own website and dashboard, Clerk may use cookies or similar browser storage needed for sign-in, sessions and security, and browser storage keeps preferences such as light or dark mode.</p>
             <p>TraceTray does not currently use behavioural tracking data for advertising.</p>
         </section>
 

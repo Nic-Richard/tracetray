@@ -83,3 +83,22 @@ test("CSV cells are quoted when needed and can't start a spreadsheet formula", (
     assert.equal(cell(null), "");
     assert.equal(toCsv(["a", "b"], [[1, "x"]]), "a,b\r\n1,x\r\n");
 });
+
+test("the tracker never stores anything on the visitor's device", () => {
+    const fs = require("node:fs");
+    const tracker = fs.readFileSync(require("node:path").resolve(__dirname, "../../client/tracker.js"), "utf8");
+    assert.doesNotMatch(tracker, /localStorage\.setItem|sessionStorage|document\.cookie|indexedDB/);
+});
+
+test("journeys split after 30 minutes away, and each visitor ID keeps its own journey", () => {
+    const { splitJourneys } = require("../src/lib/siteData");
+    const min = 60 * 1000, t = Date.parse("2026-10-15T12:00:00Z");
+    const journeys = splitJourneys([
+        { visitor_id: "a", page: "/", start_time: t, end_time: t + 2 * min },
+        { visitor_id: "b", page: "/pricing", start_time: t + min, end_time: new Date(t + 3 * min).toISOString() },
+        { visitor_id: "a", page: "/cart", start_time: t + 20 * min, end_time: t + 21 * min },
+        { visitor_id: "a", page: "/", start_time: t + 60 * min, end_time: t + 61 * min },
+        { visitor_id: "b", page: "/signup", start_time: t + 25 * min, end_time: t + 26 * min }
+    ]);
+    assert.deepEqual(journeys, [["/", "/cart"], ["/pricing", "/signup"], ["/"]]);
+});

@@ -373,7 +373,7 @@ footer span { margin-left: auto; }
       <div class="section-head"><h2>Light on your site</h2></div>
       <div class="extras-grid">
         <div><h3>About 4 KB</h3><p>Smaller than most images. Loads after your page does.</p></div>
-        <div><h3>Nothing private recorded</h3><p>No video, keystrokes or form input.</p></div>
+        <div><h3>Nothing private recorded</h3><p>No cookies and nothing stored on visitors' devices. No video, keystrokes or form input.</p></div>
         <div><h3>No workarounds needed</h3><p>No proxy, tag manager or server-side setup to keep data coming in.</p></div>
         <div><h3>Works with single-page apps</h3><p>Route changes in React, Vue, Next.js and other SPAs are tracked automatically.</p></div>
       </div>
@@ -420,7 +420,7 @@ footer span { margin-left: auto; }
       <h2>Questions</h2>
       <div>
         <details open><summary>How is this different from other analytics?</summary><p>Pageview tools count visits. Heatmaps and recordings show where people clicked. TraceTray compares every visit, groups visitors by behaviour and tells you what each group needs, with no proxy or server setup to keep data flowing.</p></details>
-        <details><summary>What does the tracker collect?</summary><p>Cursor movement, pauses, clicks, taps, scrolling, page depth, timing and the text of clicked elements. Never keystrokes, form values, screenshots or video.</p></details>
+        <details><summary>What does the tracker collect?</summary><p>Cursor movement, pauses, clicks, taps, scrolling, page depth, timing and the text of clicked elements. Never keystrokes, form values, screenshots or video. It sets no cookies and stores nothing on the visitor's device; visits are grouped with an identifier that changes daily and never stores the IP address.</p></details>
         <details><summary>Who is it for?</summary><p>Site owners, marketers and product teams who want to know how their pages perform: stores, SaaS sites, portfolios and blogs. No analytics background needed.</p></details>
         <details><summary>What happens after the beta?</summary><p>Plans start at $12 a month, and every plan begins with a 30-day free trial. Accounts from the beta keep their data and get the trial too.</p></details>
         <details><summary>How many visits do I need?</summary><p>Fewer than you'd think. Groups appear once a page has a modest number of active visits, and each analysis shows how many it used.</p></details>
@@ -579,7 +579,7 @@ async function startTraceTrayTracker() {
   }
   window.TraceTray = { endpoint: `${window.location.origin}/collect`, key: siteKey };
   const script = document.createElement("script");
-  script.src = "/client/tracker.js?v=20260804-3";
+  script.src = "/client/tracker.js?v=20261015-1";
   script.async = true;
   document.head.appendChild(script);
 }

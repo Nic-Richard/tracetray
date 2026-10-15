@@ -166,19 +166,38 @@ function topCounts(counts, limit, key) {
         .map(([value, count]) => ({ [key]: value, count }));
 }
 
+const JOURNEY_GAP_MS = 30 * 60 * 1000;
+
+const timeOf = value => typeof value === "number" ? value : Date.parse(value) || null;
+
+// One journey per visitor until they've been away for 30 minutes, matching Google Analytics' session rule.
+// Visitor IDs change daily, so a journey can't outlive the day either.
+function splitJourneys(sessions) {
+    const open = new Map();
+    const journeys = [];
+    for (const s of sessions) {
+        const start = timeOf(s.start_time);
+        const current = open.get(s.visitor_id);
+        if (current && start !== null && current.lastActive !== null && start - current.lastActive <= JOURNEY_GAP_MS) {
+            current.pages.push(s.page);
+        } else {
+            const journey = { pages: [s.page], lastActive: null };
+            journeys.push(journey);
+            open.set(s.visitor_id, journey);
+        }
+        const last = open.get(s.visitor_id);
+        last.lastActive = Math.max(last.lastActive || 0, timeOf(s.end_time) || start || 0) || null;
+    }
+    return journeys.map(j => j.pages);
+}
+
 async function getJourney(siteKey) {
     const sessions = await Session.find(
         { site_key: siteKey, end_time: { $ne: null }, visitor_id: { $ne: null } },
-        { visitor_id: 1, page: 1, start_time: 1, _id: 0 }
+        { visitor_id: 1, page: 1, start_time: 1, end_time: 1, _id: 0 }
     ).sort({ start_time: 1 }).lean();
 
-    const byVisitor = {};
-    for (const s of sessions) {
-        if (!byVisitor[s.visitor_id]) byVisitor[s.visitor_id] = [];
-        byVisitor[s.visitor_id].push(s.page);
-    }
-
-    const journeys = Object.values(byVisitor);
+    const journeys = splitJourneys(sessions);
     const entryCounts = {}, exitCounts = {}, transitions = {}, pathCounts = {};
     for (const j of journeys) {
         entryCounts[j[0]] = (entryCounts[j[0]] || 0) + 1;
@@ -231,6 +250,7 @@ async function getReferrers(siteKey, { days = 30, page = null, limit = 15, ownHo
 }
 
 module.exports = {
+    splitJourneys,
     getSessionCounts,
     getVisitQuality,
     latestAnalysis,

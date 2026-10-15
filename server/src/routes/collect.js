@@ -8,6 +8,7 @@ const { groupPage } = require("../lib/pageGroups");
 const { countSession } = require("../lib/pageDays");
 const { overVisitAllowance } = require("../lib/limits");
 const { TRACETRAY_MODE } = require("../config");
+const { visitorIdFor } = require("../lib/visitorId");
 
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT = 240;
@@ -101,12 +102,15 @@ router.post("/collect", async (req, res) => {
         // Past the plan's monthly visits a visit keeps its summary but not its raw events.
         const keptEvents = await overVisitAllowance(account) ? [] : events;
 
+        // Worked out here rather than sent by the tracker, which stores nothing on the visitor's device.
+        // A visit keeps the ID from its first batch, even if it runs past midnight.
+        const visitorId = await visitorIdFor({ siteKey, ip: req.ip, userAgent: req.get("user-agent") });
+
         const write = await Session.updateOne(
             { site_key: siteKey, session_id: sessionId },
             {
                 $set: {
                     site_key: siteKey,
-                    visitor_id: text(data.visitor_id, 100),
                     device_type: deviceType,
                     referrer: text(data.referrer, 2000),
                     page,
@@ -116,6 +120,7 @@ router.post("/collect", async (req, res) => {
                     summary: data.summary,
                     updated_at: Date.now()
                 },
+                $setOnInsert: { visitor_id: visitorId },
                 // A positive $slice keeps a session's first events and drops anything past the cap.
                 $push: { events: { $each: keptEvents, $slice: MAX_SESSION_EVENTS } }
             },
