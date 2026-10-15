@@ -1,4 +1,10 @@
 // Collects desktop cursor activity and mobile touch and scroll activity.
+// Wrapped so its names never clash with the host page; window.sessionData and window.sendTestSession are
+// the only things it exposes.
+(function () {
+// A second copy of the script on the same page would record every event twice.
+if (window.__traceTrayLoaded) return;
+window.__traceTrayLoaded = true;
 
 function generateId() {
     if (crypto && crypto.randomUUID) {
@@ -431,3 +437,4 @@ window.addEventListener("pagehide", () => exportSession());
 window.sendTestSession = exportSession;
 
 window.sessionData = sessionData;
+})();
