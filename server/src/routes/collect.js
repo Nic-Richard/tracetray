@@ -36,6 +36,21 @@ function text(value, max) {
     return typeof value === "string" ? value.slice(0, max) : null;
 }
 
+// Every tracker batch needs its site's account; a short cache saves a lookup per request, including for
+// unknown keys. Plan, goal and group changes reach tracking within ACCOUNT_CACHE_MS.
+const ACCOUNT_CACHE_MS = 30 * 1000;
+const accountCache = new Map();
+
+async function accountFor(siteKey) {
+    const hit = accountCache.get(siteKey);
+    if (hit && Date.now() - hit.at < ACCOUNT_CACHE_MS) return hit.account;
+    const account = await Account.findOne({ $or: [{ site_key: siteKey }, { "sites.key": siteKey }] });
+    if (account) await ensureAccountSites(account);
+    if (accountCache.size > 10000) accountCache.clear();
+    accountCache.set(siteKey, { at: Date.now(), account });
+    return account;
+}
+
 router.post("/collect", async (req, res) => {
     try {
         if (overRateLimit(req.ip)) return res.sendStatus(429);
@@ -52,12 +67,8 @@ router.post("/collect", async (req, res) => {
         if (!siteKey || !sessionId || !trackingDomain) return res.sendStatus(204);
         if (originDomain && pageDomain && originDomain !== pageDomain) return res.sendStatus(204);
 
-        let account = await Account.findOne({
-            $or: [{ site_key: siteKey }, { "sites.key": siteKey }]
-        });
-
+        let account = await accountFor(siteKey);
         if (!account) return res.sendStatus(204);
-        await ensureAccountSites(account);
 
         let site = account.sites.find(item => item.key === siteKey);
         if (!site) return res.sendStatus(204);
@@ -85,7 +96,8 @@ router.post("/collect", async (req, res) => {
                 }
             );
 
-            account = await Account.findById(account._id);
+            accountCache.delete(siteKey);
+            account = await accountFor(siteKey);
             site = account?.sites.find(item => item.key === siteKey);
         }
 

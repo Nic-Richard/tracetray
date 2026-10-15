@@ -70,6 +70,12 @@ app.use(require("./src/routes/export"));
 app.use(require("./src/routes/goals"));
 app.use(require("./src/routes/paths"));
 
+// Malformed or oversized bodies come from bots and broken clients; answer without logging a stack trace.
+app.use((err, req, res, next) => {
+    if (err.type === "entity.parse.failed" || err.type === "entity.too.large") return res.sendStatus(err.status || 400);
+    next(err);
+});
+
 async function startServer() {
     try {
         await mongoose.connect(MONGODB_URI);
