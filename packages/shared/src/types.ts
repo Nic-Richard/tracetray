@@ -18,14 +18,16 @@ export interface Usage {
   askQuestions: number;
 }
 
-export type GoalType = "click" | "page";
+export type GoalType = "click" | "form" | "page";
 
-/** A click goal matches id, else href, else text (and tag when given); a page goal matches page. */
+/** A click goal matches id, else href, else text (and tag when given); a form goal id, else name, else action; a page goal page. */
 export interface GoalMatch {
   id?: string | null;
   href?: string | null;
   text?: string | null;
   tag?: string | null;
+  name?: string | null;
+  action?: string | null;
   page?: string;
 }
 
@@ -49,9 +51,35 @@ export interface Goal {
 }
 
 export interface GoalList {
+  /** Whether the plan includes form goals (Ultra). */
+  form_goals?: boolean;
   goals: Goal[];
   main_goals: { page: string; goal: string }[];
   cap: number;
+}
+
+/** A form sent on the site recently, for picking a form goal. */
+export interface FormSeen {
+  id: string | null;
+  name: string | null;
+  action: string | null;
+  sent: number;
+  page: string;
+}
+
+export interface PathStep {
+  page: string;
+  /** Journeys that reached this step after every earlier one. */
+  all: number;
+  desktop: number;
+  mobile: number;
+}
+
+export interface PathFunnel {
+  id: string;
+  name: string;
+  days: number;
+  steps: PathStep[];
 }
 
 export interface GoalInput {

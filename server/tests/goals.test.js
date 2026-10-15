@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { clickHits, pageGoalMarks, journeysOf, parseGoal, matchChanged, appliesTo } = require("../src/lib/goals");
+const { eventHits, pageGoalMarks, journeysOf, parseGoal, matchChanged, appliesTo } = require("../src/lib/goals");
 
 const site = "https://shop.example";
 const click = (target, extra = {}) => ({ type: "click", tag: "SPAN", text: "icon", target, ...extra });
@@ -10,15 +10,15 @@ test("click goals match the button by id, link destination or label, whatever wa
     const byHref = { id: "g2", type: "click", match: { href: "/pricing" }, pages: [] };
     const byId = { id: "g3", type: "click", match: { id: "buy" }, pages: [] };
     const session = { page: `${site}/`, page_path: "/" };
-    assert.deepEqual(clickHits([byText, byHref, byId], session, [click({ tag: "BUTTON", id: null, text: "start  FREE trial", href: null })]), ["g1"]);
-    assert.deepEqual(clickHits([byText, byHref, byId], session, [click({ tag: "A", id: null, text: "Plans", href: "/pricing" })]), ["g2"]);
-    assert.deepEqual(clickHits([byText, byHref, byId], session, [click({ tag: "BUTTON", id: "buy", text: "Buy", href: null })]), ["g3"]);
-    assert.deepEqual(clickHits([byText], session, [{ type: "scroll" }, click(null)]), []);
+    assert.deepEqual(eventHits([byText, byHref, byId], session, [click({ tag: "BUTTON", id: null, text: "start  FREE trial", href: null })]), ["g1"]);
+    assert.deepEqual(eventHits([byText, byHref, byId], session, [click({ tag: "A", id: null, text: "Plans", href: "/pricing" })]), ["g2"]);
+    assert.deepEqual(eventHits([byText, byHref, byId], session, [click({ tag: "BUTTON", id: "buy", text: "Buy", href: null })]), ["g3"]);
+    assert.deepEqual(eventHits([byText], session, [{ type: "scroll" }, click(null)]), []);
 });
 
 test("clicks recorded before the tracker named the button still match on the element itself", () => {
     const goal = { id: "g1", type: "click", match: { text: "Buy now" }, pages: [] };
-    assert.deepEqual(clickHits([goal], { page: `${site}/` }, [{ type: "tap", tag: "BUTTON", id: null, text: "Buy now" }]), ["g1"]);
+    assert.deepEqual(eventHits([goal], { page: `${site}/` }, [{ type: "tap", tag: "BUTTON", id: null, text: "Buy now" }]), ["g1"]);
 });
 
 test("a goal limited to some pages only counts there, by group or by real address", () => {
@@ -47,7 +47,7 @@ test("page goals mark the earlier pages of a journey that reaches the goal page,
 test("goal input is checked and cleaned, and only match or page changes need past visits rechecked", () => {
     assert.match(parseGoal({ type: "click", name: "Trial", match: {} }).error, /button or link/);
     assert.match(parseGoal({ type: "page", name: "Thanks", match: { page: "/thanks" } }).error, /page/);
-    assert.match(parseGoal({ type: "visit", name: "x" }).error, /click goal or a page goal/);
+    assert.match(parseGoal({ type: "visit", name: "x" }).error, /click, form or page goal/);
     const { goal } = parseGoal({ type: "click", name: "  Start   trial ", match: { text: " Start  free trial ", tag: "button" }, pages: ["javascript:x", `${site}/`] });
     assert.equal(goal.name, "Start trial");
     assert.deepEqual(goal.match, { id: null, href: null, text: "Start free trial", tag: "BUTTON" });
@@ -75,4 +75,30 @@ test("a goal's target is a share of visits, kept through renames and clearable",
     assert.equal(parseGoal({ name: "Checkout page" }, goal).goal.target, 0.05);
     assert.equal(parseGoal({ name: "Checkout", target: null }, goal).goal.target, null);
     assert.match(parseGoal({ name: "Checkout", target: 5 }, goal).error, /between 0% and 100%/);
+});
+
+test("form goals match a sent form by id, else name, else where it posts, and never by field values", () => {
+    const sent = form => ({ type: "form_submit", form });
+    const byId = { id: "f1", type: "form", match: { id: "signup" }, pages: [] };
+    const byName = { id: "f2", type: "form", match: { name: "contact" }, pages: [] };
+    const byAction = { id: "f3", type: "form", match: { action: "/subscribe" }, pages: [] };
+    const session = { page: `${site}/`, page_path: "/" };
+    assert.deepEqual(eventHits([byId, byName, byAction], session, [sent({ id: "signup", name: null, action: "/join" })]), ["f1"]);
+    assert.deepEqual(eventHits([byId, byName, byAction], session, [sent({ id: null, name: "contact", action: "/x" })]), ["f2"]);
+    assert.deepEqual(eventHits([byId, byName, byAction], session, [sent({ id: null, name: null, action: "/subscribe" })]), ["f3"]);
+    assert.deepEqual(eventHits([byId], session, [click({ tag: "BUTTON", id: "signup", text: "Sign up", href: null })]), []);
+    assert.match(parseGoal({ type: "form", name: "Signup", match: {} }).error, /form/);
+    assert.deepEqual(parseGoal({ type: "form", name: "Signup", match: { id: " signup " } }).goal.match, { id: "signup", name: null, action: null });
+});
+
+test("an expected path counts steps reached in order, ignoring pages in between", () => {
+    const { parsePath, stepsReached } = require("../src/lib/paths");
+    const steps = [`${site}/products/:product`, `${site}/cart`, `${site}/checkout`];
+    const visit = (page, path) => ({ page: `${site}${page}`, page_path: path });
+    assert.equal(stepsReached([visit("/", "/"), visit("/products/:product", "/products/tent"), visit("/journal", "/journal"), visit("/cart", "/cart")], steps), 2);
+    assert.equal(stepsReached([visit("/cart", "/cart"), visit("/products/:product", "/products/tent")], steps), 1);
+    assert.equal(stepsReached([visit("/products/:product", "/products/a"), visit("/cart", "/cart"), visit("/checkout", "/checkout")], steps), 3);
+    assert.match(parsePath({ name: "Buy", steps: [steps[0]] }).error, /2 to 6/);
+    assert.match(parsePath({ name: "Buy", steps: [steps[0], steps[0]] }).error, /only be one step/);
+    assert.deepEqual(parsePath({ name: " Buy ", steps }).path.steps, steps);
 });

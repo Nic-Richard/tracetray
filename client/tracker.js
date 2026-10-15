@@ -432,6 +432,18 @@ document.addEventListener("visibilitychange", () => {
     }
 });
 
+// A sent form, named by its id, name and where it posts (same rules as links). Never any field or its value.
+document.addEventListener("submit", (e) => {
+    const form = e.target;
+    if (!form || form.tagName !== "FORM") return;
+    let action = null;
+    try {
+        const u = new URL(form.getAttribute("action") || window.location.href, window.location.href);
+        action = /^https?:$/.test(u.protocol) ? (u.origin === window.location.origin ? u.pathname : u.hostname) : u.protocol;
+    } catch(err) {}
+    logEvent("form_submit", { form: { id: form.id || null, name: form.getAttribute("name") || null, action: action } });
+}, true);
+
 window.addEventListener("pagehide", () => exportSession());
 
 window.sendTestSession = exportSession;

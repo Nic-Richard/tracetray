@@ -1,7 +1,7 @@
 // Marks visits that reached a goal (session.goal_hits) and counts them in the daily page rows
 // (page_days.goals.<id>), so goal rates read small daily rows instead of every visit.
 const { Account, Session, PageDay } = require("../db/models");
-const { clickHits, pageGoalMarks, journeysOf, appliesTo, isGoalPage } = require("./goals");
+const { eventHits, pageGoalMarks, journeysOf, appliesTo, isGoalPage } = require("./goals");
 const { dayOf } = require("./pageDays");
 const logger = require("./logger");
 
@@ -28,7 +28,7 @@ async function markHits(siteKey, sessionId, goalIds, { page, path, startTime }) 
 async function markBatch(site, session, events, isNew) {
     const goals = site.goals || [];
     if (!goals.length) return;
-    const hits = clickHits(goals, session, events);
+    const hits = eventHits(goals, session, events);
     if (hits.length) await markHits(site.key, session.session_id, hits, { page: session.page, path: session.page_path, startTime: session.start_time });
 
     // Landing on a goal page marks the visitor's earlier pages in the same journey.
@@ -74,18 +74,18 @@ async function recountGoal(siteKey, goalId, fromDay = null) {
     if (ops.length) await PageDay.bulkWrite(ops, { ordered: false });
 }
 
-// Applies a goal to stored visits: clicks back 90 days (how long click detail is kept), pages back 13 months.
+// Applies a goal to stored visits: clicks and forms back 90 days (how long event detail is kept), pages back 13 months.
 async function backfillGoal(siteKey, goal, now = Date.now()) {
     await Session.updateMany({ site_key: siteKey, goal_hits: goal.id }, { $pull: { goal_hits: goal.id } });
     const marks = new Map();
-    if (goal.type === "click") {
+    if (goal.type === "click" || goal.type === "form") {
         const cursor = Session.aggregate([
             { $match: { site_key: siteKey, start_time: { $gte: now - CLICK_LOOKBACK_DAYS * DAY_MS }, "events.0": { $exists: true } } },
             { $project: { _id: 0, session_id: 1, page: 1, page_path: 1,
-                events: { $filter: { input: "$events", cond: { $in: ["$$this.type", ["click", "tap"]] } } } } },
+                events: { $filter: { input: "$events", cond: { $in: ["$$this.type", ["click", "tap", "form_submit"]] } } } } },
             { $match: { "events.0": { $exists: true } } }
         ]).allowDiskUse(true).cursor();
-        for await (const s of cursor) if (clickHits([goal], s, s.events).length) marks.set(s.session_id, [goal.id]);
+        for await (const s of cursor) if (eventHits([goal], s, s.events).length) marks.set(s.session_id, [goal.id]);
     } else {
         const cursor = Session.find(
             { site_key: siteKey, visitor_id: { $ne: null }, start_time: { $gte: now - PAGE_LOOKBACK_DAYS * DAY_MS } },

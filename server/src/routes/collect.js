@@ -102,10 +102,10 @@ router.post("/collect", async (req, res) => {
         if (TRACETRAY_MODE === "production" && account.plan === "none" && !account.delete_after) return res.sendStatus(204);
 
         // Past the plan's monthly visits a visit keeps its summary but not its raw events. Busy pages keep
-        // full detail for a sample of visits; the rest keep only clicks and taps, which goals need.
+        // full detail for a sample of visits; the rest keep only clicks, taps and sent forms, which goals need.
         const overAllowance = await overVisitAllowance(account);
         const detailed = !overAllowance && inSample(sessionId, await detailRate(account, siteKey, page));
-        const keptEvents = overAllowance ? [] : detailed ? events : events.filter(e => e?.type === "click" || e?.type === "tap");
+        const keptEvents = overAllowance ? [] : detailed ? events : events.filter(e => e?.type === "click" || e?.type === "tap" || e?.type === "form_submit");
 
         // Worked out here rather than sent by the tracker, which stores nothing on the visitor's device.
         // A visit keeps the ID from its first batch, even if it runs past midnight.

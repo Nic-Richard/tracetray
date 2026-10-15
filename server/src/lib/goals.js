@@ -1,8 +1,8 @@
-// Goals: what a page exists for. A click goal matches a link or button; a page goal matches a later page in
-// the same journey. Pure functions only; marking visits and counting lives in goalHits.js.
+// Goals: what a page exists for. A click goal matches a link or button, a form goal a sent form, and a page goal
+// a later page in the same journey. Pure functions only; marking visits and counting lives in goalHits.js.
 const crypto = require("crypto");
 
-const TYPES = ["click", "page"];
+const TYPES = ["click", "form", "page"];
 const JOURNEY_GAP_MS = 30 * 60 * 1000;
 
 const clean = value => typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
@@ -48,9 +48,19 @@ function clickMatches(goal, event) {
     return false;
 }
 
-// Click goals reached by one batch of a visit's events.
-function clickHits(goals, session, events) {
-    return goals.filter(goal => goal.type === "click" && appliesTo(goal, session) && events.some(e => clickMatches(goal, e)))
+function formMatches(goal, event) {
+    if (goal.type !== "form" || event?.type !== "form_submit" || !event.form) return false;
+    const match = goal.match, form = event.form;
+    if (match.id) return form.id === match.id;
+    if (match.name) return form.name === match.name;
+    if (match.action) return form.action === match.action;
+    return false;
+}
+
+// Click and form goals reached by one batch of a visit's events.
+function eventHits(goals, session, events) {
+    return goals.filter(goal => (goal.type === "click" || goal.type === "form") && appliesTo(goal, session)
+        && events.some(e => clickMatches(goal, e) || formMatches(goal, e)))
         .map(goal => goal.id);
 }
 
@@ -88,7 +98,7 @@ function pageGoalMarks(goals, journey) {
 function parseGoal(input, existing = null) {
     const name = clean(input?.name).slice(0, 60);
     const type = existing?.type || input?.type;
-    if (!TYPES.includes(type)) return { error: "pick a click goal or a page goal" };
+    if (!TYPES.includes(type)) return { error: "pick a click, form or page goal" };
     if (!name) return { error: "give the goal a name" };
 
     const raw = input?.match || existing?.match || {};
@@ -101,6 +111,13 @@ function parseGoal(input, existing = null) {
             tag: clean(raw.tag).toUpperCase().slice(0, 20) || null
         };
         if (!match.id && !match.href && !match.text) return { error: "choose the button or link this goal is for" };
+    } else if (type === "form") {
+        match = {
+            id: clean(raw.id).slice(0, 120) || null,
+            name: clean(raw.name).slice(0, 120) || null,
+            action: clean(raw.action).slice(0, 2000) || null
+        };
+        if (!match.id && !match.name && !match.action) return { error: "choose the form this goal is for" };
     } else {
         const page = clean(raw.page).slice(0, 2000);
         if (!/^https?:\/\//.test(page)) return { error: "choose the page this goal is for" };
@@ -122,4 +139,4 @@ function matchChanged(before, after) {
     return JSON.stringify([before.match, [...(before.pages || [])].sort()]) !== JSON.stringify([after.match, [...(after.pages || [])].sort()]);
 }
 
-module.exports = { clickHits, clickMatches, pageGoalMarks, journeysOf, appliesTo, isGoalPage, pageNames, parseGoal, matchChanged, JOURNEY_GAP_MS };
+module.exports = { eventHits, clickMatches, formMatches, pageGoalMarks, journeysOf, appliesTo, isGoalPage, pageNames, parseGoal, matchChanged, JOURNEY_GAP_MS };

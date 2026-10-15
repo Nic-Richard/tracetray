@@ -4,6 +4,7 @@ import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
 import { useAskAbout } from "../lib/askLink";
+import ExpectedPaths from "../components/ExpectedPaths";
 
 function pathLabel(path: string): string {
   return path.split(/ -> | → /).map(pageLabel).join(" → ");
@@ -46,6 +47,7 @@ export default function Journeys() {
         <h1 className="section-title">Journeys</h1>
         <p className="tab-intro">How visitors move through {site.name}: where they arrive, where they go next, and where they leave. It follows each visitor across pages, so it covers the whole site.</p>
       </div>
+      <ExpectedPaths />
       {visitors === 0 ? (
         <section className="panel"><div className="empty"><b>No journeys yet</b><p>Journeys appear once visitors view more than one page.</p></div></section>
       ) : (

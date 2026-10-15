@@ -2,9 +2,9 @@ const express = require("express");
 const router = express.Router();
 const { getAuth } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
-const { Account, PageDay } = require("../db/models");
+const { Account, PageDay, Session } = require("../db/models");
 const { resolveSiteKey } = require("../lib/siteAccount");
-const { limitsFor } = require("../lib/limits");
+const { limitsFor, hasFeature } = require("../lib/limits");
 const { PLANS } = require("../lib/plans");
 const { parseGoal, matchChanged, appliesTo, isGoalPage } = require("../lib/goals");
 const { queueBackfill, removeGoalMarks, goalRate, goalWeeks, mainGoalFor, milestoneCrossed, nextMilestone } = require("../lib/goalHits");
@@ -41,6 +41,7 @@ router.get("/api/goals", requireAuth(), async (req, res) => {
         ]) : [];
         const byGoal = new Map(totals.map(t => [t._id, t]));
         res.json({
+            form_goals: hasFeature(found.account, "formGoals"),
             goals: goals.map(goal => {
                 const all = byGoal.get(goal.id)?.all || 0, week = byGoal.get(goal.id)?.week || 0;
                 return { ...view(goal), reached_last_7_days: week, reached_all_time: all, next_milestone: nextMilestone(all), milestone_this_week: milestoneCrossed(all - week, all) };
@@ -63,6 +64,9 @@ router.post("/api/goals", requireAuth(), async (req, res) => {
         if (goals.length >= cap) return res.status(400).json({ error: `your plan allows ${cap} goals per website; remove one or upgrade`, limit_reached: "goals" });
         const parsed = parseGoal(req.body);
         if (parsed.error) return res.status(400).json({ error: parsed.error });
+        if (parsed.goal.type === "form" && !hasFeature(found.account, "formGoals")) {
+            return res.status(403).json({ error: "form goals are part of Ultra", limit_reached: "plan" });
+        }
         const goal = { ...parsed.goal, backfill: "queued", created_at: new Date() };
         found.site.goals = [...goals, goal];
         await found.account.save();
@@ -110,6 +114,26 @@ router.delete("/api/goals/:id", requireAuth(), async (req, res) => {
     } catch (err) {
         logger.error("delete goal error:", err);
         res.status(500).json({ error: "couldn't remove the goal" });
+    }
+});
+
+// Forms sent on the site in the last 30 days, for picking a form goal.
+router.get("/api/forms", requireAuth(), async (req, res) => {
+    try {
+        const found = await loadSite(req, res);
+        if (!found) return;
+        const forms = await Session.aggregate([
+            { $match: { site_key: found.site.key, start_time: { $gte: Date.now() - 30 * DAY_MS }, "events.type": "form_submit" } },
+            { $unwind: "$events" },
+            { $match: { "events.type": "form_submit" } },
+            { $group: { _id: { id: "$events.form.id", name: "$events.form.name", action: "$events.form.action" }, sent: { $sum: 1 }, page: { $first: "$page" } } },
+            { $sort: { sent: -1 } },
+            { $limit: 20 }
+        ]);
+        res.json(forms.map(f => ({ id: f._id.id || null, name: f._id.name || null, action: f._id.action || null, sent: f.sent, page: f.page })));
+    } catch (err) {
+        logger.error("forms error:", err);
+        res.status(500).json({ error: "couldn't load your forms" });
     }
 });
 

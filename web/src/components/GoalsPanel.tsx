@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useLocation } from "react-router";
-import { pageLabel, percent, type Goal, type GoalType } from "@tracetray/shared";
+import { pageLabel, percent, type FormSeen, type Goal, type GoalType } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
 import { describeGoal } from "./GoalLine";
+
+const formLabel = (form?: FormSeen) => !form ? "Form" : form.id ? `Form #${form.id}` : form.name ? `Form “${form.name}”` : `Form to ${form.action}`;
 
 const asPercent = (value: number) => percent(value, value < 0.1 ? 1 : 0);
 
@@ -107,6 +109,8 @@ export default function GoalsPanel() {
   const [name, setName] = useState("");
   const [text, setText] = useState("");
   const [target, setTarget] = useState("");
+  const [form, setForm] = useState("");
+  const forms = useLoad(() => type === "form" ? api.forms(siteKey) : null, [api, siteKey, type]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -126,9 +130,13 @@ export default function GoalsPanel() {
     event.preventDefault();
     setSaving(true); setError("");
     try {
-      const match = type === "click" ? { text } : { page: target };
-      await api.addGoal(siteKey, { name: name || (type === "click" ? text : pageLabel(target)), type, match });
-      setName(""); setText(""); setTarget("");
+      const sent = forms.data?.[Number(form)];
+      const match = type === "click" ? { text }
+        : type === "form" ? (sent?.id ? { id: sent.id } : sent?.name ? { name: sent.name } : { action: sent?.action })
+        : { page: target };
+      const fallback = type === "click" ? text : type === "form" ? formLabel(sent) : pageLabel(target);
+      await api.addGoal(siteKey, { name: name || fallback, type, match });
+      setName(""); setText(""); setTarget(""); setForm("");
       list.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "The goal wasn't saved");
@@ -139,7 +147,7 @@ export default function GoalsPanel() {
 
   const goals = list.data?.goals || [];
   const full = list.data ? goals.length >= list.data.cap : false;
-  const ready = type === "click" ? text.trim() : target;
+  const ready = type === "click" ? text.trim() : type === "form" ? form : target;
   return (
     <section className="panel" id="goals">
       <div className="panel-head">
@@ -147,7 +155,7 @@ export default function GoalsPanel() {
         {list.data && <div className="end"><span className="ask-note">{goals.length} of {list.data.cap}</span></div>}
       </div>
       <div className="panel-body setup-copy">
-        <p>A goal is what a page is for: a button or link people click, or a page they go on to, like checkout or a thank-you page. Each page then shows how many visits reached it, and new goals are checked against past visits too.</p>
+        <p>A goal is what a page is for: a button or link people click, a form they send, or a page they go on to, like checkout or a thank-you page. Each page then shows how many visits reached it, and new goals are checked against past visits too.</p>
         {list.error && <p className="form-error">{list.error}</p>}
         {list.data && (
           <ul className="rule-list goal-list">
@@ -160,10 +168,16 @@ export default function GoalsPanel() {
             <div className="seg" role="group" aria-label="Kind of goal">
               <button type="button" className={type === "click" ? "on" : ""} onClick={() => setType("click")}>Clicks a button or link</button>
               <button type="button" className={type === "page" ? "on" : ""} onClick={() => setType("page")}>Goes on to a page</button>
+              <button type="button" className={type === "form" ? "on" : ""} onClick={() => setType("form")} disabled={!list.data.form_goals} title={list.data.form_goals ? undefined : "Included with Ultra"}>Sends a form{list.data.form_goals ? "" : " (Ultra)"}</button>
             </div>
             <div className="inline-form">
               {type === "click" ? (
                 <input value={text} onChange={event => setText(event.target.value)} placeholder="Button or link text, like Start free trial" aria-label="Button or link text" maxLength={80} />
+              ) : type === "form" ? (
+                <select value={form} onChange={event => setForm(event.target.value)} aria-label="Form">
+                  <option value="">{forms.data?.length === 0 ? "No forms sent in the last 30 days" : "Choose a form"}</option>
+                  {(forms.data || []).map((f, i) => <option key={i} value={i}>{formLabel(f)} · sent {f.sent.toLocaleString()} times on {pageLabel(f.page)}</option>)}
+                </select>
               ) : (
                 <select value={target} onChange={event => setTarget(event.target.value)} aria-label="Page">
                   <option value="">Choose a page</option>

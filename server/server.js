@@ -68,6 +68,7 @@ app.use(require("./src/routes/email"));
 app.use(require("./src/routes/compare"));
 app.use(require("./src/routes/export"));
 app.use(require("./src/routes/goals"));
+app.use(require("./src/routes/paths"));
 
 async function startServer() {
     try {

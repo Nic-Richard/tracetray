@@ -18,6 +18,7 @@ const Account = mongoose.model("Account", new mongoose.Schema({
         page_changes: [{ id: String, page: String, day: String, note: String, created_at: Date }],
         goals: [{ _id: false, id: String, name: String, type: { type: String }, match: Object, pages: [String], target: Number, backfill: String, backfill_at: Date, created_at: Date }],
         main_goals: [{ _id: false, page: String, goal: String }],
+        paths: [{ _id: false, id: String, name: String, steps: [String], created_at: Date }],
         regrouping_at: Date,
         created_at: Date
     }],

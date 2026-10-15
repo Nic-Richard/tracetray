@@ -7,6 +7,7 @@ import { useLoad } from "../lib/useLoad";
 
 export function describeGoal(goal: Pick<GoalRate, "type" | "match">): string {
   if (goal.type === "page") return `Goes on to ${goal.match.page ? new URL(goal.match.page).pathname : "a page"}`;
+  if (goal.type === "form") return `Sends the form ${goal.match.id ? `#${goal.match.id}` : goal.match.name ? `“${goal.match.name}”` : `to ${goal.match.action}`}`;
   if (goal.match.href) return `Clicks a link to ${goal.match.href}`;
   if (goal.match.text) return `Clicks “${goal.match.text}”`;
   return `Clicks #${goal.match.id}`;

@@ -1,6 +1,6 @@
 import type {
   Account, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, ChangeComparison, Config, EmailList, EmailPrefs,
-  Goal, GoalInput, GoalList, GoalRates, GoalTrend, GroupMembers, Journey, MemberSort, PageChange, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
+  FormSeen, Goal, GoalInput, GoalList, PathFunnel, GoalRates, GoalTrend, GroupMembers, Journey, MemberSort, PageChange, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
   SitesResponse, Stats, Timeseries, UsageResponse, UxTrends, Win
 } from "./types";
 
@@ -76,6 +76,10 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     removeGoal: (siteKey: string, id: string) => request<{ deleted: boolean }>("DELETE", `/api/goals/${encodeURIComponent(id)}`, { siteKey }),
     setMainGoal: (siteKey: string, page: string, goal: string | null) => request<{ page: string; goal: string | null }>("PUT", "/api/main-goal", { siteKey, body: { page, goal } }),
     goalRates: (siteKey: string, page: string, days: 7 | 30 | 90 = 30) => request<GoalRates>("GET", "/api/goal-rates", { siteKey, query: { page, days } }),
+    forms: (siteKey: string) => request<FormSeen[]>("GET", "/api/forms", { siteKey }),
+    paths: (siteKey: string, days: 7 | 30 | 90 = 30) => request<{ paths: PathFunnel[]; cap: number }>("GET", "/api/paths", { siteKey, query: { days } }),
+    addPath: (siteKey: string, path: { name: string; steps: string[] }) => request<{ id: string }>("POST", "/api/paths", { siteKey, body: path }),
+    removePath: (siteKey: string, id: string) => request<{ deleted: boolean }>("DELETE", `/api/paths/${encodeURIComponent(id)}`, { siteKey }),
     goalTrend: (siteKey: string, page: string) => request<GoalTrend>("GET", "/api/goal-trend", { siteKey, query: { page } }),
     wins: (siteKey: string) => request<Win[]>("GET", "/api/wins", { siteKey }),
     compare: (siteKey: string, page: string, day: string) => request<ChangeComparison>("GET", "/api/compare", { siteKey, query: { page, day } }),
