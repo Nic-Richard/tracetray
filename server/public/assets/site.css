@@ -88,7 +88,7 @@ p, li, dd, td, th, summary { text-wrap: pretty; }
 .plan .price span { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 4px; }
 .plan .price-note { font-size: 14px; color: var(--muted); min-height: 1.6em; }
 .plan .btn { align-self: end; width: 100%; }
-/* Visits allowance on a straight-line scale, so the bar shows how much room each plan really gives. */
+/* Visits allowance on a square-root scale: Ultra still reads as the most room without Pro looking empty. */
 .meter { display: grid; gap: 6px; font-size: 14.5px; color: var(--ink-2); }
 .meter i { display: block; height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; }
 .meter i::before { content: ""; display: block; height: 100%; width: var(--fill); min-width: 6px; border-radius: 6px; background: var(--heat); background-size: calc(100% / var(--share, 1)) 100%; }
@@ -120,7 +120,7 @@ p, li, dd, td, th, summary { text-wrap: pretty; }
 .pricing-faq summary { cursor: pointer; font-weight: 600; font-size: 18px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
 .pricing-faq summary::-webkit-details-marker { display: none; }
 .pricing-faq summary::after { content: "+"; color: var(--muted); font-size: 22px; line-height: 1; }
-.pricing-faq details[open] summary::after { content: "2"; }
+.pricing-faq details[open] summary::after { content: "\2212"; }
 .pricing-faq summary:focus-visible { outline: 3px solid var(--hot); outline-offset: 3px; }
 .pricing-faq details p { color: var(--ink-2); margin-top: 10px; max-width: 62ch; }
 .error { display: none; max-width: 880px; margin: 20px auto 0; padding: 12px 16px; border-radius: 12px; color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, var(--paper)); }
