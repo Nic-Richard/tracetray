@@ -57,6 +57,25 @@ function normalisePage(url) {
     }
 }
 
+// The link or button a click belongs to, so a click on an icon inside a button still names the button.
+// Links keep only their path on this site, the domain elsewhere, or the scheme (mailto:, tel:), never a query.
+const ACTIONABLE = "a[href], button, [role='button'], input[type='submit'], input[type='button'], summary, label";
+
+function actionTarget(el) {
+    const found = el && el.closest ? el.closest(ACTIONABLE) : null;
+    if (!found) return null;
+    let href = null;
+    if (found.tagName === "A") {
+        try {
+            const u = new URL(found.href, window.location.href);
+            if (!/^https?:$/.test(u.protocol)) href = u.protocol;
+            else href = u.origin === window.location.origin ? u.pathname : u.hostname;
+        } catch(e) {}
+    }
+    const text = (found.innerText || found.value || found.getAttribute("aria-label") || "").trim().replace(/\s+/g, " ").slice(0, 80);
+    return { tag: found.tagName, id: found.id || null, text: text || null, href: href };
+}
+
 const sessionData = {
     session_id:  sessionId,
     device_type: DEVICE_TYPE,
@@ -252,6 +271,7 @@ if (!IS_MOBILE) {
             id: target.id || null,
             classes: target.className || null,
             text: target.innerText ? target.innerText.slice(0, 50) : null,
+            target: actionTarget(target),
             page: window.location.pathname
         });
     });
@@ -339,6 +359,7 @@ if (IS_MOBILE) {
             id: target.id || null,
             classes: typeof target.className === "string" ? target.className : null,
             text: target.innerText ? target.innerText.slice(0, 50) : null,
+            target: actionTarget(target),
             page: window.location.pathname,
             ...getPageMetrics()
         });
