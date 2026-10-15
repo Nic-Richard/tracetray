@@ -4,13 +4,17 @@ import { BrowserRouter } from "react-router";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 import { createApi } from "@tracetray/shared";
 import { ApiProvider } from "./api";
+import { writeStorage } from "./lib/storage";
 import App from "./App";
 import "./styles.css";
 
 function SignedInOnly({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth();
   useEffect(() => {
-    if (isLoaded && !isSignedIn) window.location.replace("/sign-in.html");
+    if (!isLoaded) return;
+    // The public pages only load Clerk (and its cookies) for browsers marked here.
+    writeStorage("tt-signed-in", isSignedIn ? "1" : null);
+    if (!isSignedIn) window.location.replace("/sign-in.html");
   }, [isLoaded, isSignedIn]);
   return isLoaded && isSignedIn ? <>{children}</> : null;
 }
