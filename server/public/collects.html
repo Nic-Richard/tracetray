@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Exactly what the TraceTray tracker collects from your visitors, what it never collects, how visits are grouped without cookies, and how long data is kept.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://tracetray.com/collects.html">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#141724">
+<title>What TraceTray Collects | TraceTray</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css?v=4">
+<script>try { const t = localStorage.getItem("tt-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+</head>
+<body>
+<header class="top-bar">
+  <div class="wrap top">
+    <a class="logo" href="/"><img src="/logo-mark.svg" alt="">TraceTray</a>
+    <nav>
+      <a href="/#how">How it works</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/#faq">FAQ</a>
+      <button type="button" class="theme" id="theme" aria-label="Switch theme">
+        <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+      </button>
+      <a class="btn" href="/sign-in.html">Sign in</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="page-head">
+    <div class="wrap narrow">
+      <h1>What TraceTray collects</h1>
+      <p class="updated">Last updated: October 15, 2026</p>
+      <p>Everything the TraceTray tracker sends from your visitors' browsers, what it never touches, and how long it's kept. Written for site owners deciding whether TraceTray fits their privacy policy.</p>
+    </div>
+  </section>
+  <div class="wrap narrow legal">
+    <section class="legal-section">
+      <h2>What the tracker collects</h2>
+      <table class="data-table">
+        <thead><tr><th>What</th><th>Used for</th></tr></thead>
+        <tbody>
+          <tr><td>Cursor movement: position on the page and timing</td><td>Cursor speed, how widely attention ranges, where on the page people spend time</td></tr>
+          <tr><td>Pauses: when the cursor or scrolling stops, and for how long</td><td>Reading and hesitation</td></tr>
+          <tr><td>Clicks and taps: position, the element's tag, ID and class names, and up to 50 characters of its visible text (a button label, for&nbsp;example)</td><td>Which buttons and links get used, and how long people wait before clicking</td></tr>
+          <tr><td>Scrolling: direction, distance and how far down the page</td><td>Scroll depth and people scrolling back to compare</td></tr>
+          <tr><td>Page address without its query string, and the previous page's address the same way</td><td>Which page a visit belongs to, and journeys between pages</td></tr>
+          <tr><td>The page's height and the window's height, and whether the device is a phone or a computer</td><td>Measuring positions fairly across screen sizes, and keeping phone and desktop analysis separate</td></tr>
+          <tr><td>When the visit started and ended</td><td>Visit length, engagement and daily counts</td></tr>
+          <tr><td>A random visit ID made fresh for each page view</td><td>Joining the batches of one page view&nbsp;together</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="legal-section">
+      <h2>What it never collects</h2>
+      <ul>
+        <li>Anything typed: no keystrokes, and nothing entered into forms.</li>
+        <li>What's on the page: no screenshots, video, recordings or copies of page content.</li>
+        <li>Query strings, so search terms, email addresses or tokens in a page's address aren't sent.</li>
+        <li>IP addresses: the server uses one only for a moment (see below) and never writes it down, including in its access logs.</li>
+        <li>Cookies, or anything else stored on the visitor's device.</li>
+        <li>Names, email addresses, account details or anything that identifies a visitor from one day to the next.</li>
+      </ul>
+    </section>
+
+    <section class="legal-section">
+      <h2>How visits are grouped without cookies</h2>
+      <p>To see journeys across pages, TraceTray needs to know that two page views came from the same visit. Instead of storing an ID in the browser, the server mixes a random value with your site's key, the visitor's IP address and browser details, and keeps only the scrambled result.</p>
+      <p>The random value changes every day and the old one is deleted, so the same person gets a new, unrelated ID each day and IDs can't be traced back to an IP address. A journey ends after 30 minutes without activity. The IP address is also used, in memory only, to limit how many requests one address can send in a minute.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>Where it's kept, and for how long</h2>
+      <ul>
+        <li>Visits, including their movement data, are stored in TraceTray's database for as long as your account exists. How much history the dashboard shows depends on your plan.</li>
+        <li>After a subscription ends, your website data is kept for 30 days, with a notice 7 days before it's deleted.</li>
+        <li>Encrypted database backups are kept for 30 days.</li>
+        <li>Data is processed in the United States, on TraceTray's server and with the providers listed in the <a href="/privacy.html">privacy policy</a>. It isn't sold, shared or used for ads.</li>
+      </ul>
+    </section>
+
+    <section class="legal-section">
+      <h2>For your own privacy policy</h2>
+      <p>Your visitors should know that you use behavioural analytics. A sample paragraph you can adapt:</p>
+      <blockquote class="sample">We use TraceTray to understand how visitors use this website. It records cursor movement, pauses, clicks, taps and scrolling on our pages, without cookies and without storing anything on your device. It doesn't record what you type, the content of our pages, or your IP address. Page views from one visit are grouped with an identifier that changes every day. TraceTray processes this data for us in the United States.</blockquote>
+      <p>Whether you also need consent depends on your other tools and where your visitors are, so check with your own adviser. For a data processing agreement or other questions, write to <a href="mailto:support@tracetray.com">support@tracetray.com</a>.</p>
+    </section>
+  </div>
+</main>
+<footer>
+  <div class="wrap">
+    <a class="logo" href="/"><img src="/logo-mark.svg" alt="">TraceTray</a>
+    <a href="/sign-in.html">Sign in</a><a href="mailto:support@tracetray.com">Contact</a><a href="/pricing.html">Pricing</a><a href="/collects.html">What we collect</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a>
+    <span>&copy; 2026 TraceTray</span>
+  </div>
+</footer>
+<script src="/assets/site.js?v=1" data-track></script>
+</body>
+</html>

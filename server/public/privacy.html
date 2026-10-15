@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/site.css?v=3">
+<link rel="stylesheet" href="/assets/site.css?v=4">
 <script>try { const t = localStorage.getItem("tt-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body>
@@ -49,7 +49,7 @@
             <ul>
                 <li>account information from Clerk or a connected sign-in provider, such as your Clerk user ID, email address, name, profile image, account timestamps, and authentication status;</li>
                 <li>account settings, including your generated TraceTray site key, website URL, selected plan, and account creation date;</li>
-                <li>website interaction data sent through the TraceTray tracker, including cursor coordinates, cursor movement timing, pauses, clicks, taps, scrolling, page URLs, referrer URLs, session timing, device category, a randomly generated session identifier, and a daily visitor identifier described in section 8;</li>
+                <li>website interaction data sent through the TraceTray tracker, including cursor coordinates, cursor movement timing, pauses, clicks, taps, scrolling, page and referrer addresses without their query strings, session timing, device category, a randomly generated session identifier, and a daily visitor identifier described in section 8;</li>
                 <li>limited information about clicked or tapped page elements, such as the element tag, ID, CSS classes, and up to 50 characters of visible element text;</li>
                 <li>analysis data, including calculated interaction features, browsing-pattern groups, statistical results, summaries, suggestions, and historical analysis results;</li>
                 <li>bug reports, including the category, description, dashboard section, page URL, browser user agent, account identifiers, and submission time;</li>
@@ -104,7 +104,7 @@
 
         <section class="legal-section">
             <h2>8. Cookies, local storage, and visitor identifiers</h2>
-            <p>The TraceTray tracker does not set cookies or store anything on a website visitor's device. To group one person's page views into a browsing journey, TraceTray's server creates a visitor identifier by hashing a random value that changes every day together with the website's key, the visitor's IP address and browser details. The IP address is not stored, and each day's random value is deleted once the next day begins, so identifiers from different days cannot be linked to each other or traced back to a person. Visitors are not recognized from one day to the next.</p>
+            <p>The TraceTray tracker does not set cookies or store anything on a website visitor's device. To group one person's page views into a browsing journey, TraceTray's server creates a visitor identifier by hashing a random value that changes every day together with the website's key, the visitor's IP address and browser details. The IP address is not stored, and each day's random value is deleted once the next day begins, so identifiers from different days cannot be linked to each other or traced back to a person. Visitors are not recognized from one day to the next. Requests from the tracker are not written to TraceTray's server access logs. <a href="/collects.html">What TraceTray collects</a> lists every field.</p>
             <p>Older versions of the tracker kept a visitor identifier in the browser's local storage; the current tracker removes it. On TraceTray's own website, Clerk's sign-in cookies are only set once you sign in, and only browsers that have signed in before load Clerk on the public pages. Browser storage keeps preferences such as light or dark mode and remembers that you've signed in.</p>
             <p>TraceTray does not currently use behavioural tracking data for advertising.</p>
         </section>
@@ -141,7 +141,7 @@
 
         <section class="legal-section">
             <h2>14. International processing</h2>
-            <p>TraceTray and its providers may process information in countries other than the country where an account holder or website visitor is located. Those countries may have different data-protection laws.</p>
+            <p>TraceTray and its providers may process information in countries other than the country where an account holder or website visitor is located. Those countries may have different data-protection&nbsp;laws.</p>
         </section>
 
         <section class="legal-section">
@@ -159,7 +159,7 @@
 <footer>
   <div class="wrap">
     <a class="logo" href="/"><img src="/logo-mark.svg" alt="">TraceTray</a>
-    <a href="/sign-in.html">Sign in</a><a href="mailto:support@tracetray.com">Contact</a><a href="/pricing.html">Pricing</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a>
+    <a href="/sign-in.html">Sign in</a><a href="mailto:support@tracetray.com">Contact</a><a href="/pricing.html">Pricing</a><a href="/collects.html">What we collect</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a>
     <span>&copy; 2026 TraceTray</span>
   </div>
 </footer>

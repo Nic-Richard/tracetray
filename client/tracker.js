@@ -160,7 +160,7 @@ function getPageMetrics() {
     };
 }
 
-logEvent("page_load", { page: window.location.href, ...getPageMetrics() });
+logEvent("page_load", { page: normalisePage(window.location.href), ...getPageMetrics() });
 
 function handleRouteChange() {
     const nextPage = normalisePage(window.location.href);
@@ -169,7 +169,7 @@ function handleRouteChange() {
     const previousPage = sessionData.page;
     exportSession();
     resetSession(nextPage, previousPage);
-    logEvent("page_load", { page: window.location.href, ...getPageMetrics() });
+    logEvent("page_load", { page: normalisePage(window.location.href), ...getPageMetrics() });
 }
 
 for (const method of ["pushState", "replaceState"]) {

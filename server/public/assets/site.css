@@ -19,8 +19,10 @@ html { scroll-padding-top: 80px; }
 body { margin: 0; font-family: var(--font); font-size: 17px; line-height: 1.6; color: var(--ink); background: var(--paper); min-height: 100vh; display: flex; flex-direction: column; }
 main { flex: 1; }
 a { color: var(--link); }
-h1, h2, h3 { font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; margin: 0; }
+h1, h2, h3 { font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; margin: 0; text-wrap: balance; }
 p { margin: 0; }
+/* Stops a lone word ending a paragraph or list item. */
+p, li, dd, td, summary { text-wrap: pretty; }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; width: 100%; }
 .wrap.narrow { max-width: 808px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 22px; border-radius: 12px; font: inherit; font-weight: 600; text-decoration: none; border: 1px solid var(--line); color: var(--ink); background: var(--paper); cursor: pointer; }
@@ -61,6 +63,11 @@ p { margin: 0; }
 .legal-section p, .legal-section li { color: var(--ink-2); }
 .legal-section p + p, .legal-section p + ul, .legal-section ul + p { margin-top: 12px; }
 .legal-section ul { padding-left: 22px; display: grid; gap: 8px; margin: 0; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 15.5px; }
+.data-table th { text-align: left; color: var(--muted); font-weight: 600; font-size: 14px; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+.data-table td { vertical-align: top; padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); color: var(--ink-2); }
+.data-table td:first-child { color: var(--ink); width: 55%; }
+.sample { margin: 12px 0; padding: 16px 20px; border-left: 3px solid var(--warm); background: var(--canvas); border-radius: 0 12px 12px 0; color: var(--ink-2); }
 
 /* Pricing */
 .plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 880px; margin: 0 auto; padding-top: 56px; }
