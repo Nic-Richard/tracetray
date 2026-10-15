@@ -1,5 +1,5 @@
 import type {
-  Account, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, Config,
+  Account, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, Config, EmailPrefs,
   GroupMembers, Journey, MemberSort, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
   SitesResponse, Stats, Timeseries, UsageResponse, UxTrends
 } from "./types";
@@ -49,6 +49,8 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     config: () => request<Config>("GET", "/api/config"),
     account: () => request<Account>("POST", "/api/account"),
     usage: () => request<UsageResponse>("GET", "/api/usage"),
+    emailPrefs: () => request<EmailPrefs>("GET", "/api/email-prefs"),
+    setEmailPrefs: (prefs: { weekly_summary: boolean }) => request<EmailPrefs>("PATCH", "/api/email-prefs", { body: prefs }),
 
     sites: () => request<SitesResponse>("GET", "/api/sites"),
     createSite: (name: string, url?: string) => request<SitesResponse & { site: Site }>("POST", "/api/sites", { body: { name, url } }),

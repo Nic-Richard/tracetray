@@ -11,6 +11,7 @@ const { MONGODB_URI, PORT } = require("./src/config");
 const { startSessionCleanupJob } = require("./src/jobs/sessionCleanup");
 const { startEventRetentionJob } = require("./src/jobs/eventRetention");
 const { startDataHoldJob } = require("./src/jobs/dataHold");
+const { startWeeklySummaryJob } = require("./src/jobs/weeklySummary");
 
 const app = express();
 // nginx is the only proxy in front, so req.ip is the address it saw.
@@ -56,6 +57,7 @@ app.use(require("./src/routes/stats"));
 app.use(require("./src/routes/analysis"));
 app.use(require("./src/routes/ask"));
 app.use(require("./src/routes/pageGroups"));
+app.use(require("./src/routes/email"));
 
 async function startServer() {
     try {
@@ -72,3 +74,4 @@ startServer();
 startSessionCleanupJob();
 startEventRetentionJob();
 startDataHoldJob();
+startWeeklySummaryJob();

@@ -323,6 +323,43 @@ function Plan() {
   );
 }
 
+function Emails() {
+  const api = useApi();
+  const prefs = useLoad(() => api.emailPrefs(), [api]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const on = prefs.data?.weekly_summary ?? false;
+  const available = prefs.data?.weekly_summary_available !== false;
+
+  async function toggle() {
+    setSaving(true);
+    setError("");
+    try {
+      await api.setEmailPrefs({ weekly_summary: !on });
+      prefs.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "That didn't save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="panel">
+      <div className="panel-head"><h2>Emails</h2></div>
+      <div className="panel-body setup-copy">
+        <label className="toggle-row">
+          <input type="checkbox" checked={on} onChange={toggle} disabled={!prefs.data || saving || !available} />
+          <span><b>Weekly summary</b><small>{available
+            ? "Every Monday: last week's visits, busiest pages, what moved most and any shifts in visitor groups."
+            : "Included with Pro: last week's visits, busiest pages, what moved most and any shifts in visitor groups."}</small></span>
+        </label>
+        {error && <p className="page-status error" style={{ padding: 0 }}>{error}</p>}
+      </div>
+    </section>
+  );
+}
+
 export default function Setup() {
   return (
     <div className="content setup">
@@ -334,6 +371,7 @@ export default function Setup() {
       <PageGroupRules />
       <Websites />
       <Plan />
+      <Emails />
       <nav className="site-footer" aria-label="TraceTray">
         <a href="/">TraceTray home</a>
         <a href="/pricing.html">Pricing</a>

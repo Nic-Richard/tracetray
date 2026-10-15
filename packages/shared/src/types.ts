@@ -18,6 +18,12 @@ export interface Usage {
   askQuestions: number;
 }
 
+export interface EmailPrefs {
+  weekly_summary: boolean;
+  /** False on plans without the weekly summary. */
+  weekly_summary_available?: boolean;
+}
+
 export interface UsageResponse {
   mode: "beta" | "production";
   plan: Plan;

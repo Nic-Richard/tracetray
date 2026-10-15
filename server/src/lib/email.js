@@ -7,7 +7,7 @@ const logger = require("./logger");
 const REPLY_TO = "support@tracetray.com";
 let client;
 
-async function sendEmail({ to, subject, text, html }) {
+async function sendEmail({ to, subject, text, html, unsubscribe = null }) {
     if (!process.env.EMAIL_FROM) {
         logger.info(`email not sent (no EMAIL_FROM)  to=${to}  subject=${subject}`);
         return { sent: false };
@@ -23,7 +23,12 @@ async function sendEmail({ to, subject, text, html }) {
         Destination: { ToAddresses: [to] },
         Content: { Simple: {
             Subject: { Data: subject, Charset: charset },
-            Body: { Text: { Data: text, Charset: charset }, Html: { Data: html, Charset: charset } }
+            Body: { Text: { Data: text, Charset: charset }, Html: { Data: html, Charset: charset } },
+            // Lets mail apps show their own one-click unsubscribe button.
+            ...(unsubscribe ? { Headers: [
+                { Name: "List-Unsubscribe", Value: `<${unsubscribe}>` },
+                { Name: "List-Unsubscribe-Post", Value: "List-Unsubscribe=One-Click" }
+            ] } : {})
         } }
     }));
     logger.info(`email sent  to=${to}  subject=${subject}`);
