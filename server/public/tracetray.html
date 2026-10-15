@@ -89,8 +89,8 @@ p, li, dd, summary { text-wrap: pretty; }
 .hero-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 56px; align-items: center; padding: 64px 0 72px; }
 .hero-copy { display: grid; gap: 24px; pointer-events: none; }
 .hero-copy a { pointer-events: auto; }
-.hero h1 { font-size: clamp(40px, 5vw, 64px); }
-.hero .lede { font-size: 19px; color: #c9cdd9; max-width: 42ch; }
+.hero h1 { font-size: clamp(40px, 5vw, 64px); text-wrap: wrap; }
+.hero .lede { font-size: 19px; color: #c9cdd9; max-width: 41ch; }
 .hero .actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .screen { border-radius: 14px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.7); transform: perspective(2200px) rotateY(-5deg) rotateX(2deg); transform-origin: left center; pointer-events: none; }
 .hud { display: flex; gap: 40px; align-items: end; padding: 22px 0 28px; border-top: 1px solid rgba(255, 255, 255, 0.1); pointer-events: none; }
@@ -243,7 +243,7 @@ footer span { margin-left: auto; }
     <canvas id="trail" aria-hidden="true"></canvas>
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <h1>Understand how people use your site.</h1>
+        <h1>Understand how people use your&nbsp;site.</h1>
         <p class="lede">Privacy-friendly behavioural analytics that goes beyond pageviews. TraceTray turns lightweight interaction data into visitor groups, journeys and clear recommendations, using machine learning, with no cookies or session recordings.</p>
         <div class="actions">
           <a class="btn light" href="/sign-in.html" data-auth-cta="hero">Try it free</a>
