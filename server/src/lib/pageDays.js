@@ -72,6 +72,30 @@ async function knownPaths(siteKey, limit = 50000) {
     return rows.map(r => r._id);
 }
 
+// Re-files daily counts from before `before` (all of them when it's null) under the site's current rules,
+// one day at a time so memory stays flat.
+async function regroupDays(siteKey, rules, before) {
+    const filter = { site_key: siteKey, ...(before ? { day: { $lt: before } } : {}) };
+    let day = null, merged = new Map(), ids = [];
+    const flush = async () => {
+        if (!ids.length) return;
+        await PageDay.deleteMany({ _id: { $in: ids } });
+        await PageDay.insertMany([...merged.values()], { ordered: false });
+        merged = new Map(); ids = [];
+    };
+    for await (const row of PageDay.find(filter).sort({ day: 1 }).lean().cursor()) {
+        if (row.day !== day) { await flush(); day = row.day; }
+        let page = row.page, path = row.path;
+        try { ({ page, path } = groupPage(new URL(row.page).origin + row.path, rules)); } catch { /* keep the row as it was */ }
+        const key = `${page}|${path}`;
+        const sum = merged.get(key) || { site_key: siteKey, page, path, day: row.day, sessions: 0, desktop: 0, mobile: 0, clicks: 0 };
+        for (const field of ["sessions", "desktop", "mobile", "clicks"]) sum[field] += row[field] || 0;
+        merged.set(key, sum);
+        ids.push(row._id);
+    }
+    await flush();
+}
+
 // Re-files every stored session under the site's current rules, then rebuilds its daily counts.
 async function regroupSite(siteKey, rules) {
     const started = Date.now();
@@ -89,9 +113,14 @@ async function regroupSite(siteKey, rules) {
     }
     if (ops.length) changed += (await Session.bulkWrite(ops, { ordered: false })).modifiedCount;
 
-    await PageDay.deleteMany({ site_key: siteKey });
+    // Visits are deleted after SESSION_RETENTION_DAYS, partway through a day, so daily counts up to and
+    // including the oldest stored visit's day are regrouped from the counts themselves; the rest are rebuilt.
+    const oldest = await Session.findOne({ site_key: siteKey, start_time: { $ne: null } }, { start_time: 1 }).sort({ start_time: 1 }).lean();
+    const firstDay = oldest ? dayOf(Number(oldest.start_time) + DAY_MS) : null;
+    await regroupDays(siteKey, rules, firstDay);
+    if (firstDay) await PageDay.deleteMany({ site_key: siteKey, day: { $gte: firstDay } });
     await Session.aggregate([
-        { $match: { site_key: siteKey, page: { $ne: null }, page_path: { $ne: null }, start_time: { $ne: null } } },
+        { $match: { site_key: siteKey, page: { $ne: null }, page_path: { $ne: null }, start_time: { $gte: firstDay ? Date.parse(`${firstDay}T00:00:00Z`) : 0 } } },
         { $group: {
             _id: {
                 page: "$page",
@@ -117,4 +146,4 @@ async function regroupSite(siteKey, rules) {
     return changed;
 }
 
-module.exports = { countSession, pageMembers, groupSizes, knownPaths, regroupSite, dayOf };
+module.exports = { countSession, pageMembers, groupSizes, knownPaths, regroupSite, regroupDays, dayOf };

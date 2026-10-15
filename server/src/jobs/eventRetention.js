@@ -20,13 +20,25 @@ async function trimOldEvents(days, now = Date.now()) {
     return result.modifiedCount || 0;
 }
 
+// Deletes visits entirely once they're older than SESSION_RETENTION_DAYS. Daily page counts and analysis
+// results are kept, so long-term history doesn't depend on the visits themselves.
+async function deleteOldSessions(days, now = Date.now()) {
+    const result = await Session.deleteMany({ start_time: { $lt: now - days * DAY_MS } });
+    return result.deletedCount || 0;
+}
+
 function startEventRetentionJob() {
     const days = Number(process.env.RAW_EVENT_RETENTION_DAYS);
-    if (!Number.isFinite(days) || days < 7) return;
+    const sessionDays = Number(process.env.SESSION_RETENTION_DAYS);
+    const trimEvents = Number.isFinite(days) && days >= 7;
+    const deleteSessions = Number.isFinite(sessionDays) && sessionDays >= 90;
+    if (!trimEvents && !deleteSessions) return;
     const run = async () => {
         try {
-            const trimmed = await trimOldEvents(days);
+            const trimmed = trimEvents ? await trimOldEvents(days) : 0;
             if (trimmed) logger.info(`trimmed raw events from ${trimmed} sessions older than ${days} days`);
+            const deleted = deleteSessions ? await deleteOldSessions(sessionDays) : 0;
+            if (deleted) logger.info(`deleted ${deleted} sessions older than ${sessionDays} days`);
         } catch (err) {
             logger.error("event retention error:", err);
         }
@@ -35,4 +47,4 @@ function startEventRetentionJob() {
     setInterval(run, 6 * 60 * 60 * 1000);
 }
 
-module.exports = { startEventRetentionJob, trimOldEvents };
+module.exports = { startEventRetentionJob, trimOldEvents, deleteOldSessions };
