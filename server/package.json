@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
+    "@aws-sdk/client-sesv2": "^3.1152.0",
     "@clerk/express": "^2.1.29",
     "cors": "^2.8.6",
     "dotenv": "^16.4.0",
