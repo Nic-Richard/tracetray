@@ -167,9 +167,10 @@ router.get("/api/goal-rates", requireAuth(), async (req, res) => {
         const session = { page };
         const goals = (found.site.goals || []).filter(g => appliesTo(g, session) && !isGoalPage(g, session));
         const main = (found.site.main_goals || []).find(m => m.page === page)?.goal;
-        goals.sort((a, b) => (b.id === main) - (a.id === main));
         const rates = await Promise.all(goals.map(async goal => ({ ...view(goal), main: goal.id === main, ...await goalRate(found.site.key, goal, { page, days }) })));
-        res.json({ page, days, goals: rates });
+        rates.sort((a, b) => (b.main - a.main) || (b.reached - a.reached));
+        // Site-wide click and form goals show only where they were used, or every page would list them at 0%.
+        res.json({ page, days, goals: rates.filter(r => r.main || r.type === "page" || r.reached > 0 || r.pages.length > 0) });
     } catch (err) {
         logger.error("goal rates error:", err);
         res.status(500).json({ error: "couldn't load goal rates" });

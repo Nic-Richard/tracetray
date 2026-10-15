@@ -144,13 +144,17 @@ async function removeGoalMarks(siteKey, goalId) {
     await PageDay.updateMany({ site_key: siteKey, [`goals.${goalId}`]: { $exists: true } }, { $unset: { [`goals.${goalId}`]: "" } });
 }
 
-// The goal a page is judged by: its main goal, else the first goal that counts there.
+// The goal a page is judged by: its main goal, else the goal its visits reached most in the last 30 days.
 async function mainGoalFor(siteKey, page) {
     const account = await Account.findOne({ "sites.key": siteKey }, { sites: 1 }).lean();
     const site = account?.sites?.find(item => item.key === siteKey);
     const goals = (site?.goals || []).filter(g => appliesTo(g, { page }) && !isGoalPage(g, { page }));
     const main = (site?.main_goals || []).find(m => m.page === page)?.goal;
-    return goals.find(g => g.id === main) || goals[0] || null;
+    const chosen = goals.find(g => g.id === main);
+    if (chosen || goals.length <= 1) return chosen || goals[0] || null;
+    const reached = await Promise.all(goals.map(g => goalRate(siteKey, g, { page, days: 30 }).then(r => r.reached)));
+    const best = reached.indexOf(Math.max(...reached));
+    return reached[best] > 0 ? goals[best] : goals[0];
 }
 
 // Weekly goal rates (weeks start Monday, UTC) for the last `weeks` weeks, and the best full week with enough visits.
