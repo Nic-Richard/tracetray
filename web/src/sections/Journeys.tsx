@@ -45,7 +45,7 @@ export default function Journeys() {
     <div className="content">
       <div className="section-head">
         <h1 className="section-title">Journeys</h1>
-        <p className="tab-intro">How visitors move through {site.name}: where they arrive, where they go next, and where they leave. It follows each visitor across pages, so it covers the whole site.</p>
+        <p className="tab-intro">How visitors moved through {site.name} in the last 30 days: where they arrive, where they go next, and where they leave. It follows each visitor across pages, so it covers the whole site.</p>
       </div>
       <ExpectedPaths />
       {visitors === 0 ? (

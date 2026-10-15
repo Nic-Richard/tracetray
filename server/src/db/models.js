@@ -34,6 +34,7 @@ const sessionSchema = new mongoose.Schema({
     referrer:    String
 }, { strict: false });
 sessionSchema.index({ site_key: 1, start_time: -1 });
+sessionSchema.index({ site_key: 1, session_id: 1 });
 sessionSchema.index({ site_key: 1, visitor_id: 1, start_time: 1 });
 sessionSchema.index({ site_key: 1, goal_hits: 1 });
 const Session = mongoose.model("Session", sessionSchema, "sessions");

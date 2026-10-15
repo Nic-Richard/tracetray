@@ -57,21 +57,19 @@ async function getTimeseries(siteKey, { days = 14, page = null } = {}) {
         ...(page ? { page } : {})
     };
 
-    const sessions = await Session.find(filter, { start_time: 1, device_type: 1, summary: 1, _id: 0 }).lean();
-
-    const byDay = {};
-    let engagedTotal = 0;
-
-    for (const s of sessions) {
-        const day = new Date(parseInt(s.start_time)).toISOString().slice(0, 10);
-        if (!byDay[day]) byDay[day] = { date: day, desktop: 0, mobile: 0, engaged: 0 };
-
-        const isMobile = s.device_type === "mobile";
-        byDay[day][isMobile ? "mobile" : "desktop"]++;
-
-        const engaged = (s.summary?.duration_ms || 0) > 5000 && (s.summary?.total_events || 0) > 3;
-        if (engaged) { byDay[day].engaged++; engagedTotal++; }
-    }
+    const isMobile = { $eq: ["$device_type", "mobile"] };
+    const rows = await Session.aggregate([
+        { $match: filter },
+        { $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: { $toDate: { $convert: { input: "$start_time", to: "long", onError: 0, onNull: 0 } } } } },
+            desktop: { $sum: { $cond: [isMobile, 0, 1] } },
+            mobile: { $sum: { $cond: [isMobile, 1, 0] } },
+            engaged: { $sum: { $cond: [{ $and: [{ $gt: [{ $ifNull: ["$summary.duration_ms", 0] }, 5000] }, { $gt: [{ $ifNull: ["$summary.total_events", 0] }, 3] }] }, 1, 0] } }
+        } }
+    ]);
+    const byDay = Object.fromEntries(rows.map(r => [r._id, { date: r._id, desktop: r.desktop, mobile: r.mobile, engaged: r.engaged }]));
+    const totalSessions = rows.reduce((sum, r) => sum + r.desktop + r.mobile, 0);
+    const engagedTotal = rows.reduce((sum, r) => sum + r.engaged, 0);
 
     const series = [];
     for (let i = days - 1; i >= 0; i--) {
@@ -81,9 +79,9 @@ async function getTimeseries(siteKey, { days = 14, page = null } = {}) {
 
     return {
         series,
-        total_sessions:   sessions.length,
+        total_sessions:   totalSessions,
         engaged_sessions: engagedTotal,
-        engagement_rate:  sessions.length > 0 ? engagedTotal / sessions.length : 0
+        engagement_rate:  totalSessions > 0 ? engagedTotal / totalSessions : 0
     };
 }
 
@@ -168,6 +166,8 @@ function topCounts(counts, limit, key) {
 
 const JOURNEY_GAP_MS = 30 * 60 * 1000;
 
+const MAX_TALLY_KEYS = 50000;
+
 const timeOf = value => typeof value === "number" ? value : Date.parse(value) || null;
 
 // One journey per visitor until they've been away for 30 minutes, matching Google Analytics' session rule.
@@ -191,29 +191,48 @@ function splitJourneys(sessions) {
     return journeys.map(j => j.pages);
 }
 
-async function getJourney(siteKey) {
-    const sessions = await Session.find(
-        { site_key: siteKey, end_time: { $ne: null }, visitor_id: { $ne: null } },
+// Journeys over the last `days`, read one visitor at a time so memory doesn't grow with traffic.
+async function getJourney(siteKey, { days = 30, now = Date.now() } = {}) {
+    const cursor = Session.find(
+        { site_key: siteKey, end_time: { $ne: null }, visitor_id: { $ne: null }, start_time: { $gte: now - days * DAY_MS } },
         { visitor_id: 1, page: 1, start_time: 1, end_time: 1, _id: 0 }
-    ).sort({ start_time: 1 }).lean();
+    ).sort({ visitor_id: 1, start_time: 1 }).lean().cursor();
 
-    const journeys = splitJourneys(sessions);
     const entryCounts = {}, exitCounts = {}, transitions = {}, pathCounts = {};
-    for (const j of journeys) {
-        entryCounts[j[0]] = (entryCounts[j[0]] || 0) + 1;
-        exitCounts[j[j.length - 1]] = (exitCounts[j[j.length - 1]] || 0) + 1;
+    let totalVisitors = 0, multiPageVisitors = 0;
+    // Distinct moves and paths can run into millions on big sites, so each tally stops taking new keys at a cap.
+    // Visitor IDs are hashes, so the visitors seen before the cap are a fair sample for the top lists.
+    const sizes = new Map();
+    const bump = (counts, key) => {
+        if (counts[key] === undefined) {
+            if ((sizes.get(counts) || 0) >= MAX_TALLY_KEYS) return;
+            sizes.set(counts, (sizes.get(counts) || 0) + 1);
+            counts[key] = 0;
+        }
+        counts[key]++;
+    };
+    const count = j => {
+        bump(entryCounts, j[0]);
+        bump(exitCounts, j[j.length - 1]);
         for (let i = 0; i < j.length - 1; i++) {
             const key = `${j[i]} -> ${j[i+1]}`;
-            transitions[key] = (transitions[key] || 0) + 1;
+            bump(transitions, key);
         }
         const path = j.slice(0, 3).join(" → ");
-        pathCounts[path] = (pathCounts[path] || 0) + 1;
+        bump(pathCounts, path);
+        totalVisitors++;
+        if (j.length > 1) multiPageVisitors++;
+    };
+    let visitor = null, visits = [];
+    const flush = () => { for (const j of splitJourneys(visits)) count(j); };
+    for await (const s of cursor) {
+        if (s.visitor_id !== visitor) { flush(); visitor = s.visitor_id; visits = []; }
+        visits.push(s);
     }
-
-    const totalVisitors     = journeys.length;
-    const multiPageVisitors = journeys.filter(j => j.length > 1).length;
+    flush();
 
     return {
+        days,
         total_visitors:       totalVisitors,
         multi_page_visitors:  multiPageVisitors,
         single_page_visitors: totalVisitors - multiPageVisitors,
@@ -234,19 +253,16 @@ function referrerHost(referrer, ownHost = null) {
 }
 
 async function getReferrers(siteKey, { days = 30, page = null, limit = 15, ownHost = null } = {}) {
-    const sessions = await Session.find({
-        site_key: siteKey,
-        end_time: { $ne: null },
-        start_time: { $gte: Date.now() - days * DAY_MS },
-        ...(page ? { page } : {})
-    }, { referrer: 1, _id: 0 }).lean();
-
+    const rows = await Session.aggregate([
+        { $match: { site_key: siteKey, end_time: { $ne: null }, start_time: { $gte: Date.now() - days * DAY_MS }, ...(page ? { page } : {}) } },
+        { $group: { _id: "$referrer", n: { $sum: 1 } } }
+    ]);
     const counts = {};
-    for (const s of sessions) {
-        const host = referrerHost(s.referrer, ownHost);
-        counts[host] = (counts[host] || 0) + 1;
+    for (const row of rows) {
+        const host = referrerHost(row._id, ownHost);
+        counts[host] = (counts[host] || 0) + row.n;
     }
-    return { days, total_sessions: sessions.length, sources: topCounts(counts, limit, "source") };
+    return { days, total_sessions: rows.reduce((sum, row) => sum + row.n, 0), sources: topCounts(counts, limit, "source") };
 }
 
 module.exports = {

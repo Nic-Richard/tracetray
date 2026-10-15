@@ -93,7 +93,7 @@ const TOOLS = [
     },
     {
         name: "get_visitor_journeys",
-        description: "Site-wide paths between pages: top entry pages, top exit pages, common page-to-page moves and common three-page paths, plus single-page versus multi-page visitor counts.",
+        description: "Site-wide paths between pages over the last 30 days: top entry pages, top exit pages, common page-to-page moves and common three-page paths, plus single-page versus multi-page visitor counts.",
         input_schema: { type: "object", properties: {}, additionalProperties: false }
     },
     {

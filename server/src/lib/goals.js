@@ -75,7 +75,9 @@ function journeysOf(sessions) {
             journeys.push(current);
         }
         current.push(s);
-        lastActive = Math.max(start, Date.parse(s.end_time) || start);
+        // End times are numbers from the tracker, or ISO text when the cleanup job closed the visit.
+        const end = typeof s.end_time === "number" ? s.end_time : Date.parse(s.end_time);
+        lastActive = Math.max(start, end || start);
     }
     return journeys;
 }
