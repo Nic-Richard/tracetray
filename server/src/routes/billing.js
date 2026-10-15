@@ -29,7 +29,7 @@ async function syncSubscription(filter, sub, extra = {}) {
     };
     const update = ended
         ? [{ $set: { ...extra, plan, subscription, delete_after: { $ifNull: ["$delete_after", new Date(Date.now() + DATA_HOLD_DAYS * 86400000)] } } }]
-        : [{ $set: { ...extra, plan, subscription } }, { $unset: "delete_after" }];
+        : [{ $set: { ...extra, plan, subscription } }, { $unset: ["delete_after", "deletion_notice_sent_at"] }];
     const result = await Account.updateOne(filter, update, { updatePipeline: true });
     return { plan, matched: result.matchedCount };
 }

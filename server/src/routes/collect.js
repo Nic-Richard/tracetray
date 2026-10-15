@@ -7,6 +7,7 @@ const logger = require("../lib/logger");
 const { groupPage } = require("../lib/pageGroups");
 const { countSession } = require("../lib/pageDays");
 const { overVisitAllowance } = require("../lib/limits");
+const { TRACETRAY_MODE } = require("../config");
 
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT = 240;
@@ -93,6 +94,9 @@ router.post("/collect", async (req, res) => {
 
         const { page, path } = groupPage(text(data.page, 2000), site.page_groups || []);
         const deviceType = data.device_type === "mobile" ? "mobile" : "desktop";
+
+        // In production an account with no plan only keeps collecting during its 30-day hold.
+        if (TRACETRAY_MODE === "production" && account.plan === "none" && !account.delete_after) return res.sendStatus(204);
 
         // Past the plan's monthly visits a visit keeps its summary but not its raw events.
         const keptEvents = await overVisitAllowance(account) ? [] : events;
