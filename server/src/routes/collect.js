@@ -125,7 +125,9 @@ router.post("/collect", async (req, res) => {
         const visitorId = await visitorIdFor({ siteKey, ip: req.ip, userAgent: req.get("user-agent"), language: req.get("accept-language") });
 
         // Kept outside the raw events so it outlives them (they're trimmed after RAW_EVENT_RETENTION_DAYS).
-        const depths = events.map(e => e?.scroll_depth).filter(d => typeof d === "number" && d >= 0 && d <= 1);
+        // Only scrolls and measured page loads count: other events can carry measurements taken before the page loaded.
+        const depths = events.filter(e => e.type === "scroll" || (e.type === "page_load" && e.measured === true))
+            .map(e => e.scroll_depth).filter(d => typeof d === "number" && d >= 0 && d <= 1);
 
         const now = Date.now();
         const startTime = visitTime(data.start_time, now);

@@ -3,7 +3,8 @@ module.exports = function scrollFeatures(session) {
     const scrolls = events.filter(e => e.type === "scroll");
     const pageLoad = events.find(e => e.type === "page_load");
 
-    let maxScrollDepth = typeof pageLoad?.scroll_depth === "number" ? pageLoad.scroll_depth : 0;
+    // Only a page_load measured after the page loaded has a real depth; earlier ones read as fully scrolled.
+    let maxScrollDepth = pageLoad?.measured === true && typeof pageLoad.scroll_depth === "number" ? pageLoad.scroll_depth : 0;
     let directionChanges = 0;
     let scrollBursts = scrolls.length > 0 ? 1 : 0;
     let upwardDistance = 0;

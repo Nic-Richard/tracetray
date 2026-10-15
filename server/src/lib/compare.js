@@ -16,7 +16,7 @@ async function windowMeasures(siteKey, page, from, to, goalId = null) {
             engaged: { $cond: [{ $and: [{ $gt: ["$summary.duration_ms", 5000] }, { $gt: ["$summary.total_events", 3] }] }, 1, 0] },
             duration: { $min: [{ $ifNull: ["$summary.duration_ms", 0] }, MAX_VISIT_MS] },
             actions: { $add: [{ $ifNull: ["$summary.clicks", 0] }, { $ifNull: ["$summary.taps", 0] }] },
-            depth: { $ifNull: ["$max_scroll_depth", { $max: "$events.scroll_depth" }] },
+            depth: { $ifNull: ["$max_scroll_depth", { $max: { $map: { input: { $filter: { input: { $ifNull: ["$events", []] }, cond: { $eq: ["$$this.type", "scroll"] } } }, in: "$$this.scroll_depth" } } }] },
             reached: { $cond: [{ $in: [goalId, { $ifNull: ["$goal_hits", []] }] }, 1, 0] }
         } },
         { $group: {

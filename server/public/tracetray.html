@@ -629,7 +629,7 @@ async function startTraceTrayTracker() {
   }
   window.TraceTray = { endpoint: `${window.location.origin}/collect`, key: siteKey };
   const script = document.createElement("script");
-  script.src = "/client/tracker.js?v=20261015-5";
+  script.src = "/client/tracker.js?v=20261015-7";
   script.async = true;
   document.head.appendChild(script);
 }

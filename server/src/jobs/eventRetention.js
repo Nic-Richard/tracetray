@@ -10,7 +10,7 @@ async function trimOldEvents(days, now = Date.now()) {
         { start_time: { $lt: now - days * DAY_MS }, "events.0": { $exists: true } },
         [
             { $set: {
-                max_scroll_depth: { $ifNull: ["$max_scroll_depth", { $max: "$events.scroll_depth" }] },
+                max_scroll_depth: { $ifNull: ["$max_scroll_depth", { $max: { $map: { input: { $filter: { input: { $ifNull: ["$events", []] }, cond: { $eq: ["$$this.type", "scroll"] } } }, in: "$$this.scroll_depth" } } }] },
                 events_trimmed_at: new Date(now)
             } },
             { $unset: "events" }

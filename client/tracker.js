@@ -185,7 +185,12 @@ function getPageMetrics() {
     };
 }
 
-logEvent("page_load", { page: normalisePage(window.location.href), ...getPageMetrics() });
+// Measured once the page has loaded: before that the page is no taller than the window, so it reads as fully scrolled.
+function logPageLoad() {
+    logEvent("page_load", { page: normalisePage(window.location.href), ...getPageMetrics(), measured: true });
+}
+if (document.readyState === "complete") logPageLoad();
+else window.addEventListener("load", logPageLoad, { once: true });
 
 function handleRouteChange() {
     const nextPage = normalisePage(window.location.href);
@@ -291,6 +296,7 @@ const MAX_ATTENTION_PAUSE = 30000;
 let attentionTimer = null;
 let openAttentionPause = null;
 let attentionContext = getPageMetrics();
+window.addEventListener("load", () => { attentionContext = getPageMetrics(); }, { once: true });
 
 function closeAttentionPause(endedBy) {
     clearTimeout(attentionTimer);

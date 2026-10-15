@@ -21,7 +21,7 @@ const trackPage = document.currentScript?.hasAttribute("data-track");
     if (!config.site_key) return;
     window.TraceTray = { endpoint: `${window.location.origin}/collect`, key: config.site_key };
     const script = document.createElement("script");
-    script.src = "/client/tracker.js?v=20261015-5";
+    script.src = "/client/tracker.js?v=20261015-7";
     script.async = true;
     document.head.appendChild(script);
   } catch (e) {
