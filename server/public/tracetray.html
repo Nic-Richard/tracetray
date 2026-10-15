@@ -168,15 +168,16 @@ section { padding: 104px 0; }
 .method li { display: block; padding-left: 14px; border-left: 3px solid var(--warm); }
 
 /* Pricing */
-.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 880px; }
-.plan { border: 1px solid var(--line); border-radius: 18px; padding: 32px; display: grid; gap: 16px; align-content: start; background: var(--paper); }
+.plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.plan { border: 1px solid var(--line); border-radius: 18px; padding: 32px; display: grid; gap: 16px; grid-template-rows: auto auto 1fr auto; background: var(--paper); }
 .plan.pro { background: linear-gradient(var(--paper), var(--paper)) padding-box, var(--heat) border-box; border: 2px solid transparent; }
-.plan header { display: flex; align-items: baseline; justify-content: space-between; }
+.plan header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .plans-note { margin-top: 20px; color: var(--muted); font-size: 15.5px; }
 .plan .soon { font-size: 14px; color: var(--muted); }
 .plan .price { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
 .plan .price small { font-size: 16px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
-.plan ul { margin: 0; padding-left: 20px; color: var(--ink-2); display: grid; gap: 6px; }
+.plan ul { margin: 0; padding-left: 20px; color: var(--ink-2); display: grid; gap: 6px; align-content: start; }
+.plan .btn { justify-content: center; }
 
 /* FAQ */
 .faq { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr); gap: 64px; }
@@ -421,35 +422,45 @@ footer span { margin-left: auto; }
   <section id="pricing">
     <div class="wrap">
       <div class="section-head">
-        <h2 id="pricing-title">Free during the beta</h2>
-        <p id="pricing-intro">Everything is free while TraceTray is in beta. After the beta, every plan starts with a 30-day free trial.</p>
+        <h2>Try any plan free for 30 days</h2>
+        <p>Cancel anytime during the trial and you won't be charged.</p>
       </div>
       <div class="plans">
         <div class="plan">
-          <header><h3>Starter</h3><span class="soon">After the beta</span></header>
+          <header><h3>Starter</h3></header>
           <div class="price">$12 <small>a month</small></div>
           <ul>
             <li>10,000 visits a month</li>
-            <li>50 pages tracked</li>
-            <li>One website, 6 months of history</li>
-            <li>50 Ask questions a month</li>
+            <li>One website</li>
+            <li>6 months of history</li>
+            <li>Weekly summary email</li>
           </ul>
-          <a class="btn primary" href="/sign-in" data-auth-cta="pricing">Start free</a>
+          <a class="btn" href="/pricing" data-auth-cta="pricing">Start free trial</a>
         </div>
         <div class="plan pro">
-          <header><h3>Pro</h3><span class="soon">After the beta</span></header>
+          <header><h3>Pro</h3><span class="soon">Most popular</span></header>
           <div class="price">$24 <small>a month</small></div>
           <ul>
             <li>100,000 visits a month</li>
-            <li>500 pages tracked</li>
-            <li>Five websites, 2 years of history</li>
-            <li>300 Ask questions a month</li>
-            <li>Full search across grouped pages</li>
+            <li>Five websites</li>
+            <li>2 years of history</li>
+            <li>Weekly automatic analysis</li>
           </ul>
-          <a class="btn" href="/sign-in" data-auth-cta="pricing">Try Pro</a>
+          <a class="btn primary" href="/pricing" data-auth-cta="pricing">Start free trial</a>
+        </div>
+        <div class="plan">
+          <header><h3>Ultra</h3></header>
+          <div class="price">$49 <small>a month</small></div>
+          <ul>
+            <li>1,000,000 visits a month</li>
+            <li>Ten websites</li>
+            <li>4 years of history</li>
+            <li>Priority support</li>
+          </ul>
+          <a class="btn" href="/pricing" data-auth-cta="pricing">Start free trial</a>
         </div>
       </div>
-      <p class="plans-note">Need more than five websites or 100,000 visits? <a href="mailto:support@tracetray.com">Get in touch</a> about Enterprise.</p>
+      <p class="plans-note"><a href="/pricing">Compare all plans</a> to see every limit and feature. Need more? <a href="mailto:support@tracetray.com?subject=TraceTray%20Enterprise">Get in touch</a> about Enterprise.</p>
     </div>
   </section>
 
@@ -623,15 +634,6 @@ async function startTraceTrayTracker() {
   document.head.appendChild(script);
 }
 startTraceTrayTracker();
-
-// Once the beta ends the same cards sell the trial.
-fetch("/api/config").then(r => r.json()).then(config => {
-  if (config.mode !== "production") return;
-  document.getElementById("pricing-title").textContent = "Try any plan free for 30 days";
-  document.getElementById("pricing-intro").textContent = "Cancel anytime during the trial and you won't be charged.";
-  document.querySelectorAll(".plan .soon").forEach(el => el.remove());
-  document.querySelectorAll('[data-auth-cta="pricing"]').forEach(el => { el.textContent = "Start free trial"; el.href = "/pricing"; });
-}).catch(() => {});
 
 // Clerk sets cookies, so it only loads for people the dashboard has marked as signed in;
 // first-time visitors get no cookies at all.

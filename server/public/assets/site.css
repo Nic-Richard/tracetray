@@ -22,7 +22,7 @@ a { color: var(--link); }
 h1, h2, h3 { font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; margin: 0; text-wrap: balance; }
 p { margin: 0; }
 /* Stops a lone word ending a paragraph or list item. */
-p, li, dd, td, summary { text-wrap: pretty; }
+p, li, dd, td, th, summary { text-wrap: pretty; }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; width: 100%; }
 .wrap.narrow { max-width: 808px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 22px; border-radius: 12px; font: inherit; font-weight: 600; text-decoration: none; border: 1px solid var(--line); color: var(--ink); background: var(--paper); cursor: pointer; }
@@ -70,18 +70,59 @@ p, li, dd, td, summary { text-wrap: pretty; }
 .sample { margin: 12px 0; padding: 16px 20px; border-left: 3px solid var(--warm); background: var(--canvas); border-radius: 0 12px 12px 0; color: var(--ink-2); }
 
 /* Pricing */
-.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 880px; margin: 0 auto; padding-top: 56px; }
-.plan { border: 1px solid var(--line); border-radius: 18px; padding: 32px; display: grid; gap: 16px; align-content: start; background: var(--paper); }
+.billing-switch { display: inline-flex; margin-top: 28px; padding: 4px; border-radius: 12px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.14); }
+.billing-switch button { font: inherit; font-size: 15px; font-weight: 600; height: 38px; padding: 0 16px; border-radius: 9px; border: 0; background: transparent; color: var(--graphite-ink); cursor: pointer; }
+.billing-switch button[aria-pressed="true"] { background: #fff; color: var(--graphite-deep); }
+.billing-switch button:focus-visible { outline: 3px solid var(--hot); outline-offset: 2px; }
+.billing-switch small { font-size: 13px; font-weight: 500; opacity: 0.75; margin-left: 4px; }
+.page-head.pricing-head { padding-bottom: 112px; }
+.plans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: -72px; position: relative; }
+.plan { border: 1px solid var(--line); border-radius: 18px; padding: 28px 24px; display: grid; gap: 14px; grid-row: span 5; grid-template-rows: subgrid; background: var(--paper); box-shadow: 0 12px 32px -18px rgba(20, 23, 36, 0.35); }
 .plan.featured { background: linear-gradient(var(--paper), var(--paper)) padding-box, var(--heat) border-box; border: 2px solid transparent; }
 .plan header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .plan h2 { font-size: 24px; letter-spacing: -0.02em; }
-.plan .badge { font-size: 14px; color: var(--muted); }
-.plan .price { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
-.plan .price sup { font-size: 0.5em; vertical-align: top; position: relative; top: 0.25em; }
-.plan .price span { font-size: 16px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
-.plan p { color: var(--ink-2); }
-.plan ul { margin: 0; padding-left: 20px; color: var(--ink-2); display: grid; gap: 6px; }
-.pricing-note { padding-top: 24px; padding-bottom: 88px; color: var(--muted); font-size: 15.5px; text-align: center; }
+.plan .badge { font-size: 13.5px; color: var(--muted); }
+.plan .for { color: var(--ink-2); font-size: 15.5px; }
+.plan .price { font-size: 44px; font-weight: 700; letter-spacing: -0.035em; line-height: 1; }
+.plan .price sup { font-size: 0.48em; vertical-align: top; position: relative; top: 0.22em; margin-right: 1px; }
+.plan .price span { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 4px; }
+.plan .price-note { font-size: 14px; color: var(--muted); min-height: 1.6em; }
+.plan .btn { align-self: end; width: 100%; }
+/* Visits allowance on a straight-line scale, so the bar shows how much room each plan really gives. */
+.meter { display: grid; gap: 6px; font-size: 14.5px; color: var(--ink-2); }
+.meter i { display: block; height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; }
+.meter i::before { content: ""; display: block; height: 100%; width: var(--fill); min-width: 6px; border-radius: 6px; background: var(--heat); background-size: calc(100% / var(--share, 1)) 100%; }
+.meter.open i { background: repeating-linear-gradient(90deg, var(--line) 0 8px, transparent 8px 13px); }
+.meter.open i::before { width: 100%; background: linear-gradient(90deg, var(--cool), var(--warm) 55%, var(--hot) 85%, transparent); }
+.pricing-error { display: none; margin-top: 16px; color: var(--danger); text-align: center; }
+.enterprise-line { margin-top: 20px; color: var(--muted); font-size: 15.5px; text-align: center; }
+
+.compare-plans { padding-top: 80px; }
+.compare-plans h2, .pricing-faq h2 { font-size: clamp(28px, 3vw, 36px); }
+.compare-scroll { margin-top: 28px; overflow-x: auto; }
+.plan-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 15.5px; }
+.plan-table th, .plan-table td { padding: 13px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.plan-table thead th { font-size: 17px; }
+.plan-table thead th span { display: block; font-size: 14px; font-weight: 500; color: var(--muted); }
+.plan-table tbody th { font-weight: 500; color: var(--ink); width: 32%; }
+.plan-table tbody th small { display: block; font-size: 13.5px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+.plan-table td { color: var(--ink-2); width: 17%; }
+.plan-table td.no { color: var(--muted); }
+.plan-table tr.group th { padding-top: 32px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; border-bottom: 2px solid var(--ink); }
+.plan-table .yes::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--heat); margin-right: 8px; vertical-align: 1px; }
+.plan-table .soon { font-size: 13px; color: var(--muted); }
+.plan-table tr.group span { position: sticky; left: 12px; }
+.scroll-hint { display: none; margin-top: 8px; font-size: 14.5px; color: var(--muted); }
+
+.pricing-faq { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr); gap: 64px; padding-top: 88px; padding-bottom: 96px; }
+.pricing-faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
+.pricing-faq details:first-child { border-top: 1px solid var(--line); }
+.pricing-faq summary { cursor: pointer; font-weight: 600; font-size: 18px; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.pricing-faq summary::-webkit-details-marker { display: none; }
+.pricing-faq summary::after { content: "+"; color: var(--muted); font-size: 22px; line-height: 1; }
+.pricing-faq details[open] summary::after { content: "2"; }
+.pricing-faq summary:focus-visible { outline: 3px solid var(--hot); outline-offset: 3px; }
+.pricing-faq details p { color: var(--ink-2); margin-top: 10px; max-width: 62ch; }
 .error { display: none; max-width: 880px; margin: 20px auto 0; padding: 12px 16px; border-radius: 12px; color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, var(--paper)); }
 
 /* Centred pages: sign-in and billing */
@@ -106,6 +147,13 @@ footer span { margin-left: auto; }
   .top nav a:not(.btn) { display: none; }
   .top nav { gap: 10px; }
   .plans { grid-template-columns: 1fr; }
+  .pricing-faq { grid-template-columns: 1fr; gap: 24px; }
+  .scroll-hint { display: block; }
+  .plan-table { min-width: 640px; font-size: 14.5px; }
+  .plan-table tbody tr:not(.group) th, .plan-table thead td { position: sticky; left: 0; z-index: 1; width: 150px; min-width: 150px; background: var(--paper); box-shadow: 1px 0 0 var(--line); }
+}
+@media (max-width: 1080px) and (min-width: 761px) {
+  .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
   .wrap { padding: 0 16px; }

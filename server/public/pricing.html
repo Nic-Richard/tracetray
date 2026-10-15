@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Try TraceTray free during the beta and explore behavioural web analytics for cursor movement, clicks, scrolling, pauses, and touch activity.">
+<meta name="description" content="TraceTray plans and pricing: Starter, Pro and Ultra, each with a 30-day free trial, and custom Enterprise plans. Compare visits, pages, websites, history and features.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://tracetray.com/pricing">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TraceTray">
-<meta property="og:title" content="TraceTray Beta and Pricing">
-<meta property="og:description" content="Try TraceTray free during the beta and explore behavioural web analytics for cursor movement, clicks, scrolling, pauses, and touch activity.">
+<meta property="og:title" content="TraceTray Pricing">
+<meta property="og:description" content="TraceTray plans and pricing: Starter, Pro and Ultra, each with a 30-day free trial, and custom Enterprise plans. Compare visits, pages, websites, history and features.">
 <meta property="og:url" content="https://tracetray.com/pricing">
 <meta property="og:image" content="https://tracetray.com/social-preview.png?v=4">
 <meta property="og:image:width" content="1200">
@@ -17,8 +17,8 @@
 <meta property="og:image:alt" content="Three TraceTray panels, attention, journeys and visitor groups, beside the headline Understand how people use your site">
 <meta property="og:locale" content="en_CA">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="TraceTray Beta and Pricing">
-<meta name="twitter:description" content="Try TraceTray free during the beta and explore behavioural web analytics for cursor movement, clicks, scrolling, pauses, and touch activity.">
+<meta name="twitter:title" content="TraceTray Pricing">
+<meta name="twitter:description" content="TraceTray plans and pricing: Starter, Pro and Ultra, each with a 30-day free trial, and custom Enterprise plans. Compare visits, pages, websites, history and features.">
 <meta name="twitter:image" content="https://tracetray.com/social-preview.png?v=4">
 <meta name="twitter:image:alt" content="Three TraceTray panels, attention, journeys and visitor groups, beside the headline Understand how people use your site">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -26,11 +26,11 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <meta name="theme-color" content="#141724">
-<title>TraceTray Beta and Pricing</title>
+<title>TraceTray Pricing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/site.css?v=4">
+<link rel="stylesheet" href="/assets/site.css?v=5">
 <script>try { const t = localStorage.getItem("tt-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body>
@@ -50,41 +50,97 @@
   </div>
 </header>
 <main>
-  <section class="page-head centred">
+  <section class="page-head pricing-head">
     <div class="wrap">
-      <h1 id="pricing-title">Try the TraceTray beta</h1>
-      <p id="pricing-intro">Everything is free while TraceTray is in beta. Paid plans arrive after the beta, with notice before anything changes.</p>
+      <h1>Plans and pricing</h1>
+      <p>Every plan starts with a 30-day free trial. Cancel anytime during the trial and you won't be charged. Prices are in US dollars.</p>
+      <div class="billing-switch" role="group" aria-label="Billing period">
+        <button type="button" data-interval="month" aria-pressed="true">Monthly</button>
+        <button type="button" data-interval="year" aria-pressed="false">Yearly <small>2 months free</small></button>
+      </div>
     </div>
   </section>
   <div class="wrap">
-    <div class="plans" id="pricing-grid">
+    <div class="plans">
       <div class="plan">
-        <header><h2 id="starter-name">Beta access</h2></header>
-        <div class="price" id="starter-price">Free</div>
-        <p id="starter-desc">The full tracker, dashboard and analysis while TraceTray is in beta.</p>
-        <ul id="starter-features">
-          <li>Desktop and mobile tracking</li>
-          <li>Visitor groups and&nbsp;recommendations</li>
-          <li>Journeys, attention and clicks</li>
-          <li>Ask your analytics</li>
-        </ul>
-        <button class="btn primary" id="btn-starter" type="button">Try the beta</button>
+        <header><h2>Starter</h2></header>
+        <p class="for">One website, getting to know its visitors.</p>
+        <div><div class="price" data-month="12" data-year="120"><sup>$</sup>12<span>a month</span></div><p class="price-note"></p></div>
+        <div class="meter" style="--fill: 1%; --share: 0.01"><i></i>10,000 visits a month</div>
+        <button class="btn" type="button" data-plan="starter">Start free trial</button>
       </div>
-      <div class="plan featured" id="pro-card">
-        <header><h2>Pro</h2><span class="badge" id="plan-badge">Planned</span></header>
-        <div class="price" id="pro-price">Coming soon</div>
-        <p id="pro-desc">Paid plans arrive after the beta, with unlimited visits.</p>
-        <ul id="pro-features">
-          <li>Unlimited visits</li>
-          <li>Up to 5 websites</li>
-          <li>Click and scroll breakdowns</li>
-          <li>Analysis history</li>
-        </ul>
-        <button class="btn" id="btn-pro" type="button" disabled>Not available yet</button>
+      <div class="plan featured">
+        <header><h2>Pro</h2><span class="badge">Most popular</span></header>
+        <p class="for">Growing sites, with room for five websites and weekly automatic analysis.</p>
+        <div><div class="price" data-month="24" data-year="240"><sup>$</sup>24<span>a month</span></div><p class="price-note"></p></div>
+        <div class="meter" style="--fill: 10%; --share: 0.1"><i></i>100,000 visits a month</div>
+        <button class="btn primary" type="button" data-plan="pro">Start free trial</button>
+      </div>
+      <div class="plan">
+        <header><h2>Ultra</h2></header>
+        <p class="for">Busy sites and teams running up to ten websites.</p>
+        <div><div class="price" data-month="49" data-year="490"><sup>$</sup>49<span>a month</span></div><p class="price-note"></p></div>
+        <div class="meter" style="--fill: 100%; --share: 1"><i></i>1,000,000 visits a month</div>
+        <button class="btn" type="button" data-plan="ultra">Start free trial</button>
+      </div>
+      <div class="plan">
+        <header><h2>Enterprise</h2></header>
+        <p class="for">Custom limits, invoicing and terms, agreed with you.</p>
+        <div><div class="price">Custom</div><p class="price-note"></p></div>
+        <div class="meter open"><i></i>As many visits as you need</div>
+        <a class="btn" href="mailto:support@tracetray.com?subject=TraceTray%20Enterprise">Get in touch</a>
       </div>
     </div>
-    <div class="error" id="error-msg"></div>
-    <p class="pricing-note" id="pricing-note">No card needed during the beta. After it, plans start at $12 a month, each with a 30-day free trial.</p>
+    <p class="pricing-error" id="error-msg" role="alert"></p>
+
+    <section class="compare-plans" aria-labelledby="compare-title">
+      <h2 id="compare-title">Compare plans</h2>
+      <p class="scroll-hint">Swipe the table sideways to see every plan.</p>
+      <div class="compare-scroll">
+        <table class="plan-table">
+          <thead>
+            <tr><td></td><th scope="col">Starter<span>$12 a month</span></th><th scope="col">Pro<span>$24 a month</span></th><th scope="col">Ultra<span>$49 a month</span></th><th scope="col">Enterprise<span>Custom</span></th></tr>
+          </thead>
+          <tbody>
+            <tr class="group"><th colspan="5" scope="colgroup"><span>Limits</span></th></tr>
+            <tr><th scope="row">Visits a month<small>One person viewing one page</small></th><td>10,000</td><td>100,000</td><td>1,000,000</td><td>Custom</td></tr>
+            <tr><th scope="row">Pages tracked<small>Every address counts, including each page in a group</small></th><td>50</td><td>500</td><td>2,000</td><td>Custom</td></tr>
+            <tr><th scope="row">Websites</th><td>1</td><td>5</td><td>10</td><td>Custom</td></tr>
+            <tr><th scope="row">History in the dashboard</th><td>6 months</td><td>2 years</td><td>4 years</td><td>Custom</td></tr>
+            <tr><th scope="row">Ask questions a month<small>Plain-language questions about your data</small></th><td>50</td><td>300</td><td>750</td><td>Custom</td></tr>
+            <tr class="group"><th colspan="5" scope="colgroup"><span>Analysis</span></th></tr>
+            <tr><th scope="row">Visitor groups and&nbsp;recommendations</th><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td></tr>
+            <tr><th scope="row">Journeys, attention and clicks</th><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td></tr>
+            <tr><th scope="row">Desktop and mobile analyzed&nbsp;separately</th><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td></tr>
+            <tr><th scope="row">Trends and before-and-after&nbsp;comparisons</th><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td></tr>
+            <tr><th scope="row">Goals<small>Judge every page by a click or a page reached</small></th><td class="yes">Unlimited <span class="soon">coming soon</span></td><td class="yes">Unlimited <span class="soon">coming soon</span></td><td class="yes">Unlimited <span class="soon">coming soon</span></td><td class="yes">Unlimited <span class="soon">coming soon</span></td></tr>
+            <tr><th scope="row">Form goals and expected paths</th><td class="no">Not included</td><td class="no">Not included</td><td class="yes">Included <span class="soon">coming soon</span></td><td class="yes">Included <span class="soon">coming soon</span></td></tr>
+            <tr class="group"><th colspan="5" scope="colgroup"><span>Keeping watch</span></th></tr>
+            <tr><th scope="row">Weekly summary email</th><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td></tr>
+            <tr><th scope="row">Weekly automatic analysis<small>Your busiest pages, refreshed every Sunday</small></th><td class="no">Not included</td><td class="yes">25 pages</td><td class="yes">100 pages</td><td class="yes">Custom</td></tr>
+            <tr><th scope="row">Alerts when visitor groups shift</th><td class="no">Not included</td><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td></tr>
+            <tr class="group"><th colspan="5" scope="colgroup"><span>Data and support</span></th></tr>
+            <tr><th scope="row">CSV export</th><td class="no">Not included</td><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td></tr>
+            <tr><th scope="row">Search every page in a group</th><td class="no">Busiest 10 pages</td><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Included</td></tr>
+            <tr><th scope="row">Email support</th><td class="yes">Included</td><td class="yes">Included</td><td class="yes">Priority</td><td class="yes">Priority</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="pricing-faq" aria-labelledby="faq-title">
+      <h2 id="faq-title">Questions about plans</h2>
+      <div>
+        <details><summary>What counts as a visit?</summary><p>One person viewing one page. Someone who reads three pages makes three visits. Visits are counted per calendar month and reset on the 1st.</p></details>
+        <details><summary>What counts as a page?</summary><p>Every distinct address on your site, ignoring anything after a question mark. When you group pages, such as all your product pages, each address in the group still counts toward the limit.</p></details>
+        <details><summary>What happens if I go over a limit?</summary><p>Nothing breaks and tracking carries on. Past your visit limit, new visits keep their summary but not their movement detail until the next month. Pages past your page limit are locked in the dashboard. Upgrading lifts either limit straight away.</p></details>
+        <details><summary>How does the free trial work?</summary><p>Every plan starts with 30 days free, once per account. Cancel anytime during the trial and you won't be charged. You'll get an email before it ends.</p></details>
+        <details><summary>Can I change plans later?</summary><p>Yes, from Billing in the dashboard. An upgrade takes effect straight away and you pay the difference for the rest of the billing period. If you cancel, your plan runs until the end of the period you've paid for.</p></details>
+        <details><summary>What happens to my data if I cancel?</summary><p>Your website data is kept for 30 days after your plan ends, in case you come back. You'll get an email 7 days before it's deleted.</p></details>
+        <details><summary>Is every visit analyzed on busy sites?</summary><p>Every visit is counted and keeps its summary, scroll depth, clicks and taps. On very busy pages, full movement detail is kept for a random sample of visits, which is plenty for accurate visitor groups. <a href="/collects">See exactly what TraceTray collects</a>.</p></details>
+        <details><summary>What does Enterprise include?</summary><p>The limits you need, invoices instead of card payments, and terms such as a data processing agreement. <a href="mailto:support@tracetray.com?subject=TraceTray%20Enterprise">Get in touch</a> and we'll put a plan together with you.</p></details>
+      </div>
+    </section>
   </div>
 </main>
 <footer>
@@ -96,63 +152,46 @@
 </footer>
 <script>
 let appMode = "beta";
+let interval = "month";
 
-async function subscribe(plan) {
-  const btnStarter = document.getElementById("btn-starter");
-  const btnPro = document.getElementById("btn-pro");
+const money = n => `<sup>$</sup>${n.toLocaleString("en-US")}`;
+
+function showInterval(next) {
+  interval = next;
+  document.querySelectorAll(".billing-switch button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.interval === interval)));
+  document.querySelectorAll(".price[data-month]").forEach(el => {
+    const month = Number(el.dataset.month), year = Number(el.dataset.year);
+    el.innerHTML = interval === "year" ? `${money(year)}<span>a year</span>` : `${money(month)}<span>a month</span>`;
+    el.nextElementSibling.textContent = interval === "year" ? `Works out to $${(year / 12).toFixed(2)} a month` : "";
+  });
+}
+
+document.querySelectorAll(".billing-switch button").forEach(b => b.addEventListener("click", () => showInterval(b.dataset.interval)));
+
+async function subscribe(plan, button) {
   const errEl = document.getElementById("error-msg");
-
-  btnStarter.disabled = true;
-  btnPro.disabled = true;
+  const buttons = document.querySelectorAll("button[data-plan]");
+  buttons.forEach(b => { b.disabled = true; });
   errEl.style.display = "none";
-
-  const btn = plan === "pro" ? btnPro : btnStarter;
-  const originalLabel = btn.textContent;
-  btn.textContent = "Redirecting to checkout...";
+  const label = button.textContent;
+  button.textContent = "Opening checkout…";
 
   try {
     const token = await window.Clerk.session.getToken();
     const res = await fetch("/api/create-checkout-session", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ plan })
+      body: JSON.stringify({ plan, interval })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Checkout failed");
+    if (!res.ok) throw new Error(data.error || "Checkout didn't open");
     window.location.href = data.url;
   } catch (e) {
-    errEl.textContent = e.message || "Something went wrong. Please try again.";
+    errEl.textContent = `${e.message || "Checkout didn't open"}. Try again, or email support@tracetray.com.`;
     errEl.style.display = "block";
-    btn.textContent = originalLabel;
-    btnStarter.disabled = false;
-    btnPro.disabled = false;
+    button.textContent = label;
+    buttons.forEach(b => { b.disabled = false; });
   }
-}
-
-function applyProductionPricing() {
-  document.getElementById("pricing-title").textContent = "Try any plan free for 30 days";
-  document.getElementById("pricing-intro").textContent = "Cancel anytime during the trial and you won't be charged.";
-  document.getElementById("starter-name").textContent = "Starter";
-  document.getElementById("starter-price").innerHTML = "<sup>$</sup>12<span>/mo</span>";
-  document.getElementById("starter-desc").textContent = "For one website getting started with behavioural analytics.";
-  document.getElementById("starter-features").innerHTML = `
-    <li>10,000 visits a month</li>
-    <li>50 pages tracked</li>
-    <li>One website, 6 months of history</li>
-    <li>50 Ask questions a month</li>`;
-  document.getElementById("plan-badge").textContent = "Most popular";
-  document.getElementById("pro-price").innerHTML = "<sup>$</sup>24<span>/mo</span>";
-  document.getElementById("pro-desc").textContent = "For growing sites, with room for five websites.";
-  document.getElementById("pro-features").innerHTML = `
-    <li>100,000 visits a month</li>
-    <li>500 pages tracked</li>
-    <li>Five websites, 2 years of history</li>
-    <li>300 Ask questions a month</li>
-    <li>Full search across grouped pages</li>`;
-  document.getElementById("btn-starter").textContent = "Start free trial";
-  document.getElementById("btn-pro").textContent = "Start free trial";
-  document.getElementById("btn-pro").disabled = false;
-  document.getElementById("pricing-note").innerHTML = 'One trial per account. Need more than 5 websites or 100,000 visits? <a href="mailto:support@tracetray.com">Get in touch</a> about Enterprise.';
 }
 
 async function loadClerk(pubKey) {
@@ -187,8 +226,6 @@ async function init() {
     const config = await fetch("/api/config").then(r => r.json());
     appMode = config.mode || "beta";
 
-    if (appMode === "production") applyProductionPricing();
-
     // Clerk sets cookies, so it only loads for people the dashboard has marked as signed in.
     let signedInBefore = false;
     try { signedInBefore = localStorage.getItem("tt-signed-in") === "1"; } catch (e) {}
@@ -196,32 +233,13 @@ async function init() {
       await loadClerk(config.clerk_publishable_key);
       if (!window.Clerk.user) try { localStorage.removeItem("tt-signed-in"); } catch (e) {}
     }
+  } catch (e) {}
 
-    document.getElementById("btn-starter").addEventListener("click", async () => {
-      if (!window.Clerk?.user) {
-        window.location.href = "/sign-in";
-        return;
-      }
-      if (appMode === "beta") {
-        window.location.href = "/app/";
-        return;
-      }
-      await subscribe("starter");
-    });
-
-    document.getElementById("btn-pro").addEventListener("click", async () => {
-      if (appMode !== "production") return;
-      if (!window.Clerk?.user) {
-        window.location.href = "/sign-in";
-        return;
-      }
-      await subscribe("pro");
-    });
-  } catch (e) {
-    const errEl = document.getElementById("error-msg");
-    errEl.textContent = "Could not load pricing right now.";
-    errEl.style.display = "block";
-  }
+  document.querySelectorAll("button[data-plan]").forEach(button => button.addEventListener("click", async () => {
+    if (!window.Clerk?.user) { window.location.href = "/sign-in"; return; }
+    if (appMode !== "production") { window.location.href = "/app/"; return; }
+    await subscribe(button.dataset.plan, button);
+  }));
 }
 
 init();
