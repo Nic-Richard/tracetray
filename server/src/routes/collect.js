@@ -122,7 +122,7 @@ router.post("/collect", async (req, res) => {
 
         // Worked out here rather than sent by the tracker, which stores nothing on the visitor's device.
         // A visit keeps the ID from its first batch, even if it runs past midnight.
-        const visitorId = await visitorIdFor({ siteKey, ip: req.ip, userAgent: req.get("user-agent") });
+        const visitorId = await visitorIdFor({ siteKey, ip: req.ip, userAgent: req.get("user-agent"), language: req.get("accept-language") });
 
         // Kept outside the raw events so it outlives them (they're trimmed after RAW_EVENT_RETENTION_DAYS).
         const depths = events.map(e => e?.scroll_depth).filter(d => typeof d === "number" && d >= 0 && d <= 1);
