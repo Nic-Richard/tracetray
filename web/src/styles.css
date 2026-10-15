@@ -285,6 +285,27 @@ p.tab-intro { max-width: 80ch; }
 .click-list { list-style: none; margin: 0; padding: 4px 22px 18px; display: grid; gap: 12px; }
 .click-list li { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 64px; gap: 14px; align-items: center; }
 .click-list li > b { text-align: right; font-size: 15.5px; }
+.click-list.with-goal li { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 64px 116px; }
+.click-list.with-goal li > .link-button, .click-list .goal-tag { justify-self: end; }
+.goal-tag { font-size: 12.5px; font-weight: 600; border-radius: 999px; padding: 2px 10px; color: var(--good); background: color-mix(in srgb, var(--good) 13%, var(--panel)); }
+.click-error { padding: 0 22px 14px; }
+
+/* Goal rate under the page title */
+.goal-line { display: flex; align-items: center; gap: 14px; padding: 14px 36px 0; }
+.goal-rate { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; background: linear-gradient(90deg, var(--heat-cool), var(--heat-warm) 60%, var(--heat-hot)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.goal-what { display: grid; gap: 2px; min-width: 0; }
+.goal-what b { font-size: 15.5px; color: var(--ink); }
+.goal-what small { font-size: 13.5px; color: var(--muted); }
+.goal-what select { font: inherit; font-weight: 700; color: var(--ink); background: transparent; border: 0; border-bottom: 1px dashed var(--line-2); padding: 0 2px; cursor: pointer; }
+.goal-line.empty-goal { display: block; font-size: 14.5px; color: var(--muted); }
+
+/* Goals in Setup */
+.goal-row > span:first-child { display: grid; gap: 2px; }
+.goal-row .row-actions { display: flex; gap: 14px; flex-shrink: 0; }
+.goal-row .inline-form { flex: 1; }
+.goal-form { display: grid; gap: 12px; margin-top: 16px; }
+.goal-form .seg { justify-self: start; }
+.goal-form select { flex: 1 1 200px; min-width: 0; font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line-2); border-radius: 10px; padding: 9px 12px; }
 .click-text { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .click-text b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .click-text small { color: var(--muted); font-size: 13px; }
@@ -426,6 +447,11 @@ td.strong { font-weight: 700; }
   .phone-attention { grid-template-columns: 70px minmax(0, 1fr); gap: 18px; }
   .depth { height: 150px; }
   .click-list li { grid-template-columns: minmax(0, 1fr) 72px 48px; }
+  .click-list.with-goal li { grid-template-columns: minmax(0, 1fr) 48px; }
+  .click-list.with-goal li .meter { display: none; }
+  .click-list.with-goal li { row-gap: 2px; }
+  .click-list.with-goal li > .link-button, .click-list.with-goal .goal-tag { grid-column: 1 / -1; justify-self: start; font-size: 13px; }
+  .goal-line { padding: 12px 16px 0; }
   .stat-strip { grid-template-columns: 1fr; }
   .hide-sm { display: none; }
   th, td { padding: 11px 14px; }

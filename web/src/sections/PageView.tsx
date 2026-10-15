@@ -19,6 +19,7 @@ import AttentionTab from "../tabs/AttentionTab";
 import ClicksTab from "../tabs/ClicksTab";
 import TrendsTab from "../tabs/TrendsTab";
 import DetailsTab from "../tabs/DetailsTab";
+import GoalLine from "../components/GoalLine";
 
 const MIN_SESSIONS = 16;
 
@@ -312,6 +313,7 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
             </div>
           )}
           <p className="page-sub">{subline(timeseries.data, summary?.pages_in_group) || `${compactNumber(summary?.sessions || 0)} visit${summary?.sessions === 1 ? "" : "s"} so far.`}</p>
+          {page && !locked && <GoalLine key={page} page={page} />}
           {status && <p className={`page-status${status.error ? " error" : ""}`} role="status">{status.text}</p>}
           <nav className="tabs" aria-label="Page views">
             {TABS.map(item => (

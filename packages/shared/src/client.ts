@@ -1,6 +1,6 @@
 import type {
   Account, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, ChangeComparison, Config, EmailList, EmailPrefs,
-  GroupMembers, Journey, MemberSort, PageChange, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
+  Goal, GoalInput, GoalList, GoalRates, GroupMembers, Journey, MemberSort, PageChange, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
   SitesResponse, Stats, Timeseries, UsageResponse, UxTrends
 } from "./types";
 
@@ -70,6 +70,12 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     deletePageChange: (siteKey: string, id: string) => request<{ deleted: boolean }>("DELETE", `/api/page-changes/${encodeURIComponent(id)}`, { siteKey }),
     exportCsv: (siteKey: string, kind: "daily" | "groups", days?: number) =>
       request<{ blob: Blob; filename: string }>("GET", `/api/export/${kind}`, { siteKey, query: { days }, raw: true }),
+    goals: (siteKey: string) => request<GoalList>("GET", "/api/goals", { siteKey }),
+    addGoal: (siteKey: string, goal: GoalInput) => request<Goal>("POST", "/api/goals", { siteKey, body: goal }),
+    editGoal: (siteKey: string, id: string, goal: Partial<GoalInput>) => request<Goal>("PATCH", `/api/goals/${encodeURIComponent(id)}`, { siteKey, body: goal }),
+    removeGoal: (siteKey: string, id: string) => request<{ deleted: boolean }>("DELETE", `/api/goals/${encodeURIComponent(id)}`, { siteKey }),
+    setMainGoal: (siteKey: string, page: string, goal: string | null) => request<{ page: string; goal: string | null }>("PUT", "/api/main-goal", { siteKey, body: { page, goal } }),
+    goalRates: (siteKey: string, page: string, days: 7 | 30 | 90 = 30) => request<GoalRates>("GET", "/api/goal-rates", { siteKey, query: { page, days } }),
     compare: (siteKey: string, page: string, day: string) => request<ChangeComparison>("GET", "/api/compare", { siteKey, query: { page, day } }),
     recentSessions: (siteKey: string, limit = 50) => request<RecentSession[]>("GET", "/api/sessions/recent", { siteKey, query: { limit } }),
     journey: (siteKey: string) => request<Journey>("GET", "/api/journey", { siteKey }),

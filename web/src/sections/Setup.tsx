@@ -4,6 +4,7 @@ import type React from "react";
 import { useLoad } from "../lib/useLoad";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
+import GoalsPanel from "../components/GoalsPanel";
 
 // Lightly coloured copy of the snippet; the plain text is what gets copied.
 function SnippetCode({ origin, siteKey }: { origin: string; siteKey: string }) {
@@ -418,9 +419,10 @@ export default function Setup() {
     <div className="content setup">
       <div className="section-head">
         <h1 className="section-title">Setup</h1>
-        <p className="tab-intro">Add TraceTray to your site, group similar pages, and manage your websites and plan.</p>
+        <p className="tab-intro">Add TraceTray to your site, set goals, group similar pages, and manage your websites and plan.</p>
       </div>
       <Snippet />
+      <GoalsPanel />
       <PageGroupRules />
       <Websites />
       <Plan />

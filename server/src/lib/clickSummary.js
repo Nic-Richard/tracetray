@@ -15,10 +15,14 @@ async function getClickSummary(siteKey, page, limit = 15) {
         for (const s of sessions) {
             for (const e of (s.events || [])) {
                 if (e.type !== "click") continue;
-                const text = (e.text || "").trim().slice(0, 40);
+                // Newer clicks name the link or button they belong to; older ones only the element itself.
+                const target = e.target && typeof e.target === "object" ? e.target : null;
+                const text = ((target ? target.text : e.text) || "").trim().slice(0, 40);
                 if (!text) continue;
-                const key = `${e.tag}::${text}`;
-                if (!counts[key]) counts[key] = { text, tag: e.tag || "?", count: 0 };
+                const tag = (target ? target.tag : e.tag) || "?";
+                const href = target?.href || null;
+                const key = href ? `href::${href}` : `${String(tag).toLowerCase()}::${text}`;
+                if (!counts[key]) counts[key] = { text, tag, href, id: target?.id || null, count: 0 };
                 counts[key].count++;
             }
         }

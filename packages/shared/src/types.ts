@@ -18,6 +18,56 @@ export interface Usage {
   askQuestions: number;
 }
 
+export type GoalType = "click" | "page";
+
+/** A click goal matches id, else href, else text (and tag when given); a page goal matches page. */
+export interface GoalMatch {
+  id?: string | null;
+  href?: string | null;
+  text?: string | null;
+  tag?: string | null;
+  page?: string;
+}
+
+export interface Goal {
+  id: string;
+  name: string;
+  type: GoalType;
+  match: GoalMatch;
+  /** Pages or groups the goal counts on; empty means every page. */
+  pages: string[];
+  /** Applying the goal to past visits. */
+  backfill: "queued" | "running" | "done" | "failed";
+  reached_last_7_days?: number;
+}
+
+export interface GoalList {
+  goals: Goal[];
+  main_goals: { page: string; goal: string }[];
+  cap: number;
+}
+
+export interface GoalInput {
+  name: string;
+  type?: GoalType;
+  match?: GoalMatch;
+  pages?: string[];
+}
+
+export interface GoalRate extends Goal {
+  main: boolean;
+  visits: number;
+  reached: number;
+  rate: number | null;
+}
+
+export interface GoalRates {
+  page: string;
+  days: number;
+  /** The page's main goal first. */
+  goals: GoalRate[];
+}
+
 export interface PageChange {
   id: string;
   /** YYYY-MM-DD, counted from the start of the day (UTC). */
@@ -165,6 +215,9 @@ export interface ClickCount {
   text: string;
   tag: string;
   count: number;
+  /** Where a link goes: its path on the site, another site's domain, or a scheme like mailto:. */
+  href?: string | null;
+  id?: string | null;
 }
 
 export interface DeviceAnalysis {
