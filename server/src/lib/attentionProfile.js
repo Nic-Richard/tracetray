@@ -6,6 +6,7 @@ async function computeAttentionProfile(siteKey, page) {
     const sessionFilter = {
         site_key: siteKey,
         end_time: { $ne: null },
+        detailed: { $ne: false },
         events_trimmed_at: { $exists: false },
         "summary.mouse_moves": { $gt: 0 },
         ...(page ? { page } : {})

@@ -13,6 +13,8 @@ const scrollFeatures = require("./featureModules/scrollFeatures");
 const SessionSchema = new mongoose.Schema({}, { strict: false });
 const Session = mongoose.model("Session", SessionSchema, "sessions");
 
+const MAX_SESSIONS_PER_DEVICE = 3000;
+
 async function run() {
     try {
         await mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/sessionDB");
@@ -23,22 +25,26 @@ async function run() {
             ? { page: process.env.TRACETRAY_PAGE_FILTER }
             : {};
 
-        // Mobile sessions use touch and scroll events instead of cursor movement.
-        const allSessions = await Session.find({
+        // Mobile sessions use touch and scroll events instead of cursor movement. Visits without full detail
+        // (trimmed, left out of the sample, or over the plan's allowance) have nothing to measure.
+        const filter = {
             ...siteKeyFilter,
             ...pageFilter,
             end_time: { $ne: null },
-            // Visits whose raw events were trimmed have nothing left to measure.
-            events_trimmed_at: { $exists: false },
+            detailed: { $ne: false },
+            "events.0": { $exists: true },
             $or: [
                 { "summary.mouse_moves": { $gt: 0 } },
                 { "summary.taps": { $gt: 0 } },
                 { "summary.scrolls": { $gt: 0 } }
             ]
-        });
-
-        const desktopSessions = allSessions.filter(s => (s.device_type || "desktop") === "desktop");
-        const mobileSessions  = allSessions.filter(s => s.device_type === "mobile");
+        };
+        // The most recent visits are plenty for clustering and keep memory flat however busy a site gets.
+        const recent = device => Session.find({ ...filter, ...device }).sort({ start_time: -1 }).limit(MAX_SESSIONS_PER_DEVICE).lean();
+        const [desktopSessions, mobileSessions] = await Promise.all([
+            recent({ device_type: { $ne: "mobile" } }),
+            recent({ device_type: "mobile" })
+        ]);
 
         const desktopDataset = desktopSessions.map(session => ({
             session_id: session.session_id,

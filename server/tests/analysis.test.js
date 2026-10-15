@@ -26,7 +26,12 @@ async function extractFailure(stage) {
     const mongoose = {
         async connect() { if (stage === "connect") throw new Error("offline"); },
         Schema: class {},
-        model() { return { async find() { if (stage === "query") throw new Error("offline"); return []; } }; },
+        model() {
+            return { find() {
+                const query = { sort: () => query, limit: () => query, async lean() { if (stage === "query") throw new Error("offline"); return []; } };
+                return query;
+            } };
+        },
         connection: { async close() { observed.closed = true; } },
     };
     const code = fs.readFileSync(path.resolve(__dirname, "../../analysis/extractFeatures.js"), "utf8");

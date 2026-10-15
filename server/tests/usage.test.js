@@ -36,3 +36,15 @@ test("Stripe prices map to plans by lookup key, and old prices still map by thei
     assert.equal(planForPrice({ id: "price_old_pro", lookup_key: null }), "pro");
     assert.equal(planForPrice({ id: "price_old_starter", lookup_key: null }), "starter");
 });
+
+test("busy pages keep full detail for a sample of visits, the same one for every batch", () => {
+    const { rateFor, inSample } = require("../src/lib/sampling");
+    assert.equal(rateFor(400, 20000), 1);
+    assert.equal(rateFor(4000, 20000), 0.25);
+    assert.equal(rateFor(500, 400000), 0.25);
+    const ids = Array.from({ length: 4000 }, (_, i) => `visit-${i}`);
+    const kept = ids.filter(id => inSample(id, 0.25)).length;
+    assert.ok(kept > 850 && kept < 1150, `kept ${kept} of 4000`);
+    assert.ok(ids.every(id => inSample(id, 0.25) === inSample(id, 0.25)));
+    assert.ok(ids.every(id => inSample(id, 1)));
+});
