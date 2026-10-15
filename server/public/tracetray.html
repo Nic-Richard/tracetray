@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Behavioural analytics that goes beyond pageviews. Lightweight tracking, machine learning visitor groups, journeys and recommendations, with no proxy or tag manager.">
+<meta name="description" content="Privacy-friendly behavioural analytics: machine-learning visitor groups, journeys and recommendations to improve user experience and conversions, with no cookies, recordings or proxy setup.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://tracetray.com/">
 <link rel="icon" href="/favicon.ico" sizes="any">
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TraceTray">
 <meta property="og:title" content="TraceTray | Behavioural Web Analytics">
-<meta property="og:description" content="Behavioural analytics that goes beyond pageviews. Lightweight tracking, machine learning visitor groups, journeys and recommendations, with no proxy or tag manager.">
+<meta property="og:description" content="Privacy-friendly behavioural analytics: machine-learning visitor groups, journeys and recommendations to improve user experience and conversions, with no cookies, recordings or proxy setup.">
 <meta property="og:url" content="https://tracetray.com/">
 <meta property="og:image" content="https://tracetray.com/social-preview.png?v=4">
 <meta property="og:image:width" content="1200">
@@ -23,7 +23,7 @@
 <meta property="og:locale" content="en_CA">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="TraceTray | Behavioural Web Analytics">
-<meta name="twitter:description" content="Behavioural analytics that goes beyond pageviews. Lightweight tracking, machine learning visitor groups, journeys and recommendations, with no proxy or tag manager.">
+<meta name="twitter:description" content="Privacy-friendly behavioural analytics: machine-learning visitor groups, journeys and recommendations to improve user experience and conversions, with no cookies, recordings or proxy setup.">
 <meta name="twitter:image" content="https://tracetray.com/social-preview.png?v=4">
 <meta name="twitter:image:alt" content="Three TraceTray panels, attention, journeys and visitor groups, beside the headline Understand how people use your site">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"TraceTray","url":"https://tracetray.com/","description":"Behavioural web analytics that uses cursor movement, clicks, scrolling, pauses, and touch activity to show how visitors browse your website.","applicationCategory":"BusinessApplication","operatingSystem":"Web","browserRequirements":"Requires JavaScript and a modern web browser.","isAccessibleForFree":true,"featureList":["Cursor movement and mobile attention tracking","Click, tap, scroll, and pause analysis","Visitor browsing pattern clustering","Page-level behavioural summaries"],"publisher":{"@type":"Organization","name":"TraceTray","url":"https://tracetray.com/"}}</script>
@@ -145,6 +145,14 @@ section { padding: 104px 0; }
 .compare div:not(.us) h3 { color: var(--muted); }
 .compare .us { border: 2px solid transparent; background: linear-gradient(var(--paper), var(--paper)) padding-box, var(--heat) border-box; }
 .extras { padding-bottom: 0; }
+.extras-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.privacy-link { margin-top: 20px; font-weight: 600; }
+.findings { padding-bottom: 0; }
+.finding-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px 28px; }
+.finding-list li { display: grid; gap: 4px; padding-left: 16px; border-left: 3px solid var(--c); }
+.finding-list b { font-size: 18.5px; letter-spacing: -0.01em; }
+.finding-list span { color: var(--ink-2); }
+.lead-line { font-size: 19px; color: var(--ink); font-weight: 500; }
 .extras .section-head { margin-bottom: 28px; }
 .extras-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
 .extras-grid div { display: grid; gap: 8px; align-content: start; padding-top: 18px; border-top: 1px solid var(--line); }
@@ -193,7 +201,7 @@ footer span { margin-left: auto; }
   .row.flip .row-copy { order: 0; }
   .screen { transform: none; }
   .hud p { display: none; }
-  .steps, .plans, .compare, .extras-grid { grid-template-columns: 1fr; }
+  .steps, .plans, .compare, .extras-grid, .extras-grid.three { grid-template-columns: 1fr; }
   section { padding: 72px 0; }
   .row + .row { margin-top: 72px; }
   .pair { padding-bottom: 0; display: grid; gap: 16px; }
@@ -234,7 +242,7 @@ footer span { margin-left: auto; }
     <div class="wrap hero-grid">
       <div class="hero-copy">
         <h1>Understand how people use your site.</h1>
-        <p class="lede">Behavioural analytics that goes beyond pageviews. TraceTray turns lightweight interaction data into visitor groups, journeys and clear recommendations, using machine learning instead of hours of session recordings.</p>
+        <p class="lede">Privacy-friendly behavioural analytics that goes beyond pageviews. TraceTray turns lightweight interaction data into visitor groups, journeys and clear recommendations, using machine learning, with no cookies or session recordings.</p>
         <div class="actions">
           <a class="btn light" href="/sign-in.html" data-auth-cta="hero">Try it free</a>
           <a class="btn ghost" href="#see">See a real example</a>
@@ -261,16 +269,32 @@ footer span { margin-left: auto; }
       </div>
       <div class="compare">
         <div><h3>Pageview analytics</h3><p>Traffic, sources and exits. Not what happens on the page.</p></div>
-        <div><h3>Heatmaps and recordings</h3><p>Where people clicked, one page or one visit at a time. Often blocked by ad blockers unless you set up a proxy.</p></div>
-        <div class="us"><h3>TraceTray</h3><p>Who your visitors are by behaviour and what each group needs. No proxy or server setup to keep it collecting.</p></div>
+        <div><h3>Heatmaps and recordings</h3><p>Where people clicked, one visit at a time. They copy the page as it's shown, so sensitive details can end up in recordings, and ad blockers often stop them.</p></div>
+        <div class="us"><h3>TraceTray</h3><p>Who your visitors are by behaviour and what each group needs. It never sees page content, typing or form input, and stores nothing on visitors' devices.</p></div>
       </div>
+    </div>
+  </section>
+
+  <section class="findings">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>What you'll find out</h2>
+        <p>Plain answers to the questions behind your user experience and conversion rate.</p>
+      </div>
+      <ul class="finding-list">
+        <li style="--c:var(--cool)"><b>Where people drop off</b><span>Which pages lose visitors, and how far down each page they get before leaving.</span></li>
+        <li style="--c:var(--teal)"><b>Who reads and who skims</b><span>Whether visitors take in your page or scan past it on the way to something else.</span></li>
+        <li style="--c:var(--rose)"><b>Where the friction is</b><span>Who hesitates before clicking, who scrolls back to compare, and who knows exactly what they want.</span></li>
+        <li style="--c:var(--hot)"><b>How phones differ</b><span>How engagement on phones compares with desktop, page by page.</span></li>
+        <li style="--c:var(--warm)"><b>Whether a change worked</b><span>Before-and-after numbers for a redesign, new copy or a new layout.</span></li>
+      </ul>
     </div>
   </section>
 
   <section id="how">
     <div class="wrap">
       <div class="section-head">
-        <h2>From raw interactions to useful patterns</h2>
+        <h2>Install it once, then read what it finds</h2>
         <p>One install. Fresh findings whenever you refresh.</p>
       </div>
       <div class="steps">
@@ -299,6 +323,7 @@ footer span { margin-left: auto; }
       <div class="row tall">
         <div class="row-copy">
           <h2>Who is reading and who is scanning</h2>
+          <p class="lead-line">See the few kinds of visitor each page gets, such as people who decide fast, people who compare and people who skim, and how many of each.</p>
           <p>Every visit becomes a profile of 13 behavioural measures on desktop and 8 on phones: cursor speed, pause rate, scroll depth, hesitation before clicks, how widely attention ranges and more. Machine learning clusters similar profiles into groups.</p>
           <ul class="method">
             <li>The number of groups is chosen by how cleanly the data separates, not fixed in advance.</li>
@@ -312,7 +337,7 @@ footer span { margin-left: auto; }
       <div class="row flip tall">
         <div class="row-copy">
           <h2>What to change, and why</h2>
-          <p>Each group is matched to a known behaviour pattern and the type of page it's on, whether that's a homepage, product page or checkout. The recommendation fits both.</p>
+          <p>Every visitor group comes with a clear next step, like &ldquo;keep the path short for people who already know what they want.&rdquo; Each one is based on how that group actually behaves and what the page is for, so you know which fix will do the most for conversions.</p>
           <p>Every page also gets a summary of what stands out, and groups keep the same names between analyses, so changes are easy to track.</p>
         </div>
         <div class="frame card-shot"><img src="/assets/home/type-card.webp" width="640" height="1058" alt="The Quick deciders group: 44% of visits, compared with the page average, and what to try"></div>
@@ -342,7 +367,7 @@ footer span { margin-left: auto; }
       <div class="row">
         <div class="row-copy">
           <h2>Where attention goes on your page</h2>
-          <p>See which part of the page holds attention, how far phone visitors scroll, and who leaves without engaging.</p>
+          <p>Find out where people get hung up, on a page and across your whole site: whether they reach your pricing, sign-up form or buy button, where they hesitate, and where engagement drops off.</p>
         </div>
         <div class="pair">
           <div class="frame"><img src="/assets/home/attention.webp" width="1186" height="886" alt="Cursor activity from the top of the page to the bottom, with the middle third busiest"></div>
@@ -370,10 +395,21 @@ footer span { margin-left: auto; }
 
   <section class="extras">
     <div class="wrap">
+      <div class="section-head"><h2>Private by design</h2></div>
+      <div class="extras-grid three">
+        <div><h3>No cookies or device storage</h3><p>Visits are grouped with an ID that changes daily, and the IP address is never stored.</p></div>
+        <div><h3>Never sees what's on the page</h3><p>No screenshots, page content, keystrokes or form input.</p></div>
+        <div><h3>Your data stays yours</h3><p>Not sold, not shared and not used for ads.</p></div>
+      </div>
+      <p class="privacy-link"><a href="/privacy.html">See exactly what TraceTray collects</a></p>
+    </div>
+  </section>
+
+  <section class="extras">
+    <div class="wrap">
       <div class="section-head"><h2>Light on your site</h2></div>
-      <div class="extras-grid">
+      <div class="extras-grid three">
         <div><h3>About 4 KB</h3><p>Smaller than most images. Loads after your page does.</p></div>
-        <div><h3>Nothing private recorded</h3><p>No cookies and nothing stored on visitors' devices. No video, keystrokes or form input.</p></div>
         <div><h3>No workarounds needed</h3><p>No proxy, tag manager or server-side setup to keep data coming in.</p></div>
         <div><h3>Works with single-page apps</h3><p>Route changes in React, Vue, Next.js and other SPAs are tracked automatically.</p></div>
       </div>
@@ -421,7 +457,8 @@ footer span { margin-left: auto; }
       <div>
         <details open><summary>How is this different from other analytics?</summary><p>Pageview tools count visits. Heatmaps and recordings show where people clicked. TraceTray compares every visit, groups visitors by behaviour and tells you what each group needs, with no proxy or server setup to keep data flowing.</p></details>
         <details><summary>What does the tracker collect?</summary><p>Cursor movement, pauses, clicks, taps, scrolling, page depth, timing and the text of clicked elements. Never keystrokes, form values, screenshots or video. It sets no cookies and stores nothing on the visitor's device; visits are grouped with an identifier that changes daily and never stores the IP address.</p></details>
-        <details><summary>Who is it for?</summary><p>Site owners, marketers and product teams who want to know how their pages perform: stores, SaaS sites, portfolios and blogs. No analytics background needed.</p></details>
+        <details><summary>Do I need a cookie banner for TraceTray?</summary><p>TraceTray sets no cookies and stores nothing on visitors' devices, which is what EU and UK cookie rules cover. Whether your site needs consent overall depends on your other tools and where your visitors are, so check with your own adviser.</p></details>
+        <details><summary>Who is it for?</summary><p>Site owners, marketers, UX designers and product teams who want to improve user experience and conversions: stores, SaaS sites, portfolios and blogs, including teams that can't use recording tools, like health, finance, legal and education sites. No analytics background needed.</p></details>
         <details><summary>What happens after the beta?</summary><p>Plans start at $12 a month, and every plan begins with a 30-day free trial. Accounts from the beta keep their data and get the trial too.</p></details>
         <details><summary>How many visits do I need?</summary><p>Fewer than you'd think. Groups appear once a page has a modest number of active visits, and each analysis shows how many it used.</p></details>
         <details><summary>Does it work on phones?</summary><p>Yes. Taps, scrolling and reading pauses are tracked on phones, and mobile is analyzed separately.</p></details>
