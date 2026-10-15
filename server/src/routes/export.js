@@ -39,7 +39,6 @@ router.get("/api/export/daily", requireAuth(), async (req, res) => {
         const from = new Date(Date.now() - (days - 1) * DAY_MS).toISOString().slice(0, 10);
         const rows = await PageDay.find({ site_key: site.key, day: { $gte: from } }, { _id: 0, day: 1, page: 1, path: 1, sessions: 1, desktop: 1, mobile: 1, clicks: 1, goals: 1 })
             .sort({ day: 1, page: 1, path: 1 }).lean();
-        // One column per goal: visits on that row that reached it.
         const goals = site.goals || [];
         sendCsv(res, site, `daily-${days}-days`, toCsv(
             ["day", "page", "address", "visits", "desktop", "phones", "clicks", ...goals.map(g => `reached: ${g.name}`)],

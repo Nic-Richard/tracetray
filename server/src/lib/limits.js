@@ -79,7 +79,7 @@ function askLimitReached(account, used) {
     return !!limit && used >= limit;
 }
 
-// Plan features such as CSV export; everything is on during the beta.
+// Everything is on during the beta.
 function hasFeature(account, feature, mode = TRACETRAY_MODE) {
     return mode !== "production" || !!planLimits(account.plan)?.[feature];
 }

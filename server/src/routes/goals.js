@@ -32,7 +32,6 @@ router.get("/api/goals", requireAuth(), async (req, res) => {
         if (!found) return;
         const goals = found.site.goals || [];
         const since = new Date(Date.now() - 6 * DAY_MS).toISOString().slice(0, 10);
-        // All-time and last-7-day hits per goal, straight from the daily rows.
         const totals = goals.length ? await PageDay.aggregate([
             { $match: { site_key: found.site.key, goals: { $exists: true } } },
             { $project: { day: 1, hits: { $objectToArray: "$goals" } } },

@@ -226,7 +226,6 @@ def label_mobile_clusters(df, labels):
 
 
 def goal_counts(hits_column):
-    # How many sessions in a group reached each goal.
     counts = {}
     for hits in hits_column:
         if isinstance(hits, list):

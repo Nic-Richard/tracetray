@@ -57,7 +57,6 @@ function formMatches(goal, event) {
     return false;
 }
 
-// Click and form goals reached by one batch of a visit's events.
 function eventHits(goals, session, events) {
     return goals.filter(goal => (goal.type === "click" || goal.type === "form") && appliesTo(goal, session)
         && events.some(e => clickMatches(goal, e) || formMatches(goal, e)))

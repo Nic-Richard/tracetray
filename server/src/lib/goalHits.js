@@ -24,7 +24,6 @@ async function markHits(siteKey, sessionId, goalIds, { page, path, startTime }) 
     }
 }
 
-// Called for each batch at /collect.
 async function markBatch(site, session, events, isNew) {
     const goals = site.goals || [];
     if (!goals.length) return;
@@ -200,14 +199,12 @@ async function goalTotals(siteKey, goal, { from = null, to = null, page = null }
     return { visits, reached, rate: visits ? reached / visits : null };
 }
 
-// Share of visits that reached a goal over the last `days`, for one page (or every page the goal applies to).
 async function goalRate(siteKey, goal, { page = null, days = 30, now = Date.now() } = {}) {
     return goalTotals(siteKey, goal, { from: new Date(now - (days - 1) * DAY_MS).toISOString().slice(0, 10), page });
 }
 
 const MILESTONES = [100, 1000, 10000, 100000, 1000000];
 
-// The milestone a total passed between two counts, if any.
 function milestoneCrossed(before, after) {
     return [...MILESTONES].reverse().find(m => before < m && after >= m) || null;
 }

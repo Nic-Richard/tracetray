@@ -22,7 +22,6 @@ function parsePath(input) {
     return { path: { id: "p" + crypto.randomBytes(6).toString("base64url"), name, steps } };
 }
 
-// How far one journey got: the number of steps it reached in order.
 function stepsReached(journey, steps) {
     let reached = 0;
     for (const visit of journey) {
