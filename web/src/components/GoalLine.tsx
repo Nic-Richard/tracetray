@@ -55,6 +55,14 @@ export default function GoalLine({ page }: { page: string }) {
           {checking ? "Checking past visits…" : `${goal.reached.toLocaleString()} of ${goal.visits.toLocaleString()} visits reached it in the last 30 days`} · {describeGoal(goal)}
         </small>
       </span>
+      {goal.target != null && goal.rate !== null && (
+        goal.rate >= goal.target
+          ? <span className="goal-progress met">Target of {percent(goal.target, goal.target < 0.1 ? 1 : 0)} reached</span>
+          : <span className="goal-progress">
+              <span className="meter" aria-hidden="true"><i style={{ width: `${(goal.rate / goal.target) * 100}%`, background: "var(--good)" }} /></span>
+              {Math.round((goal.rate / goal.target) * 100)}% of the way to {percent(goal.target, goal.target < 0.1 ? 1 : 0)}
+            </span>
+      )}
     </div>
   );
 }

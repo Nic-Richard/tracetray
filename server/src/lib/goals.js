@@ -110,7 +110,11 @@ function parseGoal(input, existing = null) {
     const pages = Array.isArray(input?.pages ?? existing?.pages)
         ? [...new Set((input?.pages ?? existing.pages).map(p => clean(p).slice(0, 2000)).filter(p => /^https?:\/\//.test(p)))].slice(0, 200)
         : [];
-    return { goal: { id: existing?.id || newGoalId(), name, type, match, pages } };
+    // A target is the share of visits the site owner is aiming for; null clears it.
+    const rawTarget = input && "target" in input ? input.target : existing?.target;
+    const target = rawTarget === null || rawTarget === undefined || rawTarget === "" ? null : Number(rawTarget);
+    if (target !== null && !(target > 0 && target <= 1)) return { error: "a target is a share of visits between 0% and 100%" };
+    return { goal: { id: existing?.id || newGoalId(), name, type, match, pages, target } };
 }
 
 // Whether an edit changes which visits count, so past visits have to be checked again.

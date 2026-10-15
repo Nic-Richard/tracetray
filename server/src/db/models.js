@@ -16,7 +16,7 @@ const Account = mongoose.model("Account", new mongoose.Schema({
         last_all_refresh_at: Date,
         page_groups: [String],
         page_changes: [{ id: String, page: String, day: String, note: String, created_at: Date }],
-        goals: [{ _id: false, id: String, name: String, type: { type: String }, match: Object, pages: [String], backfill: String, backfill_at: Date, created_at: Date }],
+        goals: [{ _id: false, id: String, name: String, type: { type: String }, match: Object, pages: [String], target: Number, backfill: String, backfill_at: Date, created_at: Date }],
         main_goals: [{ _id: false, page: String, goal: String }],
         regrouping_at: Date,
         created_at: Date

@@ -58,3 +58,21 @@ test("goal input is checked and cleaned, and only match or page changes need pas
     assert.equal(matchChanged(goal, renamed), false);
     assert.equal(matchChanged(goal, parseGoal({ name: "x", match: { text: "Buy" } }, goal).goal), true);
 });
+
+test("before-and-after only calls a goal change once it's unlikely to be chance", () => {
+    const { goalVerdict } = require("../src/lib/compare");
+    const side = (visits, goalReached) => ({ visits, goalReached });
+    assert.equal(goalVerdict(side(400, 8), side(400, 14)), "unclear");
+    assert.equal(goalVerdict(side(1000, 40), side(1000, 75)), "better");
+    assert.equal(goalVerdict(side(1000, 75), side(1000, 40)), "worse");
+    assert.equal(goalVerdict(side(1000, 50), side(1000, 56)), "same");
+    assert.equal(goalVerdict(side(0, 0), side(1000, 80)), "unclear");
+});
+
+test("a goal's target is a share of visits, kept through renames and clearable", () => {
+    const { goal } = parseGoal({ type: "page", name: "Checkout", match: { page: "https://shop.example/checkout" }, target: 0.05 });
+    assert.equal(goal.target, 0.05);
+    assert.equal(parseGoal({ name: "Checkout page" }, goal).goal.target, 0.05);
+    assert.equal(parseGoal({ name: "Checkout", target: null }, goal).goal.target, null);
+    assert.match(parseGoal({ name: "Checkout", target: 5 }, goal).error, /between 0% and 100%/);
+});

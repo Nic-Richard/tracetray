@@ -1,7 +1,7 @@
 import type {
   Account, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, ChangeComparison, Config, EmailList, EmailPrefs,
-  Goal, GoalInput, GoalList, GoalRates, GroupMembers, Journey, MemberSort, PageChange, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
-  SitesResponse, Stats, Timeseries, UsageResponse, UxTrends
+  Goal, GoalInput, GoalList, GoalRates, GoalTrend, GroupMembers, Journey, MemberSort, PageChange, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
+  SitesResponse, Stats, Timeseries, UsageResponse, UxTrends, Win
 } from "./types";
 
 export class ApiError extends Error {
@@ -76,6 +76,8 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     removeGoal: (siteKey: string, id: string) => request<{ deleted: boolean }>("DELETE", `/api/goals/${encodeURIComponent(id)}`, { siteKey }),
     setMainGoal: (siteKey: string, page: string, goal: string | null) => request<{ page: string; goal: string | null }>("PUT", "/api/main-goal", { siteKey, body: { page, goal } }),
     goalRates: (siteKey: string, page: string, days: 7 | 30 | 90 = 30) => request<GoalRates>("GET", "/api/goal-rates", { siteKey, query: { page, days } }),
+    goalTrend: (siteKey: string, page: string) => request<GoalTrend>("GET", "/api/goal-trend", { siteKey, query: { page } }),
+    wins: (siteKey: string) => request<Win[]>("GET", "/api/wins", { siteKey }),
     compare: (siteKey: string, page: string, day: string) => request<ChangeComparison>("GET", "/api/compare", { siteKey, query: { page, day } }),
     recentSessions: (siteKey: string, limit = 50) => request<RecentSession[]>("GET", "/api/sessions/recent", { siteKey, query: { limit } }),
     journey: (siteKey: string) => request<Journey>("GET", "/api/journey", { siteKey }),

@@ -7,7 +7,7 @@ const { resolveSiteKey } = require("../lib/siteAccount");
 const { limitsFor } = require("../lib/limits");
 const { PLANS } = require("../lib/plans");
 const { parseGoal, matchChanged, appliesTo, isGoalPage } = require("../lib/goals");
-const { queueBackfill, removeGoalMarks, goalRate } = require("../lib/goalHits");
+const { queueBackfill, removeGoalMarks, goalRate, goalWeeks, mainGoalFor } = require("../lib/goalHits");
 const logger = require("../lib/logger");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -24,7 +24,7 @@ async function loadSite(req, res) {
 // Plans cap goals per website; the beta allows Ultra's number.
 const goalCap = account => limitsFor(account)?.goals ?? PLANS.ultra.goals;
 
-const view = goal => ({ id: goal.id, name: goal.name, type: goal.type, match: goal.match, pages: goal.pages || [], backfill: goal.backfill || "done" });
+const view = goal => ({ id: goal.id, name: goal.name, type: goal.type, match: goal.match, pages: goal.pages || [], target: goal.target ?? null, backfill: goal.backfill || "done" });
 
 router.get("/api/goals", requireAuth(), async (req, res) => {
     try {
@@ -75,7 +75,7 @@ router.patch("/api/goals/:id", requireAuth(), async (req, res) => {
         const existing = goals.find(g => g.id === req.params.id);
         if (!existing) return res.status(404).json({ error: "that goal isn't there" });
         const before = existing.toObject ? existing.toObject() : existing;
-        const parsed = parseGoal({ name: req.body.name ?? before.name, match: req.body.match, pages: req.body.pages }, before);
+        const parsed = parseGoal({ name: req.body.name ?? before.name, match: req.body.match, pages: req.body.pages, ...("target" in req.body ? { target: req.body.target } : {}) }, before);
         if (parsed.error) return res.status(400).json({ error: parsed.error });
         const recheck = matchChanged(before, parsed.goal);
         const goal = { ...before, ...parsed.goal, ...(recheck ? { backfill: "queued" } : {}) };
@@ -142,6 +142,22 @@ router.get("/api/goal-rates", requireAuth(), async (req, res) => {
     } catch (err) {
         logger.error("goal rates error:", err);
         res.status(500).json({ error: "couldn't load goal rates" });
+    }
+});
+
+// Twelve weeks of the page's main goal rate and its best full week.
+router.get("/api/goal-trend", requireAuth(), async (req, res) => {
+    try {
+        const found = await loadSite(req, res);
+        if (!found) return;
+        const page = String(req.query.page || "");
+        if (!page) return res.status(400).json({ error: "pick a page first" });
+        const goal = await mainGoalFor(found.site.key, page);
+        if (!goal) return res.json({ goal: null, weeks: [], best: null });
+        res.json({ goal: view(goal), ...await goalWeeks(found.site.key, goal, { page }) });
+    } catch (err) {
+        logger.error("goal trend error:", err);
+        res.status(500).json({ error: "couldn't load the goal trend" });
     }
 });
 

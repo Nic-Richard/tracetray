@@ -24,6 +24,8 @@ const ROWS: Row[] = [
 // Below this many visits on either side a difference is mostly chance, so no verdict is given.
 const MIN_VISITS = 30;
 
+const rate = (value: number | null) => value === null ? "–" : percent(value, value < 0.1 ? 1 : 0);
+
 const today = () => new Date().toISOString().slice(0, 10);
 const dayLabel = (day: string) => new Date(`${day}T00:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
 
@@ -51,9 +53,22 @@ function Comparison({ page, day }: { page: string; day: string }) {
   return (
     <div className="compare">
       <p className="muted">{data.days} day{data.days === 1 ? "" : "s"} before {dayLabel(day)} against {data.days} day{data.days === 1 ? "" : "s"} from it: {before.visits.toLocaleString()} visits before, {after.visits.toLocaleString()} after.</p>
+      {data.goal?.verdict === "better" && (
+        <p className="win-banner"><b>A win.</b> {data.goal.name} went from {rate(data.goal.before)} to {rate(data.goal.after)} of visits after this change, more than chance would explain.</p>
+      )}
       <table>
         <thead><tr><th>Measure</th><th className="right">Before</th><th className="right">After</th><th className="right">Change</th></tr></thead>
         <tbody>
+          {data.goal && (
+            <tr className="goal-row-compare">
+              <td>Reached {data.goal.name}</td>
+              <td className="right num">{rate(data.goal.before)}</td>
+              <td className="right num">{rate(data.goal.after)}</td>
+              <td className="right">{data.goal.verdict === "unclear"
+                ? <span className="muted" title="Fewer than 30 visits have reached the goal across both sides">Too early to tell</span>
+                : <span className={`verdict ${data.goal.verdict}`}>{data.goal.verdict === "better" ? "Better" : data.goal.verdict === "worse" ? "Worse" : "About the same"}</span>}</td>
+            </tr>
+          )}
           {ROWS.map(row => {
             const b = before[row.key], a = after[row.key];
             if (b === null || a === null) return null;
@@ -69,6 +84,7 @@ function Comparison({ page, day }: { page: string; day: string }) {
           })}
         </tbody>
       </table>
+      {data.goal?.verdict === "unclear" && <p className="muted">The goal gets a verdict once 30 visits have reached it across both sides ({data.goal.reached} so far).</p>}
       <p className="muted">Scroll depth and clicks don't get a verdict because either direction can be good: shallower scrolling or fewer clicks can mean people find what they need sooner, or that they give up earlier.</p>
       {!judged && <p className="muted">Fewer than {MIN_VISITS} visits on one side, so these differences could easily be chance. They get more reliable as visits come in.</p>}
       {judged && mixShift && <p className="muted">The share of visits on phones moved from {percent(before.phoneShare!)} to {percent(after.phoneShare!)}. Phone visitors tap and scroll differently, so that alone can move these numbers.</p>}

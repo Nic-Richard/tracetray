@@ -6,6 +6,7 @@ const { requireAuth } = require("../middleware/auth");
 const { Account } = require("../db/models");
 const { resolveSiteKey } = require("../lib/siteAccount");
 const { compareAroundChange } = require("../lib/compare");
+const { mainGoalFor } = require("../lib/goalHits");
 const { isPageLocked } = require("../lib/limits");
 const { planLimits } = require("../lib/plans");
 const { TRACETRAY_MODE } = require("../config");
@@ -89,10 +90,32 @@ router.get("/api/compare", requireAuth(), async (req, res) => {
         if (await isPageLocked(found.account, found.site.key, page)) {
             return res.status(403).json({ error: "this page is past your plan's page limit for this month", limit_reached: "pages" });
         }
-        res.json(await compareAroundChange(found.site.key, page, req.query.day));
+        res.json(await compareAroundChange(found.site.key, page, req.query.day, Date.now(), await mainGoalFor(found.site.key, page)));
     } catch (err) {
         logger.error("compare error:", err);
         res.status(500).json({ error: "couldn't compare that change" });
+    }
+});
+
+// Wins: marked changes after which the page's goal rate clearly rose. Newest first; only the latest 50 changes are checked.
+router.get("/api/wins", requireAuth(), async (req, res) => {
+    try {
+        const found = await loadSite(req, res);
+        if (!found) return;
+        const changes = [...(found.site.page_changes || [])].sort((a, b) => b.day.localeCompare(a.day)).slice(0, 50);
+        const wins = [];
+        for (const change of changes) {
+            const goal = await mainGoalFor(found.site.key, change.page);
+            if (!goal) continue;
+            const result = await compareAroundChange(found.site.key, change.page, change.day, Date.now(), goal);
+            if (result.goal?.verdict === "better") {
+                wins.push({ id: change.id, page: change.page, day: change.day, note: change.note, goal: goal.name, before: result.goal.before, after: result.goal.after });
+            }
+        }
+        res.json(wins);
+    } catch (err) {
+        logger.error("wins error:", err);
+        res.status(500).json({ error: "couldn't load your wins" });
     }
 });
 

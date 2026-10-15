@@ -6,6 +6,7 @@ import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
 import { cssVar, useThemeVersion } from "../lib/palette";
 import BeforeAfter from "../components/BeforeAfter";
+import GoalTrend from "../components/GoalTrend";
 
 Chart.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip);
 
@@ -85,6 +86,7 @@ export default function TrendsTab({ page }: { page: string }) {
 
   return (
     <div className="content">
+      <GoalTrend page={page} />
       <BeforeAfter page={page} />
       <p className="tab-intro">Each point below is one analysis run, not one day. Refresh the analysis after you change the page to see whether visitors behave differently.</p>
       {points.length === 0

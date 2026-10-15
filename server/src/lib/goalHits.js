@@ -9,6 +9,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const CLICK_LOOKBACK_DAYS = 90;
 const PAGE_LOOKBACK_DAYS = 396;
 const BATCH = 500;
+const MIN_WEEK_VISITS = 30;
 
 // Adds each goal to the visit once and counts it in that visit's daily row the first time.
 async function markHits(siteKey, sessionId, goalIds, { page, path, startTime }) {
@@ -143,6 +144,40 @@ async function removeGoalMarks(siteKey, goalId) {
     await PageDay.updateMany({ site_key: siteKey, [`goals.${goalId}`]: { $exists: true } }, { $unset: { [`goals.${goalId}`]: "" } });
 }
 
+// The goal a page is judged by: its main goal, else the first goal that counts there.
+async function mainGoalFor(siteKey, page) {
+    const account = await Account.findOne({ "sites.key": siteKey }, { sites: 1 }).lean();
+    const site = account?.sites?.find(item => item.key === siteKey);
+    const goals = (site?.goals || []).filter(g => appliesTo(g, { page }) && !isGoalPage(g, { page }));
+    const main = (site?.main_goals || []).find(m => m.page === page)?.goal;
+    return goals.find(g => g.id === main) || goals[0] || null;
+}
+
+// Weekly goal rates (weeks start Monday, UTC) for the last `weeks` weeks, and the best full week with enough visits.
+async function goalWeeks(siteKey, goal, { page = null, weeks = 12, now = Date.now() } = {}) {
+    const today = new Date(now);
+    const monday = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) - ((today.getUTCDay() + 6) % 7) * DAY_MS;
+    const first = monday - (weeks - 1) * 7 * DAY_MS;
+    const rows = await PageDay.find(
+        { site_key: siteKey, day: { $gte: new Date(first).toISOString().slice(0, 10) }, ...(page ? { page } : {}) },
+        { _id: 0, page: 1, path: 1, day: 1, sessions: 1, goals: 1 }
+    ).lean();
+    const buckets = Array.from({ length: weeks }, (_, i) => ({ week: new Date(first + i * 7 * DAY_MS).toISOString().slice(0, 10), visits: 0, reached: 0 }));
+    for (const row of rows) {
+        const session = { page: row.page, page_path: row.path };
+        if (!appliesTo(goal, session) || isGoalPage(goal, session)) continue;
+        const bucket = buckets[Math.floor((Date.parse(`${row.day}T00:00:00Z`) - first) / (7 * DAY_MS))];
+        if (!bucket) continue;
+        bucket.visits += row.sessions || 0;
+        bucket.reached += row.goals?.[goal.id] || 0;
+    }
+    for (const b of buckets) b.rate = b.visits ? b.reached / b.visits : null;
+    // The current week is still filling up, so it can't be the best one yet.
+    const best = buckets.slice(0, -1).filter(b => b.visits >= MIN_WEEK_VISITS && b.rate !== null)
+        .reduce((top, b) => (!top || b.rate > top.rate ? b : top), null);
+    return { weeks: buckets, best };
+}
+
 // Share of visits that reached a goal over the last `days`, for one page (or every page the goal applies to).
 // The goal page itself is left out of a page goal's rate.
 async function goalRate(siteKey, goal, { page = null, days = 30, now = Date.now() } = {}) {
@@ -161,4 +196,4 @@ async function goalRate(siteKey, goal, { page = null, days = 30, now = Date.now(
     return { visits, reached, rate: visits ? reached / visits : null };
 }
 
-module.exports = { markBatch, markHits, backfillGoal, queueBackfill, resumeBackfills, recountGoal, removeGoalMarks, goalRate, setBackfillState };
+module.exports = { mainGoalFor, goalWeeks, markBatch, markHits, backfillGoal, queueBackfill, resumeBackfills, recountGoal, removeGoalMarks, goalRate, setBackfillState };

@@ -1,15 +1,18 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useLocation } from "react-router";
-import { pageLabel, type Goal, type GoalType } from "@tracetray/shared";
+import { pageLabel, percent, type Goal, type GoalType } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
 import { describeGoal } from "./GoalLine";
 
+const asPercent = (value: number) => percent(value, value < 0.1 ? 1 : 0);
+
 function GoalRow({ goal, onChanged }: { goal: Goal; onChanged: () => void }) {
   const api = useApi();
   const { siteKey } = useSite();
-  const [name, setName] = useState<string | null>(null);
+  const [editing, setEditing] = useState<"name" | "target" | null>(null);
+  const [value, setValue] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -17,7 +20,7 @@ function GoalRow({ goal, onChanged }: { goal: Goal; onChanged: () => void }) {
     setBusy(true); setError("");
     try {
       await action();
-      setName(null);
+      setEditing(null);
       onChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : "That didn't save");
@@ -26,30 +29,68 @@ function GoalRow({ goal, onChanged }: { goal: Goal; onChanged: () => void }) {
     }
   }
 
+  function open(mode: "name" | "target") {
+    setEditing(mode);
+    setValue(mode === "name" ? goal.name : goal.target != null ? String(+(goal.target * 100).toFixed(2)) : "");
+  }
+
+  function save(event: FormEvent) {
+    event.preventDefault();
+    if (editing === "name") return run(() => api.editGoal(siteKey, goal.id, { name: value }));
+    const target = value.trim() === "" ? null : Number(value) / 100;
+    return run(() => api.editGoal(siteKey, goal.id, { name: goal.name, target }));
+  }
+
   const checking = goal.backfill === "queued" || goal.backfill === "running";
   return (
     <li className="goal-row">
-      {name === null ? (
+      {editing === null ? (
         <span>
           <b>{goal.name}</b>
-          <small>{describeGoal(goal)}</small>
+          <small>{describeGoal(goal)}{goal.target != null ? ` · target ${asPercent(goal.target)}` : ""}</small>
           <small>{checking ? "Checking past visits…" : goal.backfill === "failed" ? "Couldn't check past visits; new visits still count." : goal.reached_last_7_days ? `Reached ${goal.reached_last_7_days.toLocaleString()} times in the last 7 days` : "No matches in the last 7 days"}</small>
         </span>
       ) : (
-        <form className="inline-form" onSubmit={event => { event.preventDefault(); run(() => api.editGoal(siteKey, goal.id, { name })); }}>
-          <input value={name} onChange={event => setName(event.target.value)} aria-label="Goal name" maxLength={60} autoFocus />
-          <button type="submit" className="btn" disabled={busy || !name.trim()}>Save</button>
-          <button type="button" className="link-button" onClick={() => setName(null)}>Cancel</button>
+        <form className="inline-form" onSubmit={save}>
+          {editing === "name"
+            ? <input value={value} onChange={event => setValue(event.target.value)} aria-label="Goal name" maxLength={60} autoFocus />
+            : <label className="target-input"><input type="number" min="0.1" max="100" step="0.1" value={value} onChange={event => setValue(event.target.value)} aria-label="Target, percent of visits" placeholder="5" autoFocus /> % of visits</label>}
+          <button type="submit" className="btn" disabled={busy || (editing === "name" && !value.trim())}>Save</button>
+          {editing === "target" && goal.target != null && <button type="button" className="link-button" onClick={() => run(() => api.editGoal(siteKey, goal.id, { name: goal.name, target: null }))}>Clear target</button>}
+          <button type="button" className="link-button" onClick={() => setEditing(null)}>Cancel</button>
         </form>
       )}
-      {name === null && (
+      {editing === null && (
         <span className="row-actions">
-          <button type="button" className="link-button" onClick={() => setName(goal.name)} disabled={busy}>Rename</button>
+          <button type="button" className="link-button" onClick={() => open("target")} disabled={busy}>{goal.target != null ? "Change target" : "Set target"}</button>
+          <button type="button" className="link-button" onClick={() => open("name")} disabled={busy}>Rename</button>
           <button type="button" className="link-button danger" onClick={() => run(() => api.removeGoal(siteKey, goal.id))} disabled={busy}>Remove</button>
         </span>
       )}
       {error && <p className="form-error">{error}</p>}
     </li>
+  );
+}
+
+function Wins() {
+  const api = useApi();
+  const { siteKey } = useSite();
+  const wins = useLoad(() => api.wins(siteKey), [api, siteKey]);
+  if (!wins.data?.length) return null;
+  return (
+    <div className="wins">
+      <h3>Wins</h3>
+      <ul className="rule-list">
+        {wins.data.map(win => (
+          <li key={win.id}>
+            <span>
+              <b>{pageLabel(win.page)}{win.note ? `: ${win.note}` : ""}</b>
+              <small>{win.goal} went from {win.before === null ? "–" : asPercent(win.before)} to {win.after === null ? "–" : asPercent(win.after)} after {new Date(`${win.day}T00:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })}</small>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -132,6 +173,7 @@ export default function GoalsPanel() {
           </form>
         )}
         {full && <p className="muted">You've used every goal your plan includes for this website. Remove one to add another.</p>}
+        <Wins />
       </div>
     </section>
   );

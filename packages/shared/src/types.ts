@@ -36,6 +36,8 @@ export interface Goal {
   match: GoalMatch;
   /** Pages or groups the goal counts on; empty means every page. */
   pages: string[];
+  /** Share of visits the site owner is aiming for, 0–1. */
+  target?: number | null;
   /** Applying the goal to past visits. */
   backfill: "queued" | "running" | "done" | "failed";
   reached_last_7_days?: number;
@@ -49,6 +51,7 @@ export interface GoalList {
 
 export interface GoalInput {
   name: string;
+  target?: number | null;
   type?: GoalType;
   match?: GoalMatch;
   pages?: string[];
@@ -92,6 +95,34 @@ export interface ChangeComparison {
   before?: ChangeMeasures;
   after?: ChangeMeasures;
   groups?: { before: { group: string; share: number }[] | null; after: { group: string; share: number }[] | null };
+  /** The page's main goal; "unclear" until 30 visits have reached it across both sides. */
+  goal?: { id: string; name: string; before: number | null; after: number | null; reached: number; verdict: "better" | "worse" | "same" | "unclear" } | null;
+}
+
+export interface GoalWeek {
+  /** Monday the week starts on, YYYY-MM-DD (UTC). */
+  week: string;
+  visits: number;
+  reached: number;
+  rate: number | null;
+}
+
+export interface GoalTrend {
+  goal: Goal | null;
+  weeks: GoalWeek[];
+  /** The best full week with at least 30 visits. */
+  best: GoalWeek | null;
+}
+
+/** A marked change after which the page's goal rate clearly rose. */
+export interface Win {
+  id: string;
+  page: string;
+  day: string;
+  note: string;
+  goal: string;
+  before: number | null;
+  after: number | null;
 }
 
 export type EmailList = "weekly_summary" | "shift_alerts";
