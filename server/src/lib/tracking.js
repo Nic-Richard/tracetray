@@ -44,4 +44,32 @@ function normalizeTrackingDomain(value) {
     }
 }
 
-module.exports = { getRegistrableDomain, normalizeTrackingDomain };
+// Everything below comes from the visitor's browser, so it's checked before it's stored.
+const SUMMARY_FIELDS = ["duration_ms", "total_events", "mouse_moves", "cursor_pauses", "clicks", "scrolls", "taps", "scroll_pauses", "attention_pauses"];
+const MAX_PAST_MS = 2 * 24 * 60 * 60 * 1000;
+const MAX_AHEAD_MS = 10 * 60 * 1000;
+
+function visitTime(value, now) {
+    const ms = Number(value);
+    return typeof value === "number" && Number.isFinite(ms) && ms > now - MAX_PAST_MS && ms < now + MAX_AHEAD_MS ? ms : now;
+}
+
+function cleanSummary(summary) {
+    if (!summary || typeof summary !== "object") return undefined;
+    return Object.fromEntries(SUMMARY_FIELDS.map(f => [f, Math.max(0, Number(summary[f]) || 0)]));
+}
+
+function cleanReferrer(value) {
+    const raw = typeof value === "string" ? value.slice(0, 2000) : null;
+    if (!raw) return null;
+    try {
+        const url = new URL(raw);
+        if (!["http:", "https:"].includes(url.protocol)) return null;
+        const routeHash = url.hash.startsWith("#/") || url.hash.startsWith("#!/") ? url.hash.split("?")[0] : "";
+        return url.origin + url.pathname + routeHash;
+    } catch {
+        return null;
+    }
+}
+
+module.exports = { getRegistrableDomain, normalizeTrackingDomain, visitTime, cleanSummary, cleanReferrer };

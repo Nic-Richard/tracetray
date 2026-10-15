@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { Account, Session } = require("../db/models");
 const { ensureAccountSites } = require("../lib/siteAccount");
-const { normalizeTrackingDomain } = require("../lib/tracking");
+const { normalizeTrackingDomain, visitTime, cleanSummary, cleanReferrer } = require("../lib/tracking");
 const logger = require("../lib/logger");
 const { groupPage } = require("../lib/pageGroups");
 const { countSession } = require("../lib/pageDays");
@@ -43,7 +43,8 @@ router.post("/collect", async (req, res) => {
         const data = req.body || {};
         const siteKey = String(data.key || "").trim().slice(0, 64);
         const sessionId = String(data.session_id || "").trim().slice(0, 100);
-        const events = Array.isArray(data.events) ? data.events.slice(0, MAX_BATCH_EVENTS) : [];
+        const events = (Array.isArray(data.events) ? data.events.slice(0, MAX_BATCH_EVENTS) : [])
+            .filter(e => e && typeof e === "object" && !Array.isArray(e) && typeof e.type === "string");
         const originDomain = normalizeTrackingDomain(req.headers.origin);
         const pageDomain = normalizeTrackingDomain(data.page);
         const trackingDomain = originDomain || pageDomain;
@@ -114,6 +115,10 @@ router.post("/collect", async (req, res) => {
         // Kept outside the raw events so it outlives them (they're trimmed after RAW_EVENT_RETENTION_DAYS).
         const depths = events.map(e => e?.scroll_depth).filter(d => typeof d === "number" && d >= 0 && d <= 1);
 
+        const now = Date.now();
+        const startTime = visitTime(data.start_time, now);
+        const endTime = data.end_time === undefined || data.end_time === null ? undefined : Math.max(startTime, visitTime(data.end_time, now));
+
         const write = await Session.updateOne(
             { site_key: siteKey, session_id: sessionId },
             {
@@ -121,12 +126,12 @@ router.post("/collect", async (req, res) => {
                 $set: {
                     site_key: siteKey,
                     device_type: deviceType,
-                    referrer: text(data.referrer, 2000),
+                    referrer: cleanReferrer(data.referrer),
                     page,
                     page_path: path,
-                    start_time: data.start_time,
-                    end_time: data.end_time,
-                    summary: data.summary,
+                    start_time: startTime,
+                    end_time: endTime,
+                    summary: cleanSummary(data.summary),
                     detailed,
                     updated_at: Date.now()
                 },
@@ -138,13 +143,13 @@ router.post("/collect", async (req, res) => {
         );
 
         await countSession({
-            siteKey, page, path, startTime: data.start_time, deviceType,
+            siteKey, page, path, startTime, deviceType,
             clicks: events.filter(e => e?.type === "click").length,
             newSession: write.upsertedCount === 1
         });
 
         // Goals read every event in the batch, so visits past the plan's allowance still count.
-        await markBatch(site, { session_id: sessionId, page, page_path: path, start_time: data.start_time, visitor_id: visitorId }, events, write.upsertedCount === 1);
+        await markBatch(site, { session_id: sessionId, page, page_path: path, start_time: startTime, visitor_id: visitorId }, events, write.upsertedCount === 1);
 
         res.sendStatus(200);
     } catch (err) {

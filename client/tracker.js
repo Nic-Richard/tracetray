@@ -56,7 +56,7 @@ const DEVICE_TYPE = IS_MOBILE ? "mobile" : "desktop";
 function normalisePage(url) {
     try {
         const u = new URL(url);
-        const routeHash = /^#!?\//.test(u.hash) ? u.hash : "";
+        const routeHash = /^#!?\//.test(u.hash) ? u.hash.split("?")[0] : "";
         return u.origin + u.pathname + routeHash;
     } catch(e) {
         return url;

@@ -19,7 +19,8 @@ function isIdSegment(segment) {
 function splitPage(pageUrl) {
     try {
         const url = new URL(pageUrl);
-        return { origin: url.origin, path: url.pathname + (url.hash.startsWith("#/") || url.hash.startsWith("#!/") ? url.hash : "") };
+        const routeHash = url.hash.startsWith("#/") || url.hash.startsWith("#!/") ? url.hash.split("?")[0] : "";
+        return { origin: url.origin, path: url.pathname + routeHash };
     } catch {
         return { origin: "", path: String(pageUrl || "") };
     }
