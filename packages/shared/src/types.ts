@@ -44,10 +44,13 @@ export interface ChangeComparison {
   groups?: { before: { group: string; share: number }[] | null; after: { group: string; share: number }[] | null };
 }
 
+export type EmailList = "weekly_summary" | "shift_alerts";
+
 export interface EmailPrefs {
   weekly_summary: boolean;
-  /** False on plans without the weekly summary. */
-  weekly_summary_available?: boolean;
+  shift_alerts: boolean;
+  /** False on plans without these emails. */
+  available: boolean;
 }
 
 export interface UsageResponse {

@@ -1,14 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const path = require("path");
-const { runProcess } = require("../lib/runProcess");
 const { getAuth } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
-const { Account, Session, AnalysisResult } = require("../db/models");
+const { Account } = require("../db/models");
 const { resolveSiteKey } = require("../lib/siteAccount");
-const { getClickSummary } = require("../lib/clickSummary");
-const { computeAttentionProfile } = require("../lib/attentionProfile");
-const { interpretClusters } = require("../lib/interpretClusters");
+const { runAnalysis } = require("../lib/runAnalysis");
 const {
     analysisRunning,
     PAGE_REFRESHES_PER_DAY,
@@ -130,83 +126,13 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
         return res.status(403).json({ error: "this page is past your plan's page limit for this month", limit_reached: "pages" });
     }
 
-    analysisRunning[siteKey] = true;
-    logger.debug(`starting analysis  key=${siteKey}`);
-
-    const env = { ...process.env, TRACETRAY_SITE_KEY: siteKey, TRACETRAY_PAGE_FILTER: pageFilter || "" };
-
-    const extractScript = path.join(__dirname, "..", "..", "..", "analysis", "extractFeatures.js");
-    async function runPythonAnalysis(device) {
-        const pyScript = path.join(__dirname, "..", "..", "..", "ml", "analyze.py");
-        const { stdout } = await runProcess(process.env.TRACETRAY_PYTHON || "python3", [pyScript, "--json-summary", "--device", device], {
-            cwd: path.join(__dirname, "..", "..", "..", "ml"), env
-        });
-        const marker = "TRACETRAY_RESULT:";
-        const resultLine = stdout.split("\n").find(line => line.startsWith(marker));
-        if (!resultLine) throw new Error(`python (${device}) returned no result`);
-        return JSON.parse(resultLine.slice(marker.length).trim());
-    }
-
     try {
-        await runProcess(process.execPath, [extractScript], { cwd: path.join(__dirname, "..", "..", ".."), env });
-        logger.debug("extraction done");
-
-        const clusterResult = await runPythonAnalysis("desktop");
-
-        // Mobile analysis is optional when no mobile traffic is available.
-        let mobileResult = null;
-        try {
-            mobileResult = await runPythonAnalysis("mobile");
-        } catch (err) {
-            logger.error("mobile analysis failed:", err);
-        }
-
-        clusterResult.site_key = siteKey;
-        clusterResult.page     = pageFilter || "all";
-        clusterResult.ran_at   = new Date();
-
-        // Mobile results are stored without a separate model interpretation.
-        if (mobileResult) {
-            clusterResult.mobile = {
-                session_count:    mobileResult.session_count,
-                k:                mobileResult.k,
-                silhouette_score: mobileResult.silhouette_score,
-                clusters:         mobileResult.clusters,
-                kruskal_wallis:   mobileResult.kruskal_wallis,
-                k_rationale:      mobileResult.k_rationale,
-                failure:          mobileResult.failure || null
-            };
-        }
-
-        const clickSummary = await getClickSummary(siteKey, pageFilter, 15);
-        clusterResult.click_summary = clickSummary;
-
-        try {
-            let pageUrl = pageFilter;
-            if (!pageUrl) {
-                const recentSess = await Session.findOne({ site_key: siteKey, end_time: { $ne: null } }).sort({ start_time: -1 }).lean();
-                pageUrl = recentSess?.page || null;
-            }
-            const attentionResult = await computeAttentionProfile(siteKey, pageFilter || null);
-            clusterResult.interpretation = interpretClusters({
-                desktop:         clusterResult,
-                mobile:          clusterResult.mobile || null,
-                pageUrl,
-                firstImpression: attentionResult.first_impression
-            });
-        } catch (err) {
-            logger.error("interpretation failed:", err);
-        }
-
-        await AnalysisResult.create(clusterResult);
-        logger.info(`analysis saved  key=${siteKey}  k=${clusterResult.k}  n=${clusterResult.session_count}  mobile_n=${mobileResult?.session_count ?? 0}`);
-
-        res.json({ ok: true, result: clusterResult });
+        const result = await runAnalysis(siteKey, pageFilter);
+        res.json({ ok: true, result });
     } catch (err) {
+        if (err.code === "BUSY") return res.status(409).json({ error: "analysis already running" });
         logger.error("analysis error:", err);
         if (!res.headersSent) res.status(500).json({ error: "analysis failed" });
-    } finally {
-        analysisRunning[siteKey] = false;
     }
 });
 

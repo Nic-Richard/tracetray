@@ -59,8 +59,18 @@ function analysisHandler({ failProcess = false, failSave = false, busy = false, 
     const code = fs.readFileSync(path.resolve(__dirname, "../src/routes/analysis.js"), "utf8");
     const cluster = { session_count: 10, clusters: [] };
     const userId = "user_test";
-    vm.runInNewContext(code, {
-        require(name) {
+    // The route hands the run to lib/runAnalysis, which is loaded for real with the same fakes.
+    const loadRunAnalysis = () => {
+        const lib = { exports: {} };
+        vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, "../src/lib/runAnalysis.js"), "utf8"), {
+            require: name => fakeRequire(name.startsWith("./") ? `../lib/${name.slice(2)}` : name),
+            __dirname: path.resolve(__dirname, "../src/lib"),
+            module: lib, process,
+        });
+        return lib.exports;
+    };
+    const fakeRequire = name => {
+            if (name === "../lib/runAnalysis") return loadRunAnalysis();
             if (name === "express") return { Router: () => ({ post(route, auth, fn) { if (route === "/api/run-analysis") handler = fn; } }) };
             if (name === "path") return path;
             if (name === "@clerk/express") return { getAuth: () => ({ userId }) };
@@ -90,7 +100,9 @@ function analysisHandler({ failProcess = false, failSave = false, busy = false, 
             if (name === "../config") return { TRACETRAY_MODE: "beta" };
             if (name === "../lib/logger") return { debug() {}, info() {}, error() {} };
             return {};
-        },
+    };
+    vm.runInNewContext(code, {
+        require: fakeRequire,
         __dirname: path.resolve(__dirname, "../src/routes"),
         module: { exports: {} }, process,
     });

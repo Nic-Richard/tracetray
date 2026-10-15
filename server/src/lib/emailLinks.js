@@ -15,9 +15,10 @@ function verify(purpose, accountId, token) {
     return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected));
 }
 
-function unsubscribeUrl(accountId) {
-    const token = sign("unsubscribe", String(accountId));
-    return token ? `${SITE}/email/unsubscribe?a=${accountId}&t=${token}` : null;
+// Each kind of email has its own link, so stopping one leaves the others alone.
+function unsubscribeUrl(accountId, list = "weekly_summary") {
+    const token = sign(`unsubscribe:${list}`, String(accountId));
+    return token ? `${SITE}/email/unsubscribe?a=${accountId}&l=${list}&t=${token}` : null;
 }
 
 module.exports = { sign, verify, unsubscribeUrl };

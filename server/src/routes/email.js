@@ -4,8 +4,7 @@ const { getAuth } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
 const { Account } = require("../db/models");
 const { verify } = require("../lib/emailLinks");
-const { wantsWeeklySummary } = require("../jobs/weeklySummary");
-const { TRACETRAY_MODE } = require("../config");
+const { EMAIL_LISTS, wantsEmail, emailAvailable } = require("../lib/emailPrefs");
 const logger = require("../lib/logger");
 
 const page = (title, body) => `<!DOCTYPE html><html lang="en-CA"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,24 +12,27 @@ const page = (title, body) => `<!DOCTYPE html><html lang="en-CA"><head><meta cha
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/site.css?v=3"></head>
 <body><main class="center"><img src="/logo-mark.svg" width="44" height="44" alt=""><h1 style="font-size:28px">${title}</h1><p>${body}</p><p><a class="btn" href="/">TraceTray home</a></p></main></body></html>`;
 
+const LIST_NAMES = { weekly_summary: "weekly summaries", shift_alerts: "behaviour-shift alerts" };
+
 async function unsubscribe(req) {
     const accountId = String(req.query.a || "");
-    if (!verify("unsubscribe", accountId, req.query.t)) return false;
-    await Account.updateOne({ _id: accountId }, { $set: { "email_prefs.weekly_summary": false } });
-    logger.info(`weekly summary turned off by email link  account=${accountId}`);
-    return true;
+    const list = String(req.query.l || "");
+    if (!EMAIL_LISTS.includes(list) || !verify(`unsubscribe:${list}`, accountId, req.query.t)) return null;
+    await Account.updateOne({ _id: accountId }, { $set: { [`email_prefs.${list}`]: false } });
+    logger.info(`${list} turned off by email link  account=${accountId}`);
+    return list;
 }
 
 // GET from the link in the email; POST from mail apps' own one-click unsubscribe button.
 router.get("/email/unsubscribe", async (req, res) => {
     try {
-        const done = await unsubscribe(req);
-        res.status(done ? 200 : 400).send(done
-            ? page("You won't get weekly summaries", "You can turn them back on any time in Setup.")
-            : page("That link didn't work", "It may be incomplete. You can turn weekly summaries off in Setup instead."));
+        const list = await unsubscribe(req);
+        res.status(list ? 200 : 400).send(list
+            ? page(`You won't get ${LIST_NAMES[list]}`, "You can turn them back on any time in Setup.")
+            : page("That link didn't work", "It may be incomplete. You can turn these emails off in Setup instead."));
     } catch (err) {
         logger.error("unsubscribe error:", err);
-        res.status(500).send(page("Something went wrong", "Try the link again, or turn weekly summaries off in Setup."));
+        res.status(500).send(page("Something went wrong", "Try the link again, or turn these emails off in Setup."));
     }
 });
 
@@ -47,16 +49,18 @@ router.get("/api/email-prefs", requireAuth(), async (req, res) => {
     const account = await Account.findOne({ clerk_user_id: getAuth(req).userId }).lean();
     if (!account) return res.status(404).json({ error: "account not found" });
     res.json({
-        weekly_summary: wantsWeeklySummary(account),
-        weekly_summary_available: TRACETRAY_MODE !== "production" || ["pro", "enterprise"].includes(account.plan)
+        weekly_summary: wantsEmail(account, "weekly_summary"),
+        shift_alerts: wantsEmail(account, "shift_alerts"),
+        available: emailAvailable(account)
     });
 });
 
 router.patch("/api/email-prefs", requireAuth(), async (req, res) => {
-    if (typeof req.body?.weekly_summary !== "boolean") return res.status(400).json({ error: "weekly_summary must be true or false" });
-    const result = await Account.updateOne({ clerk_user_id: getAuth(req).userId }, { $set: { "email_prefs.weekly_summary": req.body.weekly_summary } });
+    const changes = Object.fromEntries(EMAIL_LISTS.filter(list => typeof req.body?.[list] === "boolean").map(list => [`email_prefs.${list}`, req.body[list]]));
+    if (!Object.keys(changes).length) return res.status(400).json({ error: "nothing to change" });
+    const result = await Account.updateOne({ clerk_user_id: getAuth(req).userId }, { $set: changes });
     if (!result.matchedCount) return res.status(404).json({ error: "account not found" });
-    res.json({ weekly_summary: req.body.weekly_summary });
+    res.json({ updated: Object.keys(changes).length });
 });
 
 module.exports = router;

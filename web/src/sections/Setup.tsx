@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { pageLabel, type PageGroups, type Site } from "@tracetray/shared";
+import { pageLabel, type EmailList, type PageGroups, type Site } from "@tracetray/shared";
 import type React from "react";
 import { useLoad } from "../lib/useLoad";
 import { useApi } from "../api";
@@ -323,37 +323,42 @@ function Plan() {
   );
 }
 
+const EMAILS: { list: EmailList; name: string; about: string }[] = [
+  { list: "weekly_summary", name: "Weekly summary", about: "Every Monday: last week's visits, busiest pages, what moved most and any shifts in visitor groups." },
+  { list: "shift_alerts", name: "Behaviour-shift alerts", about: "After the weekly analysis, when a page's visitor groups move 10 points or more." }
+];
+
 function Emails() {
   const api = useApi();
   const prefs = useLoad(() => api.emailPrefs(), [api]);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState<EmailList | null>(null);
   const [error, setError] = useState("");
-  const on = prefs.data?.weekly_summary ?? false;
-  const available = prefs.data?.weekly_summary_available !== false;
+  const available = prefs.data?.available !== false;
 
-  async function toggle() {
-    setSaving(true);
+  async function toggle(list: EmailList) {
+    if (!prefs.data) return;
+    setSaving(list);
     setError("");
     try {
-      await api.setEmailPrefs({ weekly_summary: !on });
+      await api.setEmailPrefs({ [list]: !prefs.data[list] });
       prefs.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "That didn't save");
     } finally {
-      setSaving(false);
+      setSaving(null);
     }
   }
 
   return (
     <section className="panel">
-      <div className="panel-head"><h2>Emails</h2></div>
-      <div className="panel-body setup-copy">
-        <label className="toggle-row">
-          <input type="checkbox" checked={on} onChange={toggle} disabled={!prefs.data || saving || !available} />
-          <span><b>Weekly summary</b><small>{available
-            ? "Every Monday: last week's visits, busiest pages, what moved most and any shifts in visitor groups."
-            : "Included with Pro: last week's visits, busiest pages, what moved most and any shifts in visitor groups."}</small></span>
-        </label>
+      <div className="panel-head"><h2>Emails</h2>{!available && <div className="end"><span className="ask-note">Included with Pro</span></div>}</div>
+      <div className="panel-body setup-copy emails">
+        {EMAILS.map(email => (
+          <label key={email.list} className="toggle-row">
+            <input type="checkbox" checked={prefs.data?.[email.list] ?? false} onChange={() => toggle(email.list)} disabled={!prefs.data || saving !== null || !available} />
+            <span><b>{email.name}</b><small>{email.about}</small></span>
+          </label>
+        ))}
         {error && <p className="page-status error" style={{ padding: 0 }}>{error}</p>}
       </div>
     </section>

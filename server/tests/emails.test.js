@@ -17,12 +17,13 @@ test("unsubscribe links only verify for the account they were made for", () => {
     process.env.EMAIL_LINK_SECRET = "test-secret";
     delete require.cache[require.resolve("../src/lib/emailLinks")];
     const { sign, verify, unsubscribeUrl } = require("../src/lib/emailLinks");
-    const token = sign("unsubscribe", "abc123");
-    assert.equal(verify("unsubscribe", "abc123", token), true);
-    assert.equal(verify("unsubscribe", "someone-else", token), false);
-    assert.equal(verify("unsubscribe", "abc123", "x".repeat(token.length)), false);
-    assert.equal(verify("unsubscribe", "abc123", undefined), false);
-    assert.match(unsubscribeUrl("abc123"), /^https:\/\/tracetray\.com\/email\/unsubscribe\?a=abc123&t=/);
+    const token = sign("unsubscribe:weekly_summary", "abc123");
+    assert.equal(verify("unsubscribe:weekly_summary", "abc123", token), true);
+    assert.equal(verify("unsubscribe:weekly_summary", "someone-else", token), false);
+    assert.equal(verify("unsubscribe:shift_alerts", "abc123", token), false, "a weekly-summary link can't turn off alerts");
+    assert.equal(verify("unsubscribe:weekly_summary", "abc123", "x".repeat(token.length)), false);
+    assert.equal(verify("unsubscribe:weekly_summary", "abc123", undefined), false);
+    assert.equal(unsubscribeUrl("abc123", "shift_alerts"), `https://tracetray.com/email/unsubscribe?a=abc123&l=shift_alerts&t=${sign("unsubscribe:shift_alerts", "abc123")}`);
 });
 
 test("weeks run Monday to Sunday and the email escapes what site owners typed", () => {
@@ -46,3 +47,28 @@ test("a change isn't compared until a full day has passed since it", async () =>
     assert.deepEqual(await compareAroundChange("site", "page", "2026-10-14", now), { ready: false, days: 0 });
     assert.deepEqual(await compareAroundChange("site", "page", "not-a-day", now), { ready: false, days: 0 });
 });
+
+test("weekly runs take the busiest pages with new visits, within the plan's weekly allowance", () => {
+    const { pickPages, weeklyPageCap } = require("../src/jobs/autoAnalysis");
+    const pages = [
+        { page: "a", sessions: 900, analysable: 400, last_seen: 2000 },
+        { page: "b", sessions: 500, analysable: 300, last_seen: 1000 },
+        { page: "c", sessions: 300, analysable: 10, last_seen: 3000 },
+        { page: "d", sessions: 200, analysable: 100, last_seen: 3000 },
+        { page: "e", sessions: 100, analysable: 50, last_seen: 3000 }
+    ];
+    const lastRuns = new Map([["b", 1500]]);
+    const locked = new Set(["site|d"]);
+    assert.deepEqual(pickPages(pages, lastRuns, locked, "site", 10).map(p => p.page), ["a", "e"]);
+    assert.deepEqual(pickPages(pages, lastRuns, locked, "site", 1).map(p => p.page), ["a"]);
+    assert.equal(weeklyPageCap({ plan: "starter" }, "production"), 10);
+    assert.equal(weeklyPageCap({ plan: "none" }, "production"), 0);
+});
+
+test("shift alerts name the page the way the dashboard does", () => {
+    const { shiftAlert } = require("../src/lib/emailTemplates");
+    const mail = shiftAlert({ shifts: [{ site: "Shop", page: "https://shop.example/products/:product", group: "Re-checkers", from: 0.2, to: 0.35 }], unsubscribe: null });
+    assert.equal(mail.subject, "Visitors shifted on Product pages");
+    assert.match(mail.text, /Product pages on Shop: Re-checkers went from 20% to 35% of visitors/);
+});
+

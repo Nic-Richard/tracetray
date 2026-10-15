@@ -92,4 +92,17 @@ function weeklySummary({ from, to, sites, unsubscribe }) {
     return { subject, text, html: layout(title, bodyHtml, { href: `${SITE}/app/`, label: "Open your dashboard" }, footer) };
 }
 
-module.exports = { deletionNotice, weeklySummary, escapeHtml };
+// Sent after the weekly analysis when a page's visitor groups moved 10 points or more.
+function shiftAlert({ shifts, unsubscribe }) {
+    const title = shifts.length === 1 ? "Visitors changed on one of your pages" : `Visitors changed on ${shifts.length} of your pages`;
+    const lines = shifts.map(s => `${pathOf(s.page)} on ${s.site}: ${s.group} went from ${percent(s.from)} to ${percent(s.to)} of visitors.`);
+    const intro = "This week's analysis found a bigger shift than usual. Worth a look, especially if you changed something.";
+    const footer = unsubscribe ? ` <a href="${unsubscribe}" style="color:#646a80">Stop these alerts</a>.` : "";
+    return {
+        subject: shifts.length === 1 ? `Visitors shifted on ${pathOf(shifts[0].page)}` : `Visitors shifted on ${shifts.length} of your pages`,
+        text: [title, intro, ...lines, `Open your dashboard: ${SITE}/app/`, ...(unsubscribe ? [`Stop these alerts: ${unsubscribe}`] : [])].join("\n\n"),
+        html: layout(title, paragraph(intro) + lines.map(line => paragraph(line, 15)).join(""), { href: `${SITE}/app/`, label: "Open your dashboard" }, footer)
+    };
+}
+
+module.exports = { deletionNotice, weeklySummary, shiftAlert, escapeHtml };

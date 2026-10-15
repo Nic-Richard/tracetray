@@ -12,6 +12,7 @@ const { startSessionCleanupJob } = require("./src/jobs/sessionCleanup");
 const { startEventRetentionJob } = require("./src/jobs/eventRetention");
 const { startDataHoldJob } = require("./src/jobs/dataHold");
 const { startWeeklySummaryJob } = require("./src/jobs/weeklySummary");
+const { startAutoAnalysisJob } = require("./src/jobs/autoAnalysis");
 
 const app = express();
 // nginx is the only proxy in front, so req.ip is the address it saw.
@@ -76,3 +77,4 @@ startSessionCleanupJob();
 startEventRetentionJob();
 startDataHoldJob();
 startWeeklySummaryJob();
+startAutoAnalysisJob();
