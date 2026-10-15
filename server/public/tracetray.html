@@ -449,7 +449,7 @@ footer span { margin-left: auto; }
           <a class="btn" href="/sign-in" data-auth-cta="pricing">Try Pro</a>
         </div>
       </div>
-      <p class="plans-note">Need more than five websites or 100,000 visits? Enterprise starts at $299 a month. <a href="mailto:support@tracetray.com">Get in touch</a>.</p>
+      <p class="plans-note">Need more than five websites or 100,000 visits? <a href="mailto:support@tracetray.com">Get in touch</a> about Enterprise.</p>
     </div>
   </section>
 
@@ -628,7 +628,7 @@ startTraceTrayTracker();
 fetch("/api/config").then(r => r.json()).then(config => {
   if (config.mode !== "production") return;
   document.getElementById("pricing-title").textContent = "Try any plan free for 30 days";
-  document.getElementById("pricing-intro").textContent = "Add a card to start. You're charged when the trial ends, unless you cancel first.";
+  document.getElementById("pricing-intro").textContent = "Cancel anytime during the trial and you won't be charged.";
   document.querySelectorAll(".plan .soon").forEach(el => el.remove());
   document.querySelectorAll('[data-auth-cta="pricing"]').forEach(el => { el.textContent = "Start free trial"; el.href = "/pricing"; });
 }).catch(() => {});

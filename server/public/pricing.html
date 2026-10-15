@@ -131,7 +131,7 @@ async function subscribe(plan) {
 
 function applyProductionPricing() {
   document.getElementById("pricing-title").textContent = "Try any plan free for 30 days";
-  document.getElementById("pricing-intro").textContent = "Add a card to start. You're charged when the trial ends, unless you cancel first.";
+  document.getElementById("pricing-intro").textContent = "Cancel anytime during the trial and you won't be charged.";
   document.getElementById("starter-name").textContent = "Starter";
   document.getElementById("starter-price").innerHTML = "<sup>$</sup>12<span>/mo</span>";
   document.getElementById("starter-desc").textContent = "For one website getting started with behavioural analytics.";
@@ -152,7 +152,7 @@ function applyProductionPricing() {
   document.getElementById("btn-starter").textContent = "Start free trial";
   document.getElementById("btn-pro").textContent = "Start free trial";
   document.getElementById("btn-pro").disabled = false;
-  document.getElementById("pricing-note").innerHTML = 'One trial per account. Need more than 5 websites or 100,000 visits? Enterprise starts at $299 a month: <a href="mailto:support@tracetray.com">get in touch</a>.';
+  document.getElementById("pricing-note").innerHTML = 'One trial per account. Need more than 5 websites or 100,000 visits? <a href="mailto:support@tracetray.com">Get in touch</a> about Enterprise.';
 }
 
 async function loadClerk(pubKey) {
