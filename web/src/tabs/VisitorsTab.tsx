@@ -1,9 +1,11 @@
 import { useState } from "react";
 import type React from "react";
-import { pagePath, type AnalysisResult, type Device } from "@tracetray/shared";
+import { pagePath, percent, type AnalysisResult, type Device } from "@tracetray/shared";
 import { visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
 import { useAskAbout } from "../lib/askLink";
+
+const rate = (value: number) => percent(value, value < 0.1 ? 1 : 0);
 
 export default function VisitorsTab({ result, page }: { result: AnalysisResult; page: string }) {
   const [device, setDevice] = useState<Device>("desktop");
@@ -35,6 +37,12 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
               <div className="panel-body type-body">
                 <div className="meter" aria-hidden="true"><i style={{ width: `${type.share * 100}%` }} /></div>
                 <p className="muted">{type.sessions.toLocaleString()} visits</p>
+                {type.story?.goal && (
+                  <p className="group-goal">
+                    <span className={`verdict ${type.story.goal.standing === "above" ? "better" : type.story.goal.standing === "below" ? "worse" : ""}`}>{rate(type.story.goal.rate)} reached {type.story.goal.name}</span>
+                    <small>{device} average {rate(type.story.goal.average)}</small>
+                  </p>
+                )}
                 {type.story?.body && <p>{type.story.body.replace(/^\d+% of (desktop|mobile) visitors\. /, "")}</p>}
                 {(type.story?.traits?.length || 0) > 0 && (
                   <>

@@ -106,3 +106,25 @@ test("page types are guessed from the address", () => {
     assert.equal(guessPageType("https://example.com/docs/setup"), "help");
     assert.equal(guessPageType("https://example.com/about"), "other");
 });
+
+test("with a goal, groups that clearly reach it more are called working and the ones falling short lead", () => {
+    const withGoal = structuredClone(readerAndScanner);
+    withGoal.clusters[0].goal_hits = { g1: 35 };
+    withGoal.clusters[1].goal_hits = { g1: 2 };
+    const result = interpretClusters({ desktop: withGoal, pageUrl: "https://example.com/", goal: { id: "g1", name: "checkout" } });
+    const [readers, scanners] = [result.cluster_stories[0], result.cluster_stories[1]];
+    assert.equal(readers.goal.standing, "above");
+    assert.match(readers.body, /50% of them reach checkout, against 31% across the page, so what they rely on is working\./);
+    assert.deepEqual(readers.suggestions, []);
+    assert.equal(scanners.goal.standing, "below");
+    assert.match(scanners.body, /Only 4% of them reach checkout/);
+    assert.equal(result.top_suggestions[0], scanners.suggestions[0]);
+    assert.match(result.site_summary, /^58% of desktop visitors are deep readers\./);
+});
+
+test("a goal reached only a handful of times doesn't judge any group", () => {
+    const fewHits = structuredClone(readerAndScanner);
+    fewHits.clusters[0].goal_hits = { g1: 3 };
+    const result = interpretClusters({ desktop: fewHits, goal: { id: "g1", name: "checkout" } });
+    assert.ok(Object.values(result.cluster_stories).every(s => !s.goal));
+});

@@ -2,7 +2,8 @@
 // describe the groups and save the result. Used by the Refresh button and the weekly runs.
 const path = require("path");
 const { runProcess } = require("./runProcess");
-const { Session, AnalysisResult } = require("../db/models");
+const { Account, Session, AnalysisResult } = require("../db/models");
+const { appliesTo, isGoalPage } = require("./goals");
 const { getClickSummary } = require("./clickSummary");
 const { computeAttentionProfile } = require("./attentionProfile");
 const { interpretClusters } = require("./interpretClusters");
@@ -19,6 +20,16 @@ async function runPythonAnalysis(device, env) {
     const resultLine = stdout.split("\n").find(line => line.startsWith(marker));
     if (!resultLine) throw new Error(`python (${device}) returned no result`);
     return JSON.parse(resultLine.slice(marker.length).trim());
+}
+
+// The goal a page's groups are judged against: its main goal, else the first goal that counts there.
+async function goalFor(siteKey, page) {
+    const account = await Account.findOne({ "sites.key": siteKey }, { sites: 1 }).lean();
+    const site = account?.sites?.find(item => item.key === siteKey);
+    const goals = (site?.goals || []).filter(g => appliesTo(g, { page }) && !isGoalPage(g, { page }));
+    const main = (site?.main_goals || []).find(m => m.page === page)?.goal;
+    const goal = goals.find(g => g.id === main) || goals[0];
+    return goal ? { id: goal.id, name: goal.name } : null;
 }
 
 async function runAnalysis(siteKey, pageFilter = null) {
@@ -70,11 +81,14 @@ async function runAnalysis(siteKey, pageFilter = null) {
                 pageUrl = recentSess?.page || null;
             }
             const attentionResult = await computeAttentionProfile(siteKey, pageFilter || null);
+            const goal = pageFilter ? await goalFor(siteKey, pageFilter) : null;
+            if (goal) clusterResult.goal = goal;
             clusterResult.interpretation = interpretClusters({
                 desktop:         clusterResult,
                 mobile:          clusterResult.mobile || null,
                 pageUrl,
-                firstImpression: attentionResult.first_impression
+                firstImpression: attentionResult.first_impression,
+                goal
             });
         } catch (err) {
             logger.error("interpretation failed:", err);

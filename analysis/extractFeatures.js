@@ -46,8 +46,10 @@ async function run() {
             recent({ device_type: "mobile" })
         ]);
 
+        // goal_hits isn't a feature; it rides along so each group's goal rate can be counted.
         const desktopDataset = desktopSessions.map(session => ({
             session_id: session.session_id,
+            goal_hits: session.goal_hits || [],
             ...basicFeatures(session),
             ...movementFeatures(session),
             ...spatialFeatures(session),
@@ -56,6 +58,7 @@ async function run() {
 
         const mobileDataset = mobileSessions.map(session => ({
             session_id: session.session_id,
+            goal_hits: session.goal_hits || [],
             duration_ms: session.end_time ? session.end_time - session.start_time : 0,
             total_events: (session.events || []).length,
             ...mobileFeatures(session),

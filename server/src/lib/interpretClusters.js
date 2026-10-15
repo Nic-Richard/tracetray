@@ -321,7 +321,28 @@ function describeCluster(cluster, base, significance, archetypes, taken, usedNam
     return { key: archetype?.key || "composed", headline, body, traits: traitData, suggestions: suggestion ? [suggestion] : [] };
 }
 
-function describeDevice(result, archetypes, pageType, deviceLabel) {
+// A group's goal rate against the page's. "above" or "below" only when the gap is about two standard errors
+// or more, so small groups don't get called winners or losers by chance.
+function goalStanding(cluster, goal, average) {
+    const n = cluster.n || 0;
+    const reached = cluster.goal_hits?.[goal.id] || 0;
+    const rate = n ? reached / n : 0;
+    const spread = Math.sqrt(Math.max(average * (1 - average), 1e-6) / Math.max(n, 1));
+    const z = (rate - average) / spread;
+    return { rate, average, reached, standing: z >= 2 ? "above" : z <= -2 ? "below" : "about" };
+}
+
+function addGoal(story, standing, goal) {
+    story.goal = { name: goal.name, ...standing };
+    if (standing.standing === "above") {
+        story.body += ` ${pct(standing.rate)} of them reach ${goal.name}, against ${pct(standing.average)} across the page, so what they rely on is working.`;
+        story.suggestions = [];
+    } else if (standing.standing === "below") {
+        story.body += ` Only ${pct(standing.rate)} of them reach ${goal.name}, against ${pct(standing.average)} across the page.`;
+    }
+}
+
+function describeDevice(result, archetypes, pageType, deviceLabel, goal = null) {
     const clusters = (result?.clusters || []).filter(c => (c.n || 0) > 0);
     if (clusters.length === 0) return null;
     const base = baselines(clusters);
@@ -331,7 +352,19 @@ function describeDevice(result, archetypes, pageType, deviceLabel) {
     const ordered = [...clusters].sort((a, b) => (b.n || 0) - (a.n || 0));
     const stories = {};
     for (const c of ordered) stories[c.id] = describeCluster(c, base, significance, archetypes, taken, usedNames, pageType, deviceLabel);
-    return { stories, ordered, base };
+
+    // With a goal and enough visits reaching it, groups are judged by it, and suggestions start with the
+    // groups falling furthest short.
+    let priority = ordered;
+    const reached = clusters.reduce((sum, c) => sum + (c.goal_hits?.[goal?.id] || 0), 0);
+    if (goal && reached >= 5) {
+        const average = reached / base.total;
+        const standings = Object.fromEntries(clusters.map(c => [c.id, goalStanding(c, goal, average)]));
+        for (const c of clusters) addGoal(stories[c.id], standings[c.id], goal);
+        const missing = c => (c.n || 0) * Math.max(0, average - standings[c.id].rate);
+        priority = [...ordered].sort((a, b) => missing(b) - missing(a) || (b.n || 0) - (a.n || 0));
+    }
+    return { stories, ordered, priority, base };
 }
 
 function dataNote(sessionCount) {
@@ -383,14 +416,14 @@ function summarise(device, label) {
     return text;
 }
 
-function interpretClusters({ desktop, mobile = null, pageUrl = null, firstImpression = null }) {
+function interpretClusters({ desktop, mobile = null, pageUrl = null, firstImpression = null, goal = null }) {
     const pageType = guessPageType(pageUrl);
-    const d = describeDevice(desktop, ARCHETYPES.desktop, pageType, "desktop");
-    const m = describeDevice(mobile, ARCHETYPES.mobile, pageType, "mobile");
+    const d = describeDevice(desktop, ARCHETYPES.desktop, pageType, "desktop", goal);
+    const m = describeDevice(mobile, ARCHETYPES.mobile, pageType, "mobile", goal);
 
     const suggestions = [];
     for (const device of [d, m].filter(Boolean)) {
-        for (const c of device.ordered) {
+        for (const c of device.priority) {
             for (const s of device.stories[c.id].suggestions) if (!suggestions.includes(s)) suggestions.push(s);
         }
     }

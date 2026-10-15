@@ -225,6 +225,16 @@ def label_mobile_clusters(df, labels):
 
 
 
+def goal_counts(hits_column):
+    # How many sessions in a group reached each goal.
+    counts = {}
+    for hits in hits_column:
+        if isinstance(hits, list):
+            for goal in set(hits):
+                counts[goal] = counts.get(goal, 0) + 1
+    return counts
+
+
 def json_safe(value):
     # NaN is not valid JSON, and the server parses this output with JSON.parse.
     if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
@@ -346,6 +356,8 @@ def main(device, site_key):
 
     df_out = df[["session_id"] + engineered + ["cluster_km"]].copy()
     df_out["behaviour_label"] = df_out["cluster_km"].map(behaviour_names)
+    if "goal_hits" in df_raw.columns:
+        df_out["goal_hits"] = df_raw.set_index("session_id").reindex(df_out["session_id"])["goal_hits"].values
 
     return df_out, km_labels, cluster_means, k_metrics, None
 
@@ -380,7 +392,8 @@ if __name__ == "__main__":
                 "id":            int(cl_id),
                 "label":         label,
                 "n":             n,
-                "feature_means": means_row
+                "feature_means": means_row,
+                "goal_hits":     goal_counts(df_out.loc[df_out["cluster_km"] == cl_id, "goal_hits"]) if "goal_hits" in df_out.columns else {}
             })
 
         best_k        = int(df_out["cluster_km"].nunique())

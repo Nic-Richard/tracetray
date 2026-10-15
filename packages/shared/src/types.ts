@@ -168,6 +168,8 @@ export interface Cluster {
   label: string;
   n: number;
   feature_means: ClusterMeans;
+  /** Visits in the group that reached each goal, by goal ID. */
+  goal_hits?: Record<string, number>;
 }
 
 export interface KruskalWallis {
@@ -197,6 +199,8 @@ export interface ClusterStory {
   body: string;
   suggestions: string[];
   traits?: Trait[];
+  /** Against the page's goal; "above" and "below" only when the gap is unlikely to be chance. */
+  goal?: { name: string; rate: number; average: number; reached: number; standing: "above" | "below" | "about" };
 }
 
 export interface Interpretation {

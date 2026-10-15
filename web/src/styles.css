@@ -298,6 +298,8 @@ p.tab-intro { max-width: 80ch; }
 .goal-what small { font-size: 13.5px; color: var(--muted); }
 .goal-what select { font: inherit; font-weight: 700; color: var(--ink); background: transparent; border: 0; border-bottom: 1px dashed var(--line-2); padding: 0 2px; cursor: pointer; }
 .goal-line.empty-goal { display: block; font-size: 14.5px; color: var(--muted); }
+.group-goal { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.group-goal small { font-size: 13px; color: var(--muted); }
 
 /* Goals in Setup */
 .goal-row > span:first-child { display: grid; gap: 2px; }
