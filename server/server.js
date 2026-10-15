@@ -58,6 +58,7 @@ app.use(require("./src/routes/analysis"));
 app.use(require("./src/routes/ask"));
 app.use(require("./src/routes/pageGroups"));
 app.use(require("./src/routes/email"));
+app.use(require("./src/routes/compare"));
 
 async function startServer() {
     try {

@@ -1,6 +1,6 @@
 import type {
-  Account, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, Config, EmailPrefs,
-  GroupMembers, Journey, MemberSort, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
+  Account, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, ChangeComparison, Config, EmailPrefs,
+  GroupMembers, Journey, MemberSort, PageChange, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
   SitesResponse, Stats, Timeseries, UsageResponse, UxTrends
 } from "./types";
 
@@ -62,6 +62,10 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     stats: (siteKey: string, page: string) => request<Stats>("GET", "/api/stats", { siteKey, query: { page } }),
     timeseries: (siteKey: string, page?: string | null, days = 14) => request<Timeseries>("GET", "/api/sessions/timeseries", { siteKey, query: { page, days } }),
     uxTrends: (siteKey: string, page: string, runs = 10) => request<UxTrends>("GET", "/api/ux-trends", { siteKey, query: { page, runs } }),
+    pageChanges: (siteKey: string, page: string) => request<PageChange[]>("GET", "/api/page-changes", { siteKey, query: { page } }),
+    addPageChange: (siteKey: string, change: { page: string; day: string; note: string }) => request<PageChange>("POST", "/api/page-changes", { siteKey, body: change }),
+    deletePageChange: (siteKey: string, id: string) => request<{ deleted: boolean }>("DELETE", `/api/page-changes/${encodeURIComponent(id)}`, { siteKey }),
+    compare: (siteKey: string, page: string, day: string) => request<ChangeComparison>("GET", "/api/compare", { siteKey, query: { page, day } }),
     recentSessions: (siteKey: string, limit = 50) => request<RecentSession[]>("GET", "/api/sessions/recent", { siteKey, query: { limit } }),
     journey: (siteKey: string) => request<Journey>("GET", "/api/journey", { siteKey }),
     attention: (siteKey: string, page?: string | null) => request<AttentionProfile>("GET", "/api/attention-profile", { siteKey, query: { page } }),

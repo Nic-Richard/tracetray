@@ -39,3 +39,10 @@ test("weeks run Monday to Sunday and the email escapes what site owners typed", 
     assert.match(mail.text, /Stop these weekly emails/);
     assert.match(deletionNotice({ siteNames: ["A"], deleteOn: "2026-11-20" }).subject, /November 20, 2026/);
 });
+
+test("a change isn't compared until a full day has passed since it", async () => {
+    const { compareAroundChange } = require("../src/lib/compare");
+    const now = Date.parse("2026-10-14T18:00:00Z");
+    assert.deepEqual(await compareAroundChange("site", "page", "2026-10-14", now), { ready: false, days: 0 });
+    assert.deepEqual(await compareAroundChange("site", "page", "not-a-day", now), { ready: false, days: 0 });
+});

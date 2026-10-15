@@ -15,6 +15,7 @@ const Account = mongoose.model("Account", new mongoose.Schema({
         last_page_refresh_at: Date,
         last_all_refresh_at: Date,
         page_groups: [String],
+        page_changes: [{ id: String, page: String, day: String, note: String, created_at: Date }],
         regrouping_at: Date,
         created_at: Date
     }],

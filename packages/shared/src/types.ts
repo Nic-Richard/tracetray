@@ -18,6 +18,32 @@ export interface Usage {
   askQuestions: number;
 }
 
+export interface PageChange {
+  id: string;
+  /** YYYY-MM-DD, counted from the start of the day (UTC). */
+  day: string;
+  note: string;
+}
+
+export interface ChangeMeasures {
+  visits: number;
+  visitsPerDay: number;
+  engaged: number | null;
+  timeOnPage: number | null;
+  actionsPerVisit: number | null;
+  scrollDepth: number | null;
+  phoneShare: number | null;
+}
+
+export interface ChangeComparison {
+  /** False until a full day has passed since the change. */
+  ready: boolean;
+  days: number;
+  before?: ChangeMeasures;
+  after?: ChangeMeasures;
+  groups?: { before: { group: string; share: number }[] | null; after: { group: string; share: number }[] | null };
+}
+
 export interface EmailPrefs {
   weekly_summary: boolean;
   /** False on plans without the weekly summary. */

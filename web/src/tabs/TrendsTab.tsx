@@ -5,6 +5,7 @@ import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
 import { cssVar, useThemeVersion } from "../lib/palette";
+import BeforeAfter from "../components/BeforeAfter";
 
 Chart.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip);
 
@@ -80,7 +81,8 @@ export default function TrendsTab({ page }: { page: string }) {
 
   return (
     <div className="content">
-      <p className="tab-intro">Each point is one analysis run, not one day. Refresh the analysis after you change the page to see whether visitors behave differently.</p>
+      <BeforeAfter page={page} />
+      <p className="tab-intro">Each point below is one analysis run, not one day. Refresh the analysis after you change the page to see whether visitors behave differently.</p>
       {points.length === 0
         ? <section className="panel"><p className="empty">No analysis runs on this page yet.</p></section>
         : <div className="trend-grid">{MEASURES.map(measure => <MeasureCard key={measure.key} measure={measure} points={points} theme={theme} />)}</div>}

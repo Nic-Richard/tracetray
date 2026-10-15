@@ -2,6 +2,7 @@
 // the week before, per website.
 const { PageDay, AnalysisResult } = require("../db/models");
 const { getAccountSites } = require("./siteAccount");
+const { biggestShift } = require("./groupShifts");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MIN_MOVER_VISITS = 20;
@@ -28,13 +29,6 @@ async function pageTotals(siteKey, from, to) {
     return new Map(rows.map(r => [r._id, r]));
 }
 
-function shares(result) {
-    const clusters = result?.clusters || [];
-    const total = clusters.reduce((sum, c) => sum + (c.n || 0), 0) || 1;
-    const stories = result?.interpretation?.cluster_stories || result?.ai_interpretation?.cluster_stories || {};
-    return new Map(clusters.map(c => [stories[c.id]?.headline || c.label, (c.n || 0) / total]));
-}
-
 // The visitor group whose share moved most between a page's latest run this week and the run before it.
 async function groupShifts(siteKey, from, to) {
     const recent = await AnalysisResult.find({ site_key: siteKey, ran_at: { $gte: new Date(from), $lt: new Date(to) }, k: { $gt: 0 } })
@@ -46,16 +40,8 @@ async function groupShifts(siteKey, from, to) {
         seen.add(latest.page);
         const before = await AnalysisResult.findOne({ site_key: siteKey, page: latest.page, ran_at: { $lt: latest.ran_at }, k: { $gt: 0 } })
             .sort({ ran_at: -1 }).lean();
-        if (!before) continue;
-        const now = shares(latest), then = shares(before);
-        let best = null;
-        for (const name of new Set([...now.keys(), ...then.keys()])) {
-            const delta = (now.get(name) || 0) - (then.get(name) || 0);
-            if (Math.abs(delta) >= MIN_SHIFT && (!best || Math.abs(delta) > Math.abs(best.delta))) {
-                best = { page: latest.page, group: name, from: then.get(name) || 0, to: now.get(name) || 0, delta };
-            }
-        }
-        if (best) shifts.push(best);
+        const shift = before && biggestShift(before, latest, MIN_SHIFT);
+        if (shift) shifts.push({ page: latest.page, ...shift, delta: shift.to - shift.from });
     }
     return shifts.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 3);
 }
