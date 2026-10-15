@@ -105,3 +105,27 @@ test("journeys split after 30 minutes away, and each visitor ID keeps its own jo
     ]);
     assert.deepEqual(journeys, [["/", "/cart"], ["/pricing", "/signup"], ["/"]]);
 });
+
+test("the weekly email reports each goal, with best weeks, targets, milestones and wins only when earned", () => {
+    const site = {
+        name: "Shop", visits: 1200, change: 0.1, mobileShare: 0.4, topPages: [], mover: null, shifts: [],
+        goals: [
+            { name: "Checkout", rate: 0.041, previous: 0.036, bestWeek: true, targetMet: 0.04, milestone: 1000 },
+            { name: "<b>Signup</b>", rate: 0.12, previous: null, bestWeek: false, targetMet: null, milestone: null }
+        ],
+        wins: [{ page: "https://shop.example/", day: "2026-10-05", note: "New hero", goal: "Checkout", before: 0.031, after: 0.046 }]
+    };
+    const email = weeklySummary({ from: "2026-10-05", to: "2026-10-11", sites: [site] });
+    assert.match(email.text, /Checkout: 4\.1% of visits reached it, against 3\.6% the week before\. Your best week yet\. That's at or above your 4\.0% target\. It has now been reached 1,000 times\./);
+    assert.match(email.text, /<b>Signup<\/b>: 12% of visits reached it\./);
+    assert.ok(!email.html.includes("<b>Signup</b>"));
+    assert.match(email.text, /A win: after your change to Home on October 5, 2026 \(New hero\), Checkout went from 3\.1% to 4\.6%\./);
+});
+
+test("milestones count the biggest round number a goal passed", () => {
+    const { milestoneCrossed, nextMilestone } = require("../src/lib/goalHits");
+    assert.equal(milestoneCrossed(95, 130), 100);
+    assert.equal(milestoneCrossed(130, 990), null);
+    assert.equal(milestoneCrossed(90, 1200), 1000);
+    assert.equal(nextMilestone(130), 1000);
+});

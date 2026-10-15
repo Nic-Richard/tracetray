@@ -49,6 +49,10 @@ function GoalRow({ goal, onChanged }: { goal: Goal; onChanged: () => void }) {
           <b>{goal.name}</b>
           <small>{describeGoal(goal)}{goal.target != null ? ` · target ${asPercent(goal.target)}` : ""}</small>
           <small>{checking ? "Checking past visits…" : goal.backfill === "failed" ? "Couldn't check past visits; new visits still count." : goal.reached_last_7_days ? `Reached ${goal.reached_last_7_days.toLocaleString()} times in the last 7 days` : "No matches in the last 7 days"}</small>
+          {!checking && (goal.reached_all_time || 0) > 0 && (
+            <small>{goal.reached_all_time!.toLocaleString()} all time{goal.next_milestone ? ` · next milestone ${goal.next_milestone.toLocaleString()}` : ""}</small>
+          )}
+          {goal.milestone_this_week && <span className="goal-tag milestone">Passed {goal.milestone_this_week.toLocaleString()} this week</span>}
         </span>
       ) : (
         <form className="inline-form" onSubmit={save}>

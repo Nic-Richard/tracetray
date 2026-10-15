@@ -45,6 +45,8 @@ function deletionNotice({ siteNames, deleteOn }) {
 const percent = value => `${Math.round(value * 100)}%`;
 const signed = value => `${value > 0 ? "up" : "down"} ${percent(Math.abs(value))}`;
 const count = value => value.toLocaleString("en-CA");
+// Goal rates are often small, so they keep a decimal under 10%.
+const rate = value => value === null || value === undefined ? "–" : `${(value * 100).toFixed(value < 0.1 ? 1 : 0)}%`;
 
 // Page keys are full addresses or group patterns. Emails name them as the dashboard does:
 // "Home", a group as "Product pages", any other page by its path.
@@ -68,6 +70,16 @@ function siteLines(site) {
     if (site.topPages.length) lines.push(`Busiest pages: ${site.topPages.map(p => `${pathOf(p.page)} (${count(p.visits)})`).join(", ")}.`);
     if (site.mover) lines.push(`Moved most: ${pathOf(site.mover.page)}, ${signed(site.mover.change)}.`);
     for (const shift of site.shifts) lines.push(`On ${pathOf(shift.page)}, ${shift.group} went from ${percent(shift.from)} to ${percent(shift.to)} of visitors.`);
+    for (const goal of site.goals || []) {
+        let line = `${goal.name}: ${rate(goal.rate)} of visits reached it${goal.previous === null ? "" : `, against ${rate(goal.previous)} the week before`}.`;
+        if (goal.bestWeek) line += " Your best week yet.";
+        if (goal.targetMet !== null) line += ` That's at or above your ${rate(goal.targetMet)} target.`;
+        if (goal.milestone) line += ` It has now been reached ${count(goal.milestone)} times.`;
+        lines.push(line);
+    }
+    for (const win of site.wins || []) {
+        lines.push(`A win: after your change to ${pathOf(win.page)} on ${formatDay(win.day)}${win.note ? ` (${win.note})` : ""}, ${win.goal} went from ${rate(win.before)} to ${rate(win.after)}.`);
+    }
     return lines;
 }
 

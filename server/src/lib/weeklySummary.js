@@ -3,10 +3,16 @@
 const { PageDay, AnalysisResult } = require("../db/models");
 const { getAccountSites } = require("./siteAccount");
 const { biggestShift } = require("./groupShifts");
+const { goalTotals, goalWeeks, milestoneCrossed, mainGoalFor } = require("./goalHits");
+const { compareAroundChange } = require("./compare");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MIN_MOVER_VISITS = 20;
 const MIN_SHIFT = 0.05;
+const MAX_GOALS = 5;
+const MIN_BEST_WEEKS = 4;
+const MIN_WEEK_VISITS = 30;
+const WIN_LOOKBACK_DAYS = 21;
 
 const day = ms => new Date(ms).toISOString().slice(0, 10);
 
@@ -46,6 +52,47 @@ async function groupShifts(siteKey, from, to) {
     return shifts.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 3);
 }
 
+// Each goal's week against the week before, plus the moments worth celebrating: a best week (out of at
+// least four full ones), a milestone passed and a target met.
+async function goalLines(site, start) {
+    const end = start + 7 * DAY_MS, prevStart = start - 7 * DAY_MS;
+    const lines = [];
+    for (const goal of (site.goals || []).slice(0, MAX_GOALS)) {
+        const [week, prev, before, after, trend] = await Promise.all([
+            goalTotals(site.key, goal, { from: day(start), to: day(end) }),
+            goalTotals(site.key, goal, { from: day(prevStart), to: day(start) }),
+            goalTotals(site.key, goal, { to: day(start) }),
+            goalTotals(site.key, goal, { to: day(end) }),
+            goalWeeks(site.key, goal, { now: end })
+        ]);
+        if (!week.visits) continue;
+        const fullWeeks = trend.weeks.slice(0, -1).filter(w => w.visits >= MIN_WEEK_VISITS).length;
+        lines.push({
+            name: goal.name,
+            rate: week.rate,
+            previous: prev.visits ? prev.rate : null,
+            bestWeek: fullWeeks >= MIN_BEST_WEEKS && trend.best?.week === day(start),
+            milestone: milestoneCrossed(before.reached, after.reached),
+            targetMet: goal.target != null && week.visits >= MIN_WEEK_VISITS && week.rate >= goal.target ? goal.target : null
+        });
+    }
+    return lines;
+}
+
+// Marked changes from the last three weeks that have since clearly raised their page's goal.
+async function recentWins(site, start) {
+    const end = start + 7 * DAY_MS;
+    const wins = [];
+    for (const change of site.page_changes || []) {
+        if (change.day < day(start - WIN_LOOKBACK_DAYS * DAY_MS) || change.day >= day(end)) continue;
+        const goal = await mainGoalFor(site.key, change.page);
+        if (!goal) continue;
+        const result = await compareAroundChange(site.key, change.page, change.day, end, goal);
+        if (result.goal?.verdict === "better") wins.push({ page: change.page, day: change.day, note: change.note, goal: goal.name, before: result.goal.before, after: result.goal.after });
+    }
+    return wins.slice(0, 3);
+}
+
 async function siteSummary(site, start) {
     const end = start + 7 * DAY_MS, prevStart = start - 7 * DAY_MS;
     const [week, prev] = await Promise.all([pageTotals(site.key, start, end), pageTotals(site.key, prevStart, start)]);
@@ -63,7 +110,9 @@ async function siteSummary(site, start) {
         mobileShare: visits ? sum(week, "mobile") / visits : 0,
         topPages: pages.slice(0, 3),
         mover: mover && Math.abs(mover.change) >= 0.25 ? mover : null,
-        shifts: await groupShifts(site.key, start, end)
+        shifts: await groupShifts(site.key, start, end),
+        goals: await goalLines(site, start),
+        wins: await recentWins(site, start)
     };
 }
 

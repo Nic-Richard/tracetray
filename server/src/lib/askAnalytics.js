@@ -4,6 +4,8 @@ const { getClickSummary } = require("./clickSummary");
 const { computeAttentionProfile } = require("./attentionProfile");
 const pageDays = require("./pageDays");
 const { isGroup } = require("./pageGroups");
+const { Account } = require("../db/models");
+const { goalRate, goalWeeks, mainGoalFor } = require("./goalHits");
 const logger = require("./logger");
 
 const ASK_MODEL   = process.env.ASK_MODEL || "claude-sonnet-5-5";
@@ -78,6 +80,18 @@ const TOOLS = [
         }
     },
     {
+        name: "get_goals",
+        description: "The site owner's goals (clicking a chosen button or link, or going on to a chosen page in the same visit), each with how many visits reached it and the share, over the last 7, 30 or 90 days, for one page or the whole site. With a page: which goal is its main one, the main goal's best week and any target. Visitor groups in get_overview say how each group does against the main goal once the page is reanalyzed.",
+        input_schema: {
+            type: "object",
+            properties: {
+                page: pageProperty,
+                days: { type: "integer", enum: [7, 30, 90], description: "Defaults to 30." }
+            },
+            additionalProperties: false
+        }
+    },
+    {
         name: "get_visitor_journeys",
         description: "Site-wide paths between pages: top entry pages, top exit pages, common page-to-page moves and common three-page paths, plus single-page versus multi-page visitor counts.",
         input_schema: { type: "object", properties: {}, additionalProperties: false }
@@ -133,7 +147,9 @@ function visitorTypes(clusters, stories) {
         share: total ? Math.round((c.n / total) * 100) / 100 : null,
         sessions: c.n,
         description: stories?.[c.id]?.body || null,
-        compared_with_page_average: stories?.[c.id]?.traits?.map(t => t.description) || []
+        compared_with_page_average: stories?.[c.id]?.traits?.map(t => t.description) || [],
+        // "above"/"below" only when the gap from the average is unlikely to be chance.
+        goal: stories?.[c.id]?.goal ? { name: stories[c.id].goal.name, reached_share: stories[c.id].goal.rate, average: stories[c.id].goal.average, standing: stories[c.id].goal.standing } : null
     }));
 }
 
@@ -185,6 +201,22 @@ async function runTool(siteKey, name, input = {}, { siteHost = null } = {}) {
             return getClickSummary(siteKey, page || "all", clampInt(input.limit, 1, 30, 15));
         case "get_traffic_sources":
             return siteData.getReferrers(siteKey, { days: clampInt(input.days, 1, 90, 30), page, ownHost: siteHost });
+        case "get_goals": {
+            const account = await Account.findOne({ "sites.key": siteKey }, { sites: 1 }).lean();
+            const goals = account?.sites?.find(site => site.key === siteKey)?.goals || [];
+            if (!goals.length) return "This website has no goals yet. Goals are set in Setup or from a page's Clicks tab.";
+            const days = [7, 30, 90].includes(input.days) ? input.days : 30;
+            const rates = await Promise.all(goals.map(async goal => ({
+                goal: goal.name,
+                kind: goal.type === "page" ? `goes on to ${goal.match.page}` : `clicks ${goal.match.href || goal.match.text || goal.match.id}`,
+                target: goal.target ?? null,
+                ...await goalRate(siteKey, goal, { page, days })
+            })));
+            if (!page) return { days, goals: rates };
+            const main = await mainGoalFor(siteKey, page);
+            const trend = main ? await goalWeeks(siteKey, main, { page }) : null;
+            return { page, days, main_goal: main?.name || null, best_week: trend?.best || null, goals: rates.filter(r => r.visits > 0) };
+        }
         case "get_visitor_journeys":
             return siteData.getJourney(siteKey);
         case "get_ux_trends":

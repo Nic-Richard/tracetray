@@ -321,6 +321,7 @@ p.tab-intro { max-width: 80ch; }
 .wins { margin-top: 22px; }
 .wins h3 { font-size: 16px; margin-bottom: 4px; }
 .wins small { color: var(--good); }
+.goal-tag.milestone { justify-self: start; margin-top: 4px; }
 
 /* Goals in Setup */
 .goal-row > span:first-child { display: grid; gap: 2px; }

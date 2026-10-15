@@ -41,6 +41,11 @@ export interface Goal {
   /** Applying the goal to past visits. */
   backfill: "queued" | "running" | "done" | "failed";
   reached_last_7_days?: number;
+  reached_all_time?: number;
+  /** The next round number (100, 1,000, 10,000…) the all-time count will pass. */
+  next_milestone?: number | null;
+  /** A milestone passed in the last 7 days. */
+  milestone_this_week?: number | null;
 }
 
 export interface GoalList {

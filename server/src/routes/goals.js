@@ -7,7 +7,7 @@ const { resolveSiteKey } = require("../lib/siteAccount");
 const { limitsFor } = require("../lib/limits");
 const { PLANS } = require("../lib/plans");
 const { parseGoal, matchChanged, appliesTo, isGoalPage } = require("../lib/goals");
-const { queueBackfill, removeGoalMarks, goalRate, goalWeeks, mainGoalFor } = require("../lib/goalHits");
+const { queueBackfill, removeGoalMarks, goalRate, goalWeeks, mainGoalFor, milestoneCrossed, nextMilestone } = require("../lib/goalHits");
 const logger = require("../lib/logger");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -32,12 +32,19 @@ router.get("/api/goals", requireAuth(), async (req, res) => {
         if (!found) return;
         const goals = found.site.goals || [];
         const since = new Date(Date.now() - 6 * DAY_MS).toISOString().slice(0, 10);
-        const rows = goals.length
-            ? await PageDay.find({ site_key: found.site.key, day: { $gte: since }, goals: { $exists: true } }, { _id: 0, goals: 1 }).lean()
-            : [];
-        const lastWeek = id => rows.reduce((n, row) => n + (row.goals?.[id] || 0), 0);
+        // All-time and last-7-day hits per goal, straight from the daily rows.
+        const totals = goals.length ? await PageDay.aggregate([
+            { $match: { site_key: found.site.key, goals: { $exists: true } } },
+            { $project: { day: 1, hits: { $objectToArray: "$goals" } } },
+            { $unwind: "$hits" },
+            { $group: { _id: "$hits.k", all: { $sum: "$hits.v" }, week: { $sum: { $cond: [{ $gte: ["$day", since] }, "$hits.v", 0] } } } }
+        ]) : [];
+        const byGoal = new Map(totals.map(t => [t._id, t]));
         res.json({
-            goals: goals.map(goal => ({ ...view(goal), reached_last_7_days: lastWeek(goal.id) })),
+            goals: goals.map(goal => {
+                const all = byGoal.get(goal.id)?.all || 0, week = byGoal.get(goal.id)?.week || 0;
+                return { ...view(goal), reached_last_7_days: week, reached_all_time: all, next_milestone: nextMilestone(all), milestone_this_week: milestoneCrossed(all - week, all) };
+            }),
             main_goals: found.site.main_goals || [],
             cap: goalCap(found.account)
         });

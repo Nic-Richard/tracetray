@@ -178,12 +178,12 @@ async function goalWeeks(siteKey, goal, { page = null, weeks = 12, now = Date.no
     return { weeks: buckets, best };
 }
 
-// Share of visits that reached a goal over the last `days`, for one page (or every page the goal applies to).
+// Visits and goal hits between two days (YYYY-MM-DD, `to` exclusive), for one page or every page the goal counts on.
 // The goal page itself is left out of a page goal's rate.
-async function goalRate(siteKey, goal, { page = null, days = 30, now = Date.now() } = {}) {
-    const since = new Date(now - (days - 1) * DAY_MS).toISOString().slice(0, 10);
+async function goalTotals(siteKey, goal, { from = null, to = null, page = null } = {}) {
+    const day = { ...(from ? { $gte: from } : {}), ...(to ? { $lt: to } : {}) };
     const rows = await PageDay.find(
-        { site_key: siteKey, day: { $gte: since }, ...(page ? { page } : {}) },
+        { site_key: siteKey, ...(from || to ? { day } : {}), ...(page ? { page } : {}) },
         { _id: 0, page: 1, path: 1, sessions: 1, goals: 1 }
     ).lean();
     let visits = 0, reached = 0;
@@ -196,4 +196,18 @@ async function goalRate(siteKey, goal, { page = null, days = 30, now = Date.now(
     return { visits, reached, rate: visits ? reached / visits : null };
 }
 
-module.exports = { mainGoalFor, goalWeeks, markBatch, markHits, backfillGoal, queueBackfill, resumeBackfills, recountGoal, removeGoalMarks, goalRate, setBackfillState };
+// Share of visits that reached a goal over the last `days`, for one page (or every page the goal applies to).
+async function goalRate(siteKey, goal, { page = null, days = 30, now = Date.now() } = {}) {
+    return goalTotals(siteKey, goal, { from: new Date(now - (days - 1) * DAY_MS).toISOString().slice(0, 10), page });
+}
+
+const MILESTONES = [100, 1000, 10000, 100000, 1000000];
+
+// The milestone a total passed between two counts, if any.
+function milestoneCrossed(before, after) {
+    return [...MILESTONES].reverse().find(m => before < m && after >= m) || null;
+}
+
+const nextMilestone = total => MILESTONES.find(m => m > total) || null;
+
+module.exports = { MILESTONES, milestoneCrossed, nextMilestone, goalTotals, mainGoalFor, goalWeeks, markBatch, markHits, backfillGoal, queueBackfill, resumeBackfills, recountGoal, removeGoalMarks, goalRate, setBackfillState };
