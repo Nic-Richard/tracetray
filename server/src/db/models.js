@@ -16,6 +16,8 @@ const Account = mongoose.model("Account", new mongoose.Schema({
         last_all_refresh_at: Date,
         page_groups: [String],
         page_changes: [{ id: String, page: String, day: String, note: String, created_at: Date }],
+        goals: [{ _id: false, id: String, name: String, type: { type: String }, match: Object, pages: [String], backfill: String, backfill_at: Date, created_at: Date }],
+        main_goals: [{ _id: false, page: String, goal: String }],
         regrouping_at: Date,
         created_at: Date
     }],
@@ -31,6 +33,8 @@ const sessionSchema = new mongoose.Schema({
     referrer:    String
 }, { strict: false });
 sessionSchema.index({ site_key: 1, start_time: -1 });
+sessionSchema.index({ site_key: 1, visitor_id: 1, start_time: 1 });
+sessionSchema.index({ site_key: 1, goal_hits: 1 });
 const Session = mongoose.model("Session", sessionSchema, "sessions");
 
 const AnalysisResult = mongoose.model("AnalysisResult", new mongoose.Schema({
@@ -93,7 +97,9 @@ const pageDaySchema = new mongoose.Schema({
     sessions: { type: Number, default: 0 },
     desktop:  { type: Number, default: 0 },
     mobile:   { type: Number, default: 0 },
-    clicks:   { type: Number, default: 0 }
+    clicks:   { type: Number, default: 0 },
+    // Visits that reached each goal, by goal ID.
+    goals:    { type: mongoose.Schema.Types.Mixed }
 }, { versionKey: false });
 pageDaySchema.index({ site_key: 1, page: 1, path: 1, day: 1 }, { unique: true });
 pageDaySchema.index({ site_key: 1, day: 1 });

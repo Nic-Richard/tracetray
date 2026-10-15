@@ -67,6 +67,7 @@ app.use(require("./src/routes/pageGroups"));
 app.use(require("./src/routes/email"));
 app.use(require("./src/routes/compare"));
 app.use(require("./src/routes/export"));
+app.use(require("./src/routes/goals"));
 
 async function startServer() {
     try {
@@ -82,6 +83,7 @@ async function startServer() {
 startServer();
 startSessionCleanupJob();
 startEventRetentionJob();
+require("./src/lib/goalHits").resumeBackfills().catch(err => logger.error("goal backfill resume error:", err));
 startDataHoldJob();
 startWeeklySummaryJob();
 startAutoAnalysisJob();

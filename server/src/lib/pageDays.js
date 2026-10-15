@@ -1,4 +1,4 @@
-const { Session, PageDay } = require("../db/models");
+const { Account, Session, PageDay } = require("../db/models");
 const { groupPage, isGroup } = require("./pageGroups");
 const logger = require("./logger");
 
@@ -88,8 +88,9 @@ async function regroupDays(siteKey, rules, before) {
         let page = row.page, path = row.path;
         try { ({ page, path } = groupPage(new URL(row.page).origin + row.path, rules)); } catch { /* keep the row as it was */ }
         const key = `${page}|${path}`;
-        const sum = merged.get(key) || { site_key: siteKey, page, path, day: row.day, sessions: 0, desktop: 0, mobile: 0, clicks: 0 };
+        const sum = merged.get(key) || { site_key: siteKey, page, path, day: row.day, sessions: 0, desktop: 0, mobile: 0, clicks: 0, goals: {} };
         for (const field of ["sessions", "desktop", "mobile", "clicks"]) sum[field] += row[field] || 0;
+        for (const [goal, n] of Object.entries(row.goals || {})) sum.goals[goal] = (sum.goals[goal] || 0) + n;
         merged.set(key, sum);
         ids.push(row._id);
     }
@@ -141,6 +142,12 @@ async function regroupSite(siteKey, rules) {
         { $project: { _id: 0, site_key: siteKey, page: "$_id.page", path: "$_id.path", day: "$_id.day", sessions: 1, desktop: 1, mobile: 1, clicks: 1 } },
         { $merge: { into: "page_days", on: ["site_key", "page", "path", "day"], whenMatched: "replace", whenNotMatched: "insert" } }
     ]).allowDiskUse(true);
+
+    // The rebuilt rows lost their goal counts; the visits still carry their goal hits.
+    const { recountGoal } = require("./goalHits");
+    const account = await Account.findOne({ "sites.key": siteKey }, { sites: 1 }).lean();
+    const site = account?.sites?.find(item => item.key === siteKey);
+    if (firstDay) for (const goal of site?.goals || []) await recountGoal(siteKey, goal.id, firstDay);
 
     logger.info(`regrouped ${siteKey}: ${changed} sessions moved in ${Math.round((Date.now() - started) / 1000)}s`);
     return changed;

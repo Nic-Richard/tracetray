@@ -8,6 +8,7 @@ const { groupPage } = require("../lib/pageGroups");
 const { countSession } = require("../lib/pageDays");
 const { overVisitAllowance } = require("../lib/limits");
 const { detailRate, inSample } = require("../lib/sampling");
+const { markBatch } = require("../lib/goalHits");
 const { TRACETRAY_MODE } = require("../config");
 const { visitorIdFor } = require("../lib/visitorId");
 
@@ -141,6 +142,9 @@ router.post("/collect", async (req, res) => {
             clicks: events.filter(e => e?.type === "click").length,
             newSession: write.upsertedCount === 1
         });
+
+        // Goals read every event in the batch, so visits past the plan's allowance still count.
+        await markBatch(site, { session_id: sessionId, page, page_path: path, start_time: data.start_time, visitor_id: visitorId }, events, write.upsertedCount === 1);
 
         res.sendStatus(200);
     } catch (err) {
