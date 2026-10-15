@@ -317,7 +317,7 @@ function Plan() {
         ) && (
           <p className="note">Over a limit, TraceTray keeps collecting: extra pages are locked and extra visits keep their summary only. Both reset on the 1st, or right away on a bigger plan.</p>
         )}
-        <p><a className="link-button" href="/billing.html">Manage billing</a></p>
+        <p><a className="link-button" href="/billing">Manage billing</a></p>
       </div>
     </section>
   );
@@ -426,9 +426,9 @@ export default function Setup() {
       <Export />
       <nav className="site-footer" aria-label="TraceTray">
         <a href="/">TraceTray home</a>
-        <a href="/pricing.html">Pricing</a>
-        <a href="/privacy.html">Privacy</a>
-        <a href="/terms.html">Terms</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
       </nav>
     </div>
   );

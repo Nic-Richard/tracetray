@@ -171,7 +171,7 @@ function LockedPage() {
         <Icon name="lock" size={22} />
         <h2>This page is past your plan's page limit</h2>
         <p>TraceTray is still collecting its visits, so nothing is lost. It opens again on {month}, or as soon as you move to a plan with more pages.</p>
-        <p><a className="btn primary" href="/pricing.html">See plans</a></p>
+        <p><a className="btn primary" href="/pricing">See plans</a></p>
       </section>
     </div>
   );

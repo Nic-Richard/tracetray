@@ -38,7 +38,13 @@ app.use("/collect", express.json({ limit: "5mb", type: "text/plain" }));
 app.use(express.json({ limit: "5mb" }));
 // Express 5 leaves req.body undefined when a request has no body; routes expect an object.
 app.use((req, res, next) => { if (req.body === undefined) req.body = {}; next(); });
-app.use(express.static(path.join(__dirname, "public")));
+// Same addresses as nginx: pages without .html, and the old .html ones redirect.
+app.get(/^\/(pricing|privacy|terms|collects|sign-in|billing|tracetray)\.html$/, (req, res) => {
+    const query = req.originalUrl.indexOf("?");
+    const page = req.params[0] === "tracetray" ? "" : req.params[0];
+    res.redirect(301, `/${page}${query === -1 ? "" : req.originalUrl.slice(query)}`);
+});
+app.use(express.static(path.join(__dirname, "public"), { extensions: ["html"], index: "tracetray.html" }));
 app.get("/dashboard.html", (req, res) => {
     const query = req.originalUrl.indexOf("?");
     res.redirect(301, `/app/${query === -1 ? "" : req.originalUrl.slice(query)}`);

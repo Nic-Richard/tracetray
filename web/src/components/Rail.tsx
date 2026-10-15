@@ -48,7 +48,7 @@ export default function Rail({ onReportBug }: { onReportBug: () => void }) {
       <div className="rail-user">
         <UserButton>
           <UserButton.MenuItems>
-            <UserButton.Link label="Billing" labelIcon={<Icon name="setup" size={14} />} href="/billing.html" />
+            <UserButton.Link label="Billing" labelIcon={<Icon name="setup" size={14} />} href="/billing" />
           </UserButton.MenuItems>
         </UserButton>
       </div>

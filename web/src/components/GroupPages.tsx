@@ -95,7 +95,7 @@ export default function GroupPages({ page, groupSize }: { page: string; groupSiz
       {limited ? (
         <div className="panel-foot">
           Showing the {Math.min(rows.length, total)} busiest of {compactNumber(groupSize)} {pageLabel(page).toLowerCase()}.{" "}
-          <a className="link-button" href="/billing.html">Search all of them with Pro</a>
+          <a className="link-button" href="/billing">Search all of them with Pro</a>
         </div>
       ) : rows.length < total && (
         <div className="panel-foot"><button type="button" className="link-button" onClick={loadMore}>Show {Math.min(PAGE_SIZE, total - rows.length)} more of {total.toLocaleString()}</button></div>

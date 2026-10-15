@@ -73,7 +73,7 @@ router.post("/api/create-checkout-session", requireAuth(), async (req, res) => {
             payment_method_collection: "always",
             ...(trial ? { subscription_data: { trial_period_days: TRIAL_DAYS } } : {}),
             success_url:        `${host}/app/?checkout=success`,
-            cancel_url:         `${host}/pricing.html`
+            cancel_url:         `${host}/pricing`
         });
 
         res.json({ url: session.url });

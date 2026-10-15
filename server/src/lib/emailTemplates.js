@@ -37,8 +37,8 @@ function deletionNotice({ siteNames, deleteOn }) {
     ];
     return {
         subject: title,
-        text: [title, ...lines, `Keep your data: ${SITE}/pricing.html`, "Questions? Reply to this email or write to support@tracetray.com."].join("\n\n"),
-        html: layout(title, lines.map(line => paragraph(line)).join(""), { href: `${SITE}/pricing.html`, label: "Keep my data" })
+        text: [title, ...lines, `Keep your data: ${SITE}/pricing`, "Questions? Reply to this email or write to support@tracetray.com."].join("\n\n"),
+        html: layout(title, lines.map(line => paragraph(line)).join(""), { href: `${SITE}/pricing`, label: "Keep my data" })
     };
 }
 
