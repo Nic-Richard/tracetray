@@ -107,7 +107,6 @@ function sendBatch(isFinal = false) {
 
     const payload = {
         session_id:  sessionData.session_id,
-        visitor_id:  sessionData.visitor_id,
         device_type: sessionData.device_type,
         key:         SITE_KEY,
         page:        sessionData.page,

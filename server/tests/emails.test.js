@@ -88,6 +88,7 @@ test("the tracker never stores anything on the visitor's device", () => {
     const fs = require("node:fs");
     const tracker = fs.readFileSync(require("node:path").resolve(__dirname, "../../client/tracker.js"), "utf8");
     assert.doesNotMatch(tracker, /localStorage\.setItem|sessionStorage|document\.cookie|indexedDB/);
+    assert.doesNotMatch(tracker, /visitor_id/, "visitor IDs come from the server");
 });
 
 test("journeys split after 30 minutes away, and each visitor ID keeps its own journey", () => {
