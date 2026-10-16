@@ -97,7 +97,7 @@ ssh "$SERVER" "\
   rm -f /tmp/tracetray.nginx.conf; \
   nginx -t; \
   systemctl reload nginx; \
-  if ! nginx -T 2>/dev/null | grep -q 'server_name www.tracetray.com;'; then \
+  if ! nginx -T 2>/dev/null | grep -c 'server_name www.tracetray.com;' >/dev/null; then \
     echo 'The www redirect server block is not loaded by Nginx.' >&2; \
     exit 1; \
   fi; \
