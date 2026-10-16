@@ -380,19 +380,19 @@ def main(device, site_key):
     k_metrics, best_k = select_k(X, k_range, min_size)
     print(k_metrics.to_string(index=False))
 
-    if best_k is None:
+    small_groups = best_k is None
+    if small_groups:
         # Every split leaves a group too small to describe: a few unusual visits, not real groups.
         best_k = 2
         km_labels = fit_kmeans(X, 2).labels_
-        sil, null, stab = silhouette(X, km_labels), [1.0], 0.0
+        sil, null, stab, verdict = silhouette(X, km_labels), None, None, "none"
     else:
         km_labels = fit_kmeans(X, best_k).labels_
         sil = float(k_metrics.loc[k_metrics["k"] == best_k, "silhouette"].values[0])
         null = null_silhouettes(X, best_k)
         stab = stability(X, best_k, km_labels)
-
-    verdict = structure_verdict(sil, null, stab)
-    print(f"\nk={best_k} silhouette={sil:.3f} null_max={max(null):.3f} stability={stab:.3f} structure={verdict}")
+        verdict = structure_verdict(sil, null, stab)
+    print(f"\nk={best_k} silhouette={sil:.3f} null_max={max(null) if null else '-'} stability={stab} structure={verdict}")
 
     df["cluster_km"] = km_labels
     cluster_means = df.groupby("cluster_km")[engineered].mean()
@@ -405,8 +405,9 @@ def main(device, site_key):
 
     quality = {
         "silhouette": sil,
-        "null_silhouette": float(np.mean(null)),
-        "null_silhouette_max": float(max(null)),
+        "null_silhouette": float(np.mean(null)) if null else None,
+        "null_silhouette_max": float(max(null)) if null else None,
+        "small_groups": small_groups,
         "stability": stab,
         "structure": verdict,
         "agreement": hierarchical_agreement(X, km_labels, best_k),
@@ -470,6 +471,7 @@ if __name__ == "__main__":
                 "best_k":              best_k,
                 "null_silhouette":     info["null_silhouette"],
                 "null_silhouette_max": info["null_silhouette_max"],
+                "small_groups":        info["small_groups"],
                 "features_used":       info["features_used"],
                 "selection_basis":     f"smallest k within {SILHOUETTE_TOLERANCE} of the best silhouette, at most {MAX_GROUPS} groups of at least {info['min_group_size']} visits"
             },

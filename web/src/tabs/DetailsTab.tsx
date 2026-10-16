@@ -31,7 +31,11 @@ function Model({ title, data, result, device }: { title: string; data: DeviceAna
   const ordered = types.map(t => data.clusters.find(c => c.id === t.id)!).filter(Boolean);
   const significant = new Set((data.kruskal_wallis || []).filter(k => k.significant === "yes").map(k => k.feature));
   const used = data.k_rationale?.features_used as string[] | undefined;
-  const nullSilhouette = data.k_rationale?.null_silhouette_max as number | undefined;
+  const nullSilhouette = data.k_rationale?.null_silhouette_max as number | null | undefined;
+  const minSize = data.k_rationale?.min_cluster_size as number | undefined;
+  const verdict = data.k_rationale?.small_groups && minSize
+    ? `No reliable groups: every split left a group of fewer than ${minSize} visits, which is a few unusual visits rather than a kind of visitor. The dashboard treats these visitors as one.`
+    : data.structure ? STRUCTURE[data.structure] : null;
 
   return (
     <section className="panel">
@@ -44,7 +48,7 @@ function Model({ title, data, result, device }: { title: string; data: DeviceAna
           {data.stability != null && `, stability ${data.stability.toFixed(2)}`}
         </span></div>
       </div>
-      {data.structure && <p className="panel-note">{STRUCTURE[data.structure]}</p>}
+      {verdict && <p className="panel-note">{verdict}</p>}
       <div className="table-scroll">
         <table className="details-table">
           <thead>
