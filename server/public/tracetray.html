@@ -227,8 +227,8 @@ footer span { margin-left: auto; }
   <div class="wrap top">
     <a class="logo" href="/"><img src="/logo-mark.svg" alt="">TraceTray</a>
     <nav>
-      <a href="#how">How it works</a>
       <a href="#see">What you get</a>
+      <a href="#how">How it works</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
       <button type="button" class="theme" id="theme" aria-label="Switch theme">
@@ -248,7 +248,7 @@ footer span { margin-left: auto; }
         <p class="lede">Privacy-friendly behavioural analytics that goes beyond pageviews. TraceTray turns lightweight interaction data into visitor groups, journeys and clear recommendations, using machine learning, with no cookies or session recordings.</p>
         <div class="actions">
           <a class="btn light" href="/sign-in" data-auth-cta="hero">Try it free</a>
-          <a class="btn ghost" href="#see">See a real example</a>
+          <a class="btn ghost" href="#see">See the dashboard</a>
         </div>
         <p class="setup-note">Two lines to install. No proxy or tag manager. Start collecting in minutes.</p>
       </div>
@@ -294,32 +294,6 @@ footer span { margin-left: auto; }
     </div>
   </section>
 
-  <section id="how">
-    <div class="wrap">
-      <div class="section-head">
-        <h2>Install it once, then read what it finds</h2>
-        <p>One install. Fresh findings whenever you refresh.</p>
-      </div>
-      <div class="steps">
-        <div class="step">
-          <h3>One snippet, any site</h3>
-          <p>Paste two lines into your template. No tags, events or configuration.</p>
-          <div class="snippet">&lt;<span class="k">script</span>&gt;
-  window.TraceTray = { key: <span class="s">"tt_your_site"</span> };
-&lt;/<span class="k">script</span>&gt;
-&lt;<span class="k">script</span> src=<span class="s">"https://tracetray.com/client/tracker.js"</span>&gt;&lt;/<span class="k">script</span>&gt;</div>
-        </div>
-        <div class="step">
-          <h3>Every visit becomes a signal</h3>
-          <p>Cursor speed, pauses, scroll depth and hesitation before clicks, measured on every visit.</p>
-        </div>
-        <div class="step">
-          <h3>Visitors sorted by how they browse</h3>
-          <p>As visits come in, TraceTray clusters similar visitors and describes each group.</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <section class="features" id="see">
     <div class="wrap">
@@ -389,6 +363,33 @@ footer span { margin-left: auto; }
           <p>Pages that share a URL pattern, like <b>/products/:product</b>, are analyzed together, so low-traffic pages still add up. TraceTray suggests the patterns.</p>
         </div>
         <div class="frame"><img src="/assets/home/pages.webp" width="2200" height="1520" alt="The page tree with product, collection and post pages grouped, and the 24 product pages in one view"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Install it once, then read what it finds</h2>
+        <p>One install. Fresh findings whenever you refresh.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <h3>One snippet, any site</h3>
+          <p>Paste two lines into your template. No tags, events or configuration.</p>
+          <div class="snippet">&lt;<span class="k">script</span>&gt;
+  window.TraceTray = { key: <span class="s">"tt_your_site"</span> };
+&lt;/<span class="k">script</span>&gt;
+&lt;<span class="k">script</span> src=<span class="s">"https://tracetray.com/client/tracker.js"</span>&gt;&lt;/<span class="k">script</span>&gt;</div>
+        </div>
+        <div class="step">
+          <h3>Every visit becomes a signal</h3>
+          <p>Cursor speed, pauses, scroll depth and hesitation before clicks, measured on every visit.</p>
+        </div>
+        <div class="step">
+          <h3>Visitors sorted by how they browse</h3>
+          <p>As visits come in, TraceTray clusters similar visitors and describes each group.</p>
+        </div>
       </div>
     </div>
   </section>
