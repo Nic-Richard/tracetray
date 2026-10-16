@@ -325,11 +325,14 @@ def run_kruskal_wallis(df, labels, feature_cols):
         values = df[feat].to_numpy(dtype=float)
         groups = [values[(labels == cl) & ~np.isnan(values)] for cl in clusters]
         groups = [g for g in groups if len(g) > 0]
-        try:
-            h_stat, p_val = kruskal(*groups)
-            effect = h_stat / (sum(len(g) for g in groups) - 1)
-        except ValueError:
-            h_stat, p_val, effect = float("nan"), float("nan"), float("nan")
+        h_stat, p_val, effect = float("nan"), float("nan"), float("nan")
+        # A wait before clicking can exist in only one group (the others never click), and then there's nothing to compare.
+        if len(groups) >= 2:
+            try:
+                h_stat, p_val = kruskal(*groups)
+                effect = h_stat / (sum(len(g) for g in groups) - 1)
+            except ValueError:
+                pass
 
         results.append({
             "feature":     feat,
