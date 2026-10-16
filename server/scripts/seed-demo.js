@@ -50,54 +50,76 @@ function journey() {
     return path.slice(0, 1 + Math.floor(rand() * path.length));
 }
 
+const target = text => ({ tag: rand() < 0.6 ? "BUTTON" : "A", id: null, text, href: null });
+
+function scrollEvents(start, durationMs, depth, pageHeight, viewport, steps, backtrack, stepPx) {
+    const events = [{ type: "page_load", scroll_depth: viewport / pageHeight, page_height: pageHeight, viewport_height: viewport, measured: true, timestamp: start }];
+    let y = 0;
+    for (let i = 0; i < steps; i++) {
+        const goal = Math.max(0, Math.min(pageHeight - viewport, depth * ((i + 1) / steps) * pageHeight - viewport));
+        const to = backtrack && rand() < 0.3 ? Math.max(0, y - stepPx) : goal;
+        events.push({ type: "scroll", from: y, to, delta: to - y, scroll_depth: Math.min(1, (to + viewport) / pageHeight), page_height: pageHeight, viewport_height: viewport,
+            timestamp: Math.round(start + ((i + 1) / (steps + 1)) * durationMs) });
+        y = to;
+    }
+    return events;
+}
+
+const scrollAt = (scrolls, t) => scrolls.reduce((y, e) => (e.type === "scroll" && e.timestamp <= t ? e.to : y), 0);
+
 function desktopEvents(start, persona, path) {
     const p = DESKTOP[persona];
     const durationMs = between(...p.duration) * 1000;
     const pageHeight = path.startsWith("/products") ? 3600 : 2600;
+    const viewport = 820;
     const depth = between(...p.depth);
-    const events = [{ type: "page_load", scroll_depth: 0, timestamp: start }];
+    const events = scrollEvents(start, durationMs, Math.max(depth, viewport / pageHeight), pageHeight, viewport, Math.max(1, Math.round(depth * 12)), p.backtrack, 280);
+    const scrolls = [...events];
     const moves = Math.round(durationMs / 400);
-    let x = between(300, 1100), y = 300;
+    let x = between(300, 1100);
     for (let i = 0; i < moves; i++) {
-        const t = start + (i / moves) * durationMs;
-        const reach = Math.min(1, (i / moves) * 1.4) * depth;
+        const t = Math.round(start + (i / moves) * durationMs);
+        const top = scrollAt(scrolls, t);
         x = Math.max(40, Math.min(1400, x + between(-220, 220) * p.speed[1]));
-        y = Math.max(40, (rand() ** p.yBias) * reach * pageHeight + between(0, 700));
-        events.push({ type: "mousemove", x: Math.round(x), y: Math.round(y), delta_t: Math.round(400 / between(...p.speed)), timestamp: Math.round(t) });
+        const y = Math.round((rand() ** p.yBias) * (viewport - 40) + 20);
+        events.push({ type: "mousemove", x: Math.round(x), y, py: top + y, delta_t: Math.round(400 / between(...p.speed)), timestamp: t });
     }
     const pauseCount = Math.round(between(...p.pauses));
     for (let i = 0; i < pauseCount; i++) events.push({ type: "cursor_pause", duration: Math.round(between(600, 3000)), timestamp: Math.round(start + rand() * durationMs) });
-    const scrolls = Math.max(1, Math.round(depth * 12));
-    for (let i = 0; i < scrolls; i++) {
-        const back = p.backtrack && rand() < 0.3;
-        events.push({ type: "scroll", delta: back ? -280 : 320, scroll_depth: Math.min(1, depth * ((i + 1) / scrolls)), timestamp: Math.round(start + ((i + 1) / (scrolls + 1)) * durationMs) });
-    }
     const clickTargets = path.startsWith("/products") ? p.clicks
         : path.startsWith("/collections") ? ["Ridge 40L Pack", "Summit 25 Daypack", "Filter: Waterproof"]
         : path === "/cart" ? ["Checkout", "Remove"] : path === "/checkout" ? ["Pay now"] : ["Shop hiking packs", "New arrivals"];
     const clickCount = persona === "scanner" ? (rand() < 0.2 ? 1 : 0) : 1 + Math.floor(rand() * (persona === "comparer" ? 4 : 2));
     for (let i = 0; i < clickCount && clickTargets.length; i++) {
         const t = Math.round(start + between(0.3, 0.95) * durationMs);
+        const text = i === 0 && persona === "buyer" && path.startsWith("/products") ? "Add to cart" : pick(clickTargets);
+        const y = Math.round(between(120, viewport - 120));
         events.push({ type: "cursor_pause", duration: Math.round(between(...p.dwell)), timestamp: t - Math.round(between(...p.dwell)) });
-        events.push({ type: "click", tag: rand() < 0.6 ? "button" : "a", text: i === 0 && persona === "buyer" && path.startsWith("/products") ? "Add to cart" : pick(clickTargets), timestamp: t });
+        events.push({ type: "click", tag: "BUTTON", text, target: target(text), x: Math.round(between(200, 1100)), y, py: scrollAt(scrolls, t) + y, timestamp: t });
     }
     return { events: events.sort((a, b) => a.timestamp - b.timestamp), durationMs };
 }
 
-function phoneEvents(start, persona) {
+function phoneEvents(start, persona, path) {
     const p = PHONE[persona];
     const durationMs = between(...p.duration) * 1000;
+    const pageHeight = path.startsWith("/products") ? 5600 : 4400;
+    const viewport = 760;
     const depth = between(...p.depth);
-    const events = [{ type: "page_load", scroll_depth: 0, timestamp: start }];
-    const scrolls = Math.max(1, Math.round(depth * 14));
-    for (let i = 0; i < scrolls; i++) events.push({ type: "scroll", delta: rand() < 0.1 ? -300 : 420, scroll_depth: Math.min(1, depth * ((i + 1) / scrolls)), timestamp: Math.round(start + ((i + 1) / (scrolls + 1)) * durationMs) });
+    const events = scrollEvents(start, durationMs, Math.max(depth, viewport / pageHeight), pageHeight, viewport, Math.max(1, Math.round(depth * 14)), rand() < 0.3, 300);
+    const scrolls = [...events];
     const taps = Math.round(between(...p.taps));
     const pauses = Math.round(between(...p.pauses));
     for (let i = 0; i < pauses; i++) {
         const t = Math.round(start + rand() * durationMs);
-        events.push({ type: "attention_pause", duration: Math.round(between(...p.pauseMs)), ended_by: i < taps ? "tap" : "scroll", timestamp: t });
+        events.push({ type: "attention_pause", duration: Math.round(between(...p.pauseMs)), ended_by: i < taps ? "tap" : "scroll",
+            viewport_midpoint: scrollAt(scrolls, t) + viewport / 2, page_height: pageHeight, viewport_height: viewport, timestamp: t });
     }
-    for (let i = 0; i < taps; i++) events.push({ type: "tap", x: Math.round(between(20, 370)), y: Math.round(between(100, 800)), timestamp: Math.round(start + rand() * durationMs) });
+    const tapTargets = path.startsWith("/products") ? ["Add to cart", "Size guide", "Reviews"] : ["Shop hiking packs", "New arrivals", "Menu"];
+    for (let i = 0; i < taps; i++) {
+        const text = pick(tapTargets);
+        events.push({ type: "tap", x: Math.round(between(20, 370)), y: Math.round(between(100, 700)), text, target: target(text), timestamp: Math.round(start + rand() * durationMs) });
+    }
     return { events: events.sort((a, b) => a.timestamp - b.timestamp), durationMs };
 }
 
@@ -128,7 +150,7 @@ function isLocal(uri) {
         const source = weighted(SOURCES);
         const path = journey();
         path.forEach((page, step) => {
-            const { events, durationMs } = mobile ? phoneEvents(start, persona) : desktopEvents(start, persona, page);
+            const { events, durationMs } = mobile ? phoneEvents(start, persona, page) : desktopEvents(start, persona, page);
             const count = type => events.filter(e => e.type === type).length;
             docs.push({
                 site_key: site.key, session_id: `demo-${v}-${step}`, visitor_id: `demo-visitor-${v}`,

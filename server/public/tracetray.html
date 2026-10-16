@@ -131,7 +131,7 @@ section { padding: 104px 0; }
 .frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 30px 60px -36px rgba(28, 32, 48, 0.5); }
 .pair { position: relative; padding-bottom: 90px; }
 .pair .frame:first-child { width: 72%; }
-.pair .frame:last-child { position: absolute; right: 0; bottom: 0; width: 74%; }
+.pair .frame:last-child { position: absolute; right: 0; bottom: 0; width: 34%; }
 .card-shot { max-width: 340px; justify-self: center; }
 .row.tall { grid-template-columns: minmax(0, 500px) auto; justify-content: center; gap: 96px; }
 .row.flip.tall { grid-template-columns: auto minmax(0, 500px); }
@@ -252,7 +252,7 @@ footer span { margin-left: auto; }
         </div>
         <p class="setup-note">Two lines to install. No proxy or tag manager. Start collecting in minutes.</p>
       </div>
-      <div class="screen"><img src="/assets/home/dash-group.webp" width="2880" height="1800" alt="The TraceTray dashboard showing an outdoor gear shop's product pages, their visits and the visitor groups who use them"></div>
+      <div class="screen"><img src="/assets/home/dash-group.webp" width="2880" height="1800" alt="The TraceTray dashboard showing an outdoor gear shop's product pages, how many reach Added to cart, and the visitor groups who use them"></div>
     </div>
     <div class="wrap">
       <div class="hud" aria-live="off">
@@ -329,21 +329,21 @@ footer span { margin-left: auto; }
           <p class="lead-line">See the few kinds of visitor each page gets, such as people who decide fast, people who compare and people who skim, and how many of each.</p>
           <p>Every visit becomes a profile of 13 behavioural measures on desktop and 8 on phones: cursor speed, pause rate, scroll depth, hesitation before clicks, how widely attention ranges and more. Machine learning clusters similar profiles into groups.</p>
           <ul class="method">
-            <li>The number of groups is chosen by how cleanly the data separates, not fixed in advance.</li>
-            <li>Results are cross-checked against a second clustering method.</li>
-            <li>Statistical tests confirm which differences between groups are real.</li>
+            <li>The number of groups is chosen by how cleanly the data separates, up to five.</li>
+            <li>Every split is checked against data with no groups in it and on random samples. If none holds up, TraceTray says visitors behave alike.</li>
+            <li>Only differences large enough to matter are highlighted.</li>
           </ul>
         </div>
-        <div class="frame who-crop"><img src="/assets/home/who.webp" width="766" height="1396" alt="Who visits: Quick deciders 44%, Re-checkers 38% and Content skimmers 18%, each with a description"></div>
+        <div class="frame who-crop"><img src="/assets/home/who.webp" width="766" height="1036" alt="Who visits: Quick deciders 67% and Re-checkers 33%, each with how often they reach Shop hiking packs against the average"></div>
       </div>
 
       <div class="row flip tall">
         <div class="row-copy">
           <h2>What to change, and why</h2>
-          <p>Every visitor group comes with a clear next step, like &ldquo;keep the path short for people who already know what they want.&rdquo; Each one is based on how that group actually behaves and what the page is for, so you know which fix will do the most for conversions.</p>
-          <p>Every page also gets a summary of what stands out, and groups keep the same names between analyses, so changes are easy to track.</p>
+          <p>When a group falls short of the page's goal, TraceTray shows why from the numbers: what they click instead, where they leave the page, or how long they hesitate. No suggestion appears without the figures behind it.</p>
+          <p>Groups keep the same names between analyses, so changes are easy to track.</p>
         </div>
-        <div class="frame card-shot"><img src="/assets/home/type-card.webp" width="640" height="1058" alt="The Quick deciders group: 44% of visits, compared with the page average, and what to try"></div>
+        <div class="frame card-shot"><img src="/assets/home/type-card.webp" width="640" height="1212" alt="The Re-checkers group: none reach Added to cart, how they differ from the page average, and a suggestion to look at Reviews"></div>
       </div>
 
       <div class="row">
@@ -351,7 +351,7 @@ footer span { margin-left: auto; }
           <h2>Detailed visitor journeys</h2>
           <p>Follow visitors across your whole site: where they arrive, the paths they take, and where they leave. Spot the step where a checkout or sign-up loses people.</p>
         </div>
-        <div class="frame"><img src="/assets/home/journeys.webp" width="1750" height="1705" alt="Journeys: where visitors arrive and leave, and the most common moves between pages"></div>
+        <div class="frame"><img src="/assets/home/journeys.webp" width="2000" height="2200" alt="Journeys: where visitors arrive and leave, and the most common moves between pages"></div>
       </div>
 
       <div class="row flip">
@@ -370,11 +370,11 @@ footer span { margin-left: auto; }
       <div class="row">
         <div class="row-copy">
           <h2>Where attention goes on your page</h2>
-          <p>Find out where people get hung up, on a page and across your whole site: whether they reach your pricing, sign-up form or buy button, where they hesitate, and where engagement drops off.</p>
+          <p>See it on the page itself: where cursors spend time, where the first screen ends, how far down people get, and whether they reach your pricing, sign-up form or buy button. On phones, see where people stop to read.</p>
         </div>
         <div class="pair">
-          <div class="frame"><img src="/assets/home/attention.webp" width="1186" height="886" alt="Cursor activity from the top of the page to the bottom, with the middle third busiest"></div>
-          <div class="frame"><img src="/assets/home/attention-phone.webp" width="2000" height="558" alt="On phones: visitors get 57% of the way down and tap about 4.6 times a minute"></div>
+          <div class="frame"><img src="/assets/home/attention.webp" width="2000" height="1200" alt="A picture of the shop's homepage shaded where the cursor spends time, with lines where the first screen ends and how far visitors get"></div>
+          <div class="frame"><img src="/assets/home/attention-phone.webp" width="1180" height="1100" alt="On phones: the homepage shaded where visitors stop to read, with where the first screen ends"></div>
         </div>
       </div>
 
@@ -383,7 +383,7 @@ footer span { margin-left: auto; }
           <h2>Mobile, measured on its own terms</h2>
           <p>Phones have no cursor, so TraceTray reads taps, scrolling and reading pauses, and analyzes mobile visits separately.</p>
         </div>
-        <div class="frame"><img src="/assets/home/devices.webp" width="2000" height="582" alt="Desktop and phones: 61% desktop, 39% phones, with the phone visitor groups listed"></div>
+        <div class="frame"><img src="/assets/home/devices.webp" width="2000" height="344" alt="Desktop and phones: 61% desktop, 39% phones, and how far down each gets"></div>
       </div>
 
       <div class="row">
@@ -401,7 +401,7 @@ footer span { margin-left: auto; }
       <div class="section-head"><h2>Private by design</h2></div>
       <div class="extras-grid three">
         <div><h3>No cookies or device storage</h3><p>Visits are grouped with an ID that changes daily, and the IP address is never stored.</p></div>
-        <div><h3>Never sees what's on the page</h3><p>No screenshots, page content, keystrokes or form input.</p></div>
+        <div><h3>Never records what visitors see</h3><p>No screen recordings, page content, keystrokes or form input from visits. Pictures of your pages come from TraceTray opening the public page itself.</p></div>
         <div><h3>Your data stays yours</h3><p>Not sold, not shared and not used for ads.</p></div>
       </div>
       <p class="privacy-link"><a href="/collects">See exactly what TraceTray collects</a></p>
@@ -629,7 +629,7 @@ async function startTraceTrayTracker() {
   }
   window.TraceTray = { endpoint: `${window.location.origin}/collect`, key: siteKey };
   const script = document.createElement("script");
-  script.src = "/client/tracker.js?v=20261015-8";
+  script.src = "/client/tracker.js?v=20261016-1";
   script.async = true;
   document.head.appendChild(script);
 }

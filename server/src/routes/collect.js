@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { Account, Session } = require("../db/models");
 const { ensureAccountSites } = require("../lib/siteAccount");
-const { normalizeTrackingDomain, visitTime, cleanSummary, cleanReferrer } = require("../lib/tracking");
+const { normalizeTrackingDomain, visitTime, cleanSummary, cleanReferrer, isBot } = require("../lib/tracking");
 const logger = require("../lib/logger");
 const { groupPage } = require("../lib/pageGroups");
 const { countSession } = require("../lib/pageDays");
@@ -54,6 +54,7 @@ async function accountFor(siteKey) {
 router.post("/collect", async (req, res) => {
     try {
         if (overRateLimit(req.ip)) return res.sendStatus(429);
+        if (isBot(req.get("user-agent"))) return res.sendStatus(204);
 
         const data = req.body || {};
         const siteKey = String(data.key || "").trim().slice(0, 64);

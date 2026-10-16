@@ -5,6 +5,8 @@
 // A second copy of the script on the same page would record every event twice.
 if (window.__traceTrayLoaded) return;
 window.__traceTrayLoaded = true;
+// Browsers driven by automation (test scripts, scrapers, headless tools) aren't visitors.
+if (navigator.webdriver) return;
 
 function generateId() {
     if (crypto && crypto.randomUUID) {

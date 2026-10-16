@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { visitTime, cleanSummary, cleanReferrer } = require("../src/lib/tracking");
+const { visitTime, cleanSummary, cleanReferrer, isBot } = require("../src/lib/tracking");
 const { groupPage } = require("../src/lib/pageGroups");
 
 test("what a browser sends is checked before it's stored", () => {
@@ -33,4 +33,17 @@ test("page pictures only go to public addresses", async () => {
     for (const ip of ["8.8.8.8", "172.32.0.1", "2606:4700::1111"]) assert.equal(privateAddress(ip), false, ip);
     assert.equal(await publicUrl("file:///etc/passwd"), false);
     assert.equal(await publicUrl("http://localhost:5000/"), false);
+});
+
+test("bots and headless browsers are told apart from real visitors", () => {
+    for (const agent of [
+        "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0)",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/131.0.0.0 Safari/537.36",
+        "facebookexternalhit/1.1", "curl/8.4.0", ""
+    ]) assert.equal(isBot(agent), true, agent);
+    for (const agent of [
+        "Mozilla/5.0 (Linux; Android 13; CUBOT X30) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    ]) assert.equal(isBot(agent), false, agent);
 });

@@ -81,4 +81,7 @@ const ENGAGED = { $and: [
     { $gt: [{ $add: [summaryField("scrolls"), summaryField("clicks"), summaryField("taps")] }, 0] }
 ] };
 
-module.exports = { getRegistrableDomain, normalizeTrackingDomain, visitTime, cleanSummary, cleanReferrer, ENGAGED };
+const BOT_AGENT = /bot[\/;-]|crawl|spider|slurp|headless|lighthouse|pagespeed|prerender|phantomjs|facebookexternalhit|python-requests|curl\/|wget/i;
+const isBot = userAgent => !userAgent || BOT_AGENT.test(userAgent);
+
+module.exports = { getRegistrableDomain, normalizeTrackingDomain, visitTime, cleanSummary, cleanReferrer, ENGAGED, isBot };

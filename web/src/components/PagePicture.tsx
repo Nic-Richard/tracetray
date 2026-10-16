@@ -10,7 +10,7 @@ export function usePageShot(page: string, device: "desktop" | "mobile", info: Pa
   useEffect(() => {
     if (!info) { setUrl(null); return; }
     let objectUrl: string | null = null, cancelled = false;
-    api.pageShot(siteKey, page, device).then(({ blob }) => {
+    api.pageShot(siteKey, page, device, String(info.taken_at)).then(({ blob }) => {
       if (cancelled) return;
       objectUrl = URL.createObjectURL(blob);
       setUrl(objectUrl);
@@ -48,9 +48,10 @@ export default function PagePicture({ src, info, bands, color, reach, goal, labe
         <div className="page-picture-heat" style={{ height: percent(scale, 2) }}>
           {bands.map((weight, i) => <i key={i} style={{ opacity: (weight * 0.55).toFixed(3), background: color }} />)}
         </div>
-        {lines.map(line => {
+        {lines.map((line, i) => {
           const pos = at(line.depth);
-          return pos && <div key={line.key} className={`page-line ${line.kind}`} style={pos}><span>{line.text}</span></div>;
+          const crowded = lines.some((other, j) => j < i && Math.abs(other.depth - line.depth) * scale < 0.05);
+          return pos && <div key={line.key} className={`page-line ${line.kind}${crowded ? " left" : ""}`} style={pos}><span>{line.text}</span></div>;
         })}
         {goal && at(goal.depth) && <div className="page-line goal" style={at(goal.depth)!}><span>{goal.name}</span></div>}
       </div>

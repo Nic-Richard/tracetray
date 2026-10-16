@@ -86,7 +86,7 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     recentSessions: (siteKey: string, limit = 50) => request<RecentSession[]>("GET", "/api/sessions/recent", { siteKey, query: { limit } }),
     journey: (siteKey: string) => request<Journey>("GET", "/api/journey", { siteKey }),
     attention: (siteKey: string, page?: string | null) => request<AttentionProfile>("GET", "/api/attention-profile", { siteKey, query: { page } }),
-    pageShot: (siteKey: string, page: string, device: "desktop" | "mobile") => request<{ blob: Blob }>("GET", "/api/page-shot", { siteKey, query: { page, device }, raw: true }),
+    pageShot: (siteKey: string, page: string, device: "desktop" | "mobile", takenAt: string) => request<{ blob: Blob }>("GET", "/api/page-shot", { siteKey, query: { page, device, v: takenAt }, raw: true }),
 
     pageGroups: (siteKey: string) => request<PageGroups>("GET", "/api/page-groups", { siteKey }),
     savePageGroups: (siteKey: string, rules: string[]) => request<{ rules: string[]; regrouping: boolean }>("PUT", "/api/page-groups", { siteKey, body: { rules } }),
