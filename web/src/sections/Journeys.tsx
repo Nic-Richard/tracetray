@@ -47,7 +47,6 @@ export default function Journeys() {
         <h1 className="section-title">Journeys</h1>
         <p className="tab-intro">How visitors moved through {site.name} in the last 30 days: where they arrive, where they go next, and where they leave. It follows each visitor across pages, so it covers the whole site.</p>
       </div>
-      <ExpectedPaths />
       {visitors === 0 ? (
         <section className="panel"><div className="empty"><b>No journeys yet</b><p>Journeys appear once visitors view more than one page.</p></div></section>
       ) : (
@@ -66,6 +65,7 @@ export default function Journeys() {
           <p><button type="button" className="ask-link" onClick={() => askAbout("Where do people leave the site, and what could keep them going?")}>Ask where visitors drop off</button></p>
         </>
       )}
+      <ExpectedPaths />
     </div>
   );
 }

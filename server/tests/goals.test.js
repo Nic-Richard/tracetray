@@ -91,7 +91,7 @@ test("form goals match a sent form by id, else name, else where it posts, and ne
     assert.deepEqual(parseGoal({ type: "form", name: "Signup", match: { id: " signup " } }).goal.match, { id: "signup", name: null, action: null });
 });
 
-test("an expected path counts steps reached in order, ignoring pages in between", () => {
+test("a funnel counts steps reached in order, ignoring pages in between", () => {
     const { parsePath, stepsReached } = require("../src/lib/paths");
     const steps = [`${site}/products/:product`, `${site}/cart`, `${site}/checkout`];
     const visit = (page, path) => ({ page: `${site}${page}`, page_path: path });

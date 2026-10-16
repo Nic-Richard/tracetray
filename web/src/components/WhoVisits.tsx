@@ -14,12 +14,12 @@ interface Row {
   figures?: string[];
 }
 
-function GoalBar({ goal, name }: { goal: NonNullable<Row["goal"]>; name: string }) {
-  const tone = goal.standing === "above" ? "var(--good)" : goal.standing === "below" ? "var(--danger)" : "var(--d-neutral)";
+function GoalBar({ goal, name, color }: { goal: NonNullable<Row["goal"]>; name: string; color: string }) {
+  const tone = goal.standing === "above" ? "good" : goal.standing === "below" ? "bad" : "";
   return (
     <div className="who-goal" aria-label={`${percent(goal.rate)} reached ${name}, against ${percent(goal.average)} on average`}>
-      <div className="who-goal-track"><i style={{ width: percent(goal.rate), background: tone }} /><span style={{ left: percent(goal.average) }} /></div>
-      <small><span><b>{percent(goal.rate)}</b> reached {name}</span>{goal.average !== goal.rate && <span>average {percent(goal.average)}</span>}</small>
+      <div className="who-goal-track"><i style={{ width: percent(goal.rate), background: color }} />{goal.average !== goal.rate && <span className="average" style={{ left: percent(goal.average) }} />}<span style={{ left: percent(goal.rate) }} /></div>
+      <small><span><b className={tone}>{percent(goal.rate)}</b> reached {name}</span>{goal.average !== goal.rate && <span>average {percent(goal.average)}</span>}</small>
     </div>
   );
 }
@@ -88,7 +88,7 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
                   <b>{row.headline} <span className="num" style={{ color: row.color }}>{Math.round(row.share * 100)}%</span></b>
                   {row.text && <p>{row.text}</p>}
                   {row.figures && row.figures.length > 0 && <p className="who-figures">{row.figures.map(f => <span key={f}>{f}</span>)}</p>}
-                  {row.goal && goal && <GoalBar goal={row.goal} name={goal.name} />}
+                  {row.goal && goal && <GoalBar goal={row.goal} name={goal.name} color={row.color} />}
                   {row.id >= 0 && (
                     <button type="button" className="ask-link" onClick={() =>
                       askAbout(`On ${pagePath(page)}, what does the "${row.headline}" group (${Math.round(row.share * 100)}% of ${device} visitors) tell me, and what should I change?`)}>

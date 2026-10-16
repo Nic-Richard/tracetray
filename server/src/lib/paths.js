@@ -1,4 +1,4 @@
-// Expected paths: an ordered set of pages, such as product, cart, checkout. A journey counts as reaching a step
+// Funnels: an ordered set of pages, such as product, cart, checkout. A journey counts as reaching a step
 // once it has reached every earlier step first; other pages in between don't matter.
 const crypto = require("crypto");
 const { Session } = require("../db/models");
@@ -16,8 +16,8 @@ const clean = value => typeof value === "string" ? value.trim().replace(/\s+/g, 
 function parsePath(input) {
     const name = clean(input?.name).slice(0, 60);
     const steps = (Array.isArray(input?.steps) ? input.steps : []).map(s => clean(s).slice(0, 2000)).filter(s => /^https?:\/\//.test(s));
-    if (!name) return { error: "give the path a name" };
-    if (steps.length < MIN_STEPS || steps.length > MAX_STEPS) return { error: `a path has ${MIN_STEPS} to ${MAX_STEPS} pages` };
+    if (!name) return { error: "give the funnel a name" };
+    if (steps.length < MIN_STEPS || steps.length > MAX_STEPS) return { error: `a funnel has ${MIN_STEPS} to ${MAX_STEPS} pages` };
     if (new Set(steps).size !== steps.length) return { error: "each page can only be one step" };
     return { path: { id: "p" + crypto.randomBytes(6).toString("base64url"), name, steps } };
 }

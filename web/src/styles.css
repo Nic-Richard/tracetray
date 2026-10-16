@@ -216,8 +216,11 @@ td.page-cell { width: 100%; max-width: 0; }
 .who-goal-track { position: relative; height: 8px; background: var(--canvas); border-radius: 4px; }
 .who-goal-track i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; }
 .who-goal-track span { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
+.trait-bar-track span.average, .who-goal-track span.average { background: var(--faint); }
 .who-goal small { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; }
 .who-goal small b { color: var(--ink); }
+.who-goal small b.good { color: var(--good); }
+.who-goal small b.bad { color: var(--danger); }
 .who-note { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
 .dot { width: 12px; height: 12px; border-radius: 4px; display: inline-block; flex-shrink: 0; }
 .ask-link { justify-self: start; background: none; border: 0; padding: 0; color: var(--link); font-weight: 600; font-size: 14px; cursor: pointer; }
@@ -365,7 +368,7 @@ p.tab-intro { max-width: 80ch; }
 .wins small { color: var(--good); }
 .goal-tag.milestone { justify-self: start; margin-top: 4px; }
 
-/* Expected paths */
+/* Funnels */
 .funnel { padding: 14px 0; border-top: 1px solid var(--line); }
 .funnel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .funnel-head b { font-size: 16px; }

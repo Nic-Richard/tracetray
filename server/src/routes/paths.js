@@ -16,7 +16,7 @@ async function loadSite(req, res) {
     const siteKey = resolveSiteKey(req, account);
     const site = siteKey && account.sites.find(item => item.key === siteKey);
     if (!site) { res.status(403).json({ error: "website not available" }); return null; }
-    if (!hasFeature(account, "paths")) { res.status(403).json({ error: "expected paths are part of Ultra", limit_reached: "plan" }); return null; }
+    if (!hasFeature(account, "paths")) { res.status(403).json({ error: "funnels are part of Ultra", limit_reached: "plan" }); return null; }
     return { account, site };
 }
 
@@ -31,7 +31,7 @@ router.get("/api/paths", requireAuth(), async (req, res) => {
         res.json({ paths: funnels, cap: MAX_PATHS });
     } catch (err) {
         logger.error("paths error:", err);
-        res.status(500).json({ error: "couldn't load your paths" });
+        res.status(500).json({ error: "couldn't load your funnels" });
     }
 });
 
@@ -40,7 +40,7 @@ router.post("/api/paths", requireAuth(), async (req, res) => {
         const found = await loadSite(req, res);
         if (!found) return;
         const paths = found.site.paths || [];
-        if (paths.length >= MAX_PATHS) return res.status(400).json({ error: `you can keep ${MAX_PATHS} paths per website; remove one first` });
+        if (paths.length >= MAX_PATHS) return res.status(400).json({ error: `you can keep ${MAX_PATHS} funnels per website; remove one first` });
         const parsed = parsePath(req.body);
         if (parsed.error) return res.status(400).json({ error: parsed.error });
         found.site.paths = [...paths, { ...parsed.path, created_at: new Date() }];
@@ -48,7 +48,7 @@ router.post("/api/paths", requireAuth(), async (req, res) => {
         res.status(201).json(parsed.path);
     } catch (err) {
         logger.error("add path error:", err);
-        res.status(500).json({ error: "couldn't save the path" });
+        res.status(500).json({ error: "couldn't save the funnel" });
     }
 });
 
@@ -57,13 +57,13 @@ router.delete("/api/paths/:id", requireAuth(), async (req, res) => {
         const found = await loadSite(req, res);
         if (!found) return;
         const paths = found.site.paths || [];
-        if (!paths.some(p => p.id === req.params.id)) return res.status(404).json({ error: "that path isn't there" });
+        if (!paths.some(p => p.id === req.params.id)) return res.status(404).json({ error: "that funnel isn't there" });
         found.site.paths = paths.filter(p => p.id !== req.params.id);
         await found.account.save();
         res.json({ deleted: true });
     } catch (err) {
         logger.error("delete path error:", err);
-        res.status(500).json({ error: "couldn't remove the path" });
+        res.status(500).json({ error: "couldn't remove the funnel" });
     }
 });
 

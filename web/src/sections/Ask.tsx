@@ -15,7 +15,7 @@ const STARTERS = [
 const LOOKUPS: Record<string, string> = {
   list_pages: "Pages", get_pages_in_group: "Pages in a group", get_overview: "Overview", get_traffic_trend: "Daily traffic",
   get_top_clicks: "Clicks", get_traffic_sources: "Traffic sources", get_visitor_journeys: "Journeys",
-  get_ux_trends: "Analysis history", get_attention: "Attention"
+  get_ux_trends: "Weekly trends", get_attention: "Attention", get_goals: "Goals"
 };
 
 interface Entry {
@@ -101,7 +101,7 @@ export default function Ask() {
   return (
     <div className="content ask">
       <div className="section-head"><h1 className="section-title">Ask</h1></div>
-      <p className="ask-intro">Ask about visitors to {site.name} in plain English. TraceTray looks up the numbers (pages, traffic, clicks, journeys and past analyses) and explains what they show. It can't see sales, sign-ups or who your visitors are.</p>
+      <p className="ask-intro">Ask about visitors to {site.name} in plain English. TraceTray looks up the numbers (pages, traffic, clicks, journeys and past analyses) and explains what they show. It knows the goals you've set, but not revenue or who your visitors are.</p>
       {entries.length === 0 && (
         <div className="ask-starters">
           {STARTERS.map(starter => <button key={starter} type="button" className="chip" onClick={() => ask(starter)}>{starter}</button>)}

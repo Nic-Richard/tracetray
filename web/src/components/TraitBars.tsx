@@ -33,7 +33,7 @@ export default function TraitBars({ traits, color }: { traits: Trait[]; color: s
         return (
           <div key={t.feature} className="trait-bar" title={`They ${t.description}.`}>
             <div className="trait-bar-label"><span>{measure.label}</span><span><b>{measure.format(t.value)}</b> vs {measure.format(t.page_average)}</span></div>
-            <div className="trait-bar-track"><i style={{ width: `${(t.value / top) * 100}%`, background: color }} /><span style={{ left: `${(t.page_average / top) * 100}%` }} /></div>
+            <div className="trait-bar-track"><i style={{ width: `${(t.value / top) * 100}%`, background: color }} /><span className="average" style={{ left: `${(t.page_average / top) * 100}%` }} /><span style={{ left: `${(t.value / top) * 100}%` }} /></div>
           </div>
         );
       })}

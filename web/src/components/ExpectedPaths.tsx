@@ -55,8 +55,8 @@ export default function ExpectedPaths() {
   if (list.error && /part of Ultra/.test(list.error)) {
     return (
       <section className="panel">
-        <div className="panel-head"><h2>Expected paths</h2><div className="end"><span className="ask-note">Ultra</span></div></div>
-        <div className="panel-body setup-copy"><p>Name the steps you expect visitors to take, like product, then cart, then checkout, and see how many make each step and where they drop off. <a href="/pricing">Included with Ultra</a>.</p></div>
+        <div className="panel-head"><h2>Funnels</h2><div className="end"><span className="ask-note">Ultra</span></div></div>
+        <div className="panel-body setup-copy"><p>Pick the pages you expect visitors to go through, like a product page, then the cart, then checkout, and see how many get through each step and where they drop off. <a href="/pricing">Included with Ultra</a>.</p></div>
       </section>
     );
   }
@@ -69,7 +69,7 @@ export default function ExpectedPaths() {
       setName(""); setSteps(["", ""]);
       list.reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The path wasn't saved");
+      setError(err instanceof Error ? err.message : "The funnel wasn't saved");
     } finally {
       setSaving(false);
     }
@@ -79,15 +79,15 @@ export default function ExpectedPaths() {
   const full = list.data ? paths.length >= list.data.cap : false;
   return (
     <section className="panel" style={{ "--fill": "var(--d6)" } as React.CSSProperties}>
-      <div className="panel-head"><h2>Expected paths</h2><div className="end"><span className="ask-note">Journeys in the last 30 days</span></div></div>
+      <div className="panel-head"><h2>Funnels</h2><div className="end"><span className="ask-note">Journeys in the last 30 days</span></div></div>
       <div className="panel-body setup-copy">
-        <p>A journey counts for a step once it has reached every step before it, whatever else it visited in between.</p>
+        <p>Pick the pages you expect visitors to go through, in order. Each step shows how many journeys got that far; other pages visited along the way don't count against them.</p>
         {list.error && <p className="form-error">{list.error}</p>}
         {!list.data && !list.error && <p className="muted">Counting journeys…</p>}
         {paths.map(path => <Funnel key={path.id} path={path} onRemoved={list.reload} />)}
         {list.data && !full && (
           <form className="path-form" onSubmit={add}>
-            <input value={name} onChange={event => setName(event.target.value)} placeholder="Path name, like Buying a tent" aria-label="Path name" maxLength={60} />
+            <input value={name} onChange={event => setName(event.target.value)} placeholder="Funnel name, like Buying a tent" aria-label="Funnel name" maxLength={60} />
             <ol>
               {steps.map((step, i) => (
                 <li key={i}>
@@ -101,7 +101,7 @@ export default function ExpectedPaths() {
             </ol>
             <div className="site-actions">
               {steps.length < 6 && <button type="button" className="btn" onClick={() => setSteps([...steps, ""])}>Add a step</button>}
-              <button type="submit" className="btn primary" disabled={saving || !name.trim() || steps.filter(Boolean).length < 2}>{saving ? "Saving…" : "Save path"}</button>
+              <button type="submit" className="btn primary" disabled={saving || !name.trim() || steps.filter(Boolean).length < 2}>{saving ? "Saving…" : "Save funnel"}</button>
             </div>
             {error && <p className="form-error">{error}</p>}
           </form>
