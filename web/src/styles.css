@@ -296,7 +296,8 @@ p.tab-intro { max-width: 80ch; }
 .goal-what { display: grid; gap: 2px; min-width: 0; }
 .goal-what b { font-size: 15.5px; color: var(--ink); }
 .goal-what small { font-size: 13.5px; color: var(--muted); }
-.goal-what select { font: inherit; font-weight: 700; color: var(--ink); background: transparent; border: 0; border-bottom: 1px dashed var(--line-2); padding: 0 2px; cursor: pointer; }
+.goal-what select { font: inherit; font-weight: 700; color: var(--ink); background: transparent; border: 0; border-bottom: 1px dashed var(--line-2); padding: 0 2px 0 0; margin-left: -4px; cursor: pointer; }
+.goal-what small .sep { margin: 0 7px; }
 .goal-line.empty-goal { display: block; font-size: 14.5px; color: var(--muted); }
 .group-goal { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .group-goal small { font-size: 13px; color: var(--muted); }
@@ -387,6 +388,10 @@ p.tab-intro { max-width: 80ch; }
 .verdict.worse { background: color-mix(in srgb, var(--danger) 13%, var(--panel)); color: var(--danger); }
 .table-scroll { overflow-x: auto; }
 td.strong { font-weight: 700; }
+.details-table th, .details-table td { padding: 10px 16px; }
+.details-table th .device { white-space: normal; max-width: 150px; display: inline-flex; text-align: left; }
+.details-table tr.unused td { color: var(--faint); }
+.panel-note { padding: 0 22px 14px; margin: 0; color: var(--muted); font-size: 14px; }
 .stat-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .stat-strip div { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; display: grid; position: relative; overflow: hidden; }
 .stat-strip div::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--accent, var(--d1)); }

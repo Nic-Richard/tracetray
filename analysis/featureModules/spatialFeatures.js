@@ -1,8 +1,11 @@
-// Normalizes cursor density into a 3x3 grid.
+// Normalizes cursor density into a 3x3 grid: rows are thirds of the page, columns thirds of the cursor's
+// own horizontal range.
+const cursorDepths = require("./pagePosition");
 
 module.exports = function spatialFeatures(session) {
 
-    const moves = (session.events || []).filter(e => e.type === "mousemove");
+    const placed = cursorDepths(session.events);
+    const moves = placed.map(p => p.event);
 
     if (moves.length === 0) return {};
 
@@ -10,11 +13,12 @@ module.exports = function spatialFeatures(session) {
     const maxX = moves.reduce((a, m) => Math.max(a, m.x), -Infinity);
     const minY = moves.reduce((a, m) => Math.min(a, m.y), Infinity);
     const maxY = moves.reduce((a, m) => Math.max(a, m.y), -Infinity);
-
-    if (maxX === minX || maxY === minY) return {};
-
-    const rangeX = maxX - minX;
+    const rangeX = maxX - minX || 1;
     const rangeY = maxY - minY;
+
+    // Older visits without a known page height fall back to the cursor's own vertical range.
+    const onPage = placed.every(p => p.depth !== null);
+    if (!onPage && rangeY === 0) return {};
 
     const gridSize = 3;
     const grid = {};
@@ -25,9 +29,10 @@ module.exports = function spatialFeatures(session) {
         }
     }
 
-    for (const m of moves) {
+    for (const { event: m, depth } of placed) {
         const col = Math.min(Math.floor(((m.x - minX) / rangeX) * gridSize), gridSize - 1);
-        const row = Math.min(Math.floor(((m.y - minY) / rangeY) * gridSize), gridSize - 1);
+        const y = onPage ? depth : (m.y - minY) / rangeY;
+        const row = Math.min(Math.floor(y * gridSize), gridSize - 1);
         grid[`grid_${row}_${col}`]++;
     }
 

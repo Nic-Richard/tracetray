@@ -90,10 +90,10 @@ router.get("/api/ux-trends", requireAuth(), async (req, res) => {
         const siteKey = resolveSiteKey(req, account);
         if (!siteKey) return res.status(403).json({ error: "website not available" });
 
-        const runs = Math.min(parseInt(req.query.runs) || 10, 30);
+        const weeks = Math.max(2, Math.min(parseInt(req.query.weeks) || 8, 26));
         const historyDays = limitsFor(account)?.historyDays;
         const since = historyDays ? new Date(Date.now() - historyDays * 24 * 60 * 60 * 1000) : null;
-        res.json(await getUxTrends(siteKey, { page: req.query.page || "all", runs, since }));
+        res.json(await getUxTrends(siteKey, { page: req.query.page || "all", weeks, since }));
     } catch (err) {
         logger.error("ux-trends error:", err);
         res.status(500).json({ error: "failed to fetch UX trends" });

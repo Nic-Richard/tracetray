@@ -241,6 +241,8 @@ export interface KruskalWallis {
   /** Empty when every value of the feature was the same, so the test couldn't run. */
   H_statistic: number | null;
   p_value: number | null;
+  /** Epsilon squared: how much the feature differs between groups, from 0 to 1. */
+  effect_size?: number | null;
   significant: "yes" | "no";
 }
 
@@ -261,6 +263,8 @@ export interface ClusterStory {
   key?: string;
   headline: string;
   body: string;
+  /** What the group means, without the trait list or the goal (shown beside it). */
+  summary?: string;
   suggestions: string[];
   traits?: Trait[];
   /** Against the page's goal; "above" and "below" only when the gap is unlikely to be chance. */
@@ -274,6 +278,8 @@ export interface Interpretation {
   cluster_stories?: Record<string, ClusterStory>;
   mobile_cluster_stories?: Record<string, ClusterStory>;
   top_suggestions?: string[];
+  /** Set for a device whose visitors didn't split into reliable groups: a description of them as one. */
+  alike?: { desktop: string | null; mobile: string | null };
   data_note?: string;
   first_impression_note?: string;
   device_comparison?: string;
@@ -292,6 +298,14 @@ export interface DeviceAnalysis {
   session_count: number;
   k: number;
   silhouette_score?: number;
+  /** Whether the groups are real: well separated and stable, real but overlapping, or not there at all. */
+  structure?: "clear" | "some" | "none" | null;
+  stability?: number;
+  algorithm_agreement?: number | null;
+  /** Visits on the device over the same stretch of time, including those that never interacted. */
+  visit_count?: number | null;
+  inactive_count?: number | null;
+  inactive_goal_hits?: Record<string, number>;
   clusters: Cluster[];
   kruskal_wallis?: KruskalWallis[];
   k_rationale?: Record<string, unknown>;
@@ -302,7 +316,8 @@ export interface AnalysisResult extends DeviceAnalysis {
   site_key: string;
   page: string;
   ran_at: string;
-  algorithm_agreement?: number;
+  /** The page's main goal when the analysis ran; groups are judged by it. */
+  goal?: { id: string; name: string };
   mobile?: DeviceAnalysis | null;
   click_summary?: ClickCount[];
   interpretation?: Interpretation;
@@ -336,20 +351,20 @@ export interface Timeseries {
   engagement_rate: number;
 }
 
+/** One week of visits to a page. Measures are null for a week without visits. */
 export interface UxTrendPoint {
-  ran_at: string;
-  session_count: number;
-  hesitation_ms: number | null;
-  reading_pauses: number | null;
+  week_start: string;
+  visits: number;
+  engaged: number | null;
+  time_on_page_ms: number | null;
+  actions_per_visit: number | null;
   scroll_depth: number | null;
-  ctr: number | null;
-  top_click_text: string | null;
+  phone_share: number | null;
 }
 
 export interface UxTrends {
   page: string;
   points: UxTrendPoint[];
-  has_ctr_history: boolean;
 }
 
 export interface Journey {
@@ -369,7 +384,7 @@ export interface ZoneBreakdown {
 }
 
 export interface AttentionProfile {
-  depth_profile: { band: number; depth: number; weight: number; count: number }[];
+  depth_profile: { band: number; depth: number; weight: number; share: number }[];
   total_moves: number;
   sessions: number;
   insight: string | null;
@@ -377,9 +392,9 @@ export interface AttentionProfile {
   first_impression: {
     window_ms: number;
     velocity_delta_pct: number | null;
-    early_pause_count: number;
-    rest_pause_count: number;
-    early_zone_breakdown: ZoneBreakdown;
+    early_pauses_per_min: number | null;
+    rest_pauses_per_min: number | null;
+    early_zone_breakdown: ZoneBreakdown | null;
   } | null;
 }
 

@@ -27,10 +27,13 @@ async function extractFailure(stage) {
         async connect() { if (stage === "connect") throw new Error("offline"); },
         Schema: class {},
         model() {
-            return { find() {
-                const query = { sort: () => query, limit: () => query, async lean() { if (stage === "query") throw new Error("offline"); return []; } };
-                return query;
-            } };
+            return {
+                find() {
+                    const query = { sort: () => query, limit: () => query, async lean() { if (stage === "query") throw new Error("offline"); return []; } };
+                    return query;
+                },
+                async aggregate() { return []; }
+            };
         },
         connection: { async close() { observed.closed = true; } },
     };

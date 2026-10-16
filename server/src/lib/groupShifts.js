@@ -3,7 +3,10 @@
 function groupShares(result, device = "desktop") {
     if (!result) return null;
     const mobile = device === "mobile";
-    const clusters = (mobile ? result.mobile?.clusters : result.clusters) || [];
+    const source = mobile ? result.mobile : result;
+    // Groups that didn't hold up aren't real, so they can't shift.
+    if (source?.structure === "none") return [];
+    const clusters = source?.clusters || [];
     const total = clusters.reduce((sum, c) => sum + (c.n || 0), 0) || 1;
     const interpretation = result.interpretation || result.ai_interpretation || {};
     const stories = (mobile ? interpretation.mobile_cluster_stories : interpretation.cluster_stories) || {};

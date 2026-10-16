@@ -72,4 +72,13 @@ function cleanReferrer(value) {
     }
 }
 
-module.exports = { getRegistrableDomain, normalizeTrackingDomain, visitTime, cleanSummary, cleanReferrer };
+// An engaged visit stayed at least 10 seconds and did something on the page: scrolled, clicked or tapped.
+// Time alone isn't enough, since a tab left open counts as a long visit.
+const ENGAGED_MS = 10000;
+const summaryField = field => ({ $ifNull: [`$summary.${field}`, 0] });
+const ENGAGED = { $and: [
+    { $gte: [summaryField("duration_ms"), ENGAGED_MS] },
+    { $gt: [{ $add: [summaryField("scrolls"), summaryField("clicks"), summaryField("taps")] }, 0] }
+] };
+
+module.exports = { getRegistrableDomain, normalizeTrackingDomain, visitTime, cleanSummary, cleanReferrer, ENGAGED };

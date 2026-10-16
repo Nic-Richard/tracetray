@@ -236,7 +236,8 @@ if (!IS_MOBILE) {
             logEvent("cursor_pause", {
                 duration: pauseDuration,
                 x: e.clientX,
-                y: e.clientY
+                y: e.clientY,
+                py: e.pageY
             });
             pauseJustLogged = true;
         }
@@ -262,6 +263,7 @@ if (!IS_MOBILE) {
         logEvent("mousemove", {
             x: e.clientX,
             y: e.clientY,
+            py: e.pageY,
             delta_t: pauseDuration  // time since last move, used for velocity in feature extraction
         });
 
@@ -278,6 +280,7 @@ if (!IS_MOBILE) {
         logEvent("click", {
             x: e.clientX,
             y: e.clientY,
+            py: e.pageY,
             tag: target.tagName,
             id: target.id || null,
             classes: target.className || null,

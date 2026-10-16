@@ -18,7 +18,7 @@ test("clear behaviour gets the matching archetype, with the numbers behind it", 
     const result = interpretClusters({ desktop: readerAndScanner, pageUrl: "https://example.com/" });
     assert.equal(result.cluster_stories[0].headline, "Deep readers");
     assert.match(result.cluster_stories[1].headline, /Content skimmers|Header scanners/);
-    assert.match(result.cluster_stories[0].body, /^58% of desktop visitors\. They .*pause about 48% more often than average\./);
+    assert.match(result.cluster_stories[0].body, /^They .*pause about 48% more often than average\./);
     assert.equal(result.page_type, "Homepage");
     assert.match(result.site_summary, /^58% of desktop visitors are deep readers\./);
     assert.ok(result.top_suggestions.length >= 1);
@@ -114,12 +114,39 @@ test("with a goal, groups that clearly reach it more are called working and the 
     const result = interpretClusters({ desktop: withGoal, pageUrl: "https://example.com/", goal: { id: "g1", name: "checkout" } });
     const [readers, scanners] = [result.cluster_stories[0], result.cluster_stories[1]];
     assert.equal(readers.goal.standing, "above");
-    assert.match(readers.body, /50% of them reach checkout, against 31% across the page, so what they rely on is working\./);
+    assert.match(readers.body, /^50% of them reach checkout, against 31% of desktop visits, so what they rely on is working\./);
     assert.deepEqual(readers.suggestions, []);
     assert.equal(scanners.goal.standing, "below");
     assert.match(scanners.body, /Only 4% of them reach checkout/);
     assert.equal(result.top_suggestions[0], scanners.suggestions[0]);
     assert.match(result.site_summary, /^58% of desktop visitors are deep readers\./);
+});
+
+test("visits that never interacted count toward the goal average, and a group that never reaches it says so", () => {
+    const withGoal = structuredClone(readerAndScanner);
+    withGoal.clusters[0].goal_hits = { g1: 35 };
+    withGoal.inactive_count = 80;
+    withGoal.inactive_goal_hits = { g1: 1 };
+    const result = interpretClusters({ desktop: withGoal, goal: { id: "g1", name: "checkout" } });
+    assert.match(result.cluster_stories[0].body, /against 18% of desktop visits/);
+    assert.match(result.cluster_stories[1].body, /^None of them reach checkout/);
+});
+
+test("when no grouping holds up, visitors are described as alike and no group is acted on", () => {
+    const result = interpretClusters({ desktop: { ...readerAndScanner, structure: "none" }, pageUrl: "https://example.com/" });
+    assert.match(result.site_summary, /^Desktop visitors behave much alike/);
+    assert.match(result.data_note, /none held up/);
+    assert.deepEqual(result.top_suggestions, []);
+});
+
+test("a later group isn't named after the same trait as an earlier one", () => {
+    const result = interpretClusters({ desktop: { session_count: 90, clusters: [
+        cluster(0, 40, { direction_change_rate: 0.3, click_rate: 0.05 }),
+        cluster(1, 30, { direction_change_rate: 0.25, click_rate: 0.005 }),
+        cluster(2, 20, { direction_change_rate: 0.02, click_rate: 0.05 }),
+    ] } });
+    const names = [0, 1].map(id => result.cluster_stories[id].headline);
+    assert.equal(names.filter(name => /Re-check/.test(name)).length, 1, names.join(", "));
 });
 
 test("a goal reached only a handful of times doesn't judge any group", () => {

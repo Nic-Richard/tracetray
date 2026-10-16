@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { pagePath, type AnalysisResult, type Device } from "@tracetray/shared";
-import { visitorTypes } from "../lib/analysis";
+import { pagePath, percent, type AnalysisResult, type Device } from "@tracetray/shared";
+import { alikeNote, inactiveVisits, INACTIVE_TEXT, visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
 import { useAskAbout } from "../lib/askLink";
 
@@ -10,6 +10,12 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
   const hasMobile = (result.mobile?.clusters?.length || 0) > 0;
   const types = visitorTypes(result, device);
   const colors = groupColors(types.map(t => t.key));
+  const alike = alikeNote(result, device);
+  const inactive = inactiveVisits(result, device);
+  const rows = alike
+    ? [{ id: -1, headline: "Visitors behave alike", share: 1 - (inactive?.share || 0), body: alike, color: "var(--d1)" }]
+    : types.map((t, i) => ({ id: t.id, headline: t.headline, share: t.share, body: t.story?.body?.replace(/^\d+% of (desktop|mobile) visitors\. /, "") || "", color: colors[i] }));
+  if (inactive) rows.push({ id: -2, headline: "Left without interacting", share: inactive.share, body: `${INACTIVE_TEXT[device]}${inactive.goal ? ` ${percent(inactive.goal.rate)} of them reached ${inactive.goal.name}.` : ""}`, color: "var(--d-neutral)" });
 
   return (
     <section className="panel">
@@ -28,19 +34,21 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
           <p className="empty">{(device === "mobile" ? result.mobile?.failure?.message : result.failure?.message) || "Not enough visits yet to sort them into groups."}</p>
         ) : (
           <>
-            <div className="stack" role="img" aria-label={types.map(t => `${t.headline} ${Math.round(t.share * 100)}%`).join(", ")}>
-              {types.map((type, i) => <span key={type.id} style={{ flex: type.share, background: colors[i] }} />)}
+            <div className="stack" role="img" aria-label={rows.map(r => `${r.headline} ${Math.round(r.share * 100)}%`).join(", ")}>
+              {rows.map(row => <span key={row.id} style={{ flex: row.share, background: row.color }} />)}
             </div>
             <div className="who">
-              {types.map((type, i) => (
-                <div className="who-row" key={type.id}>
-                  <span className="dot" style={{ background: colors[i] }} />
-                  <b>{type.headline} <span className="num" style={{ color: colors[i] }}>{Math.round(type.share * 100)}%</span></b>
-                  {type.story?.body && <p>{type.story.body.replace(/^\d+% of (desktop|mobile) visitors\. /, "")}</p>}
-                  <button type="button" className="ask-link" onClick={() =>
-                    askAbout(`On ${pagePath(page)}, what does the "${type.headline}" group (${Math.round(type.share * 100)}% of ${device} visitors) tell me, and what should I change?`)}>
-                    Ask about this group
-                  </button>
+              {rows.map(row => (
+                <div className="who-row" key={row.id}>
+                  <span className="dot" style={{ background: row.color }} />
+                  <b>{row.headline} <span className="num" style={{ color: row.color }}>{Math.round(row.share * 100)}%</span></b>
+                  {row.body && <p>{row.body}</p>}
+                  {row.id >= 0 && (
+                    <button type="button" className="ask-link" onClick={() =>
+                      askAbout(`On ${pagePath(page)}, what does the "${row.headline}" group (${Math.round(row.share * 100)}% of ${device} visitors) tell me, and what should I change?`)}>
+                      Ask about this group
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

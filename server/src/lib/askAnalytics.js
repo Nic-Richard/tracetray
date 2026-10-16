@@ -45,7 +45,7 @@ const TOOLS = [
     },
     {
         name: "get_traffic_trend",
-        description: "Sessions per day for the last N days, split into desktop, mobile and engaged (over 5 seconds and more than 3 events), plus the overall engagement rate.",
+        description: "Sessions per day for the last N days, split into desktop, mobile and engaged (stayed at least 10 seconds and scrolled, clicked or tapped), plus the overall engagement rate.",
         input_schema: {
             type: "object",
             properties: {
@@ -98,19 +98,19 @@ const TOOLS = [
     },
     {
         name: "get_ux_trends",
-        description: "How behaviour changed across past analysis runs (not days): hesitation before clicking in ms, reading pauses per second, scroll depth from 0 to 1, and click-through rate of the top element. Use it to judge whether a page change helped.",
+        description: "How behaviour changed week by week (the last N calendar weeks from Monday, UTC; the last is the current week so far): visits, engaged share, average time on page in ms, clicks and taps per visit, scroll depth from 0 to 1, and phone share. Use it to judge whether a page change helped.",
         input_schema: {
             type: "object",
             properties: {
                 page: pageProperty,
-                runs: { type: "integer", minimum: 2, maximum: 30, description: "Defaults to 10." }
+                weeks: { type: "integer", minimum: 2, maximum: 26, description: "Defaults to 8." }
             },
             additionalProperties: false
         }
     },
     {
         name: "get_attention",
-        description: "Where desktop visitors keep their cursor: share of movement in the top, middle and bottom of the page, a depth profile in 20 bands, and how the first 5 seconds differ from the rest of the visit.",
+        description: "Where desktop visitors keep their cursor: share of movement in the top, middle and bottom of the page, a depth profile in 21 bands, measured on the page itself rather than the window, and how the first 5 seconds differ from the rest of the visit.",
         input_schema: { type: "object", properties: { page: pageProperty }, additionalProperties: false }
     }
 ];
@@ -220,7 +220,7 @@ async function runTool(siteKey, name, input = {}, { siteHost = null } = {}) {
         case "get_visitor_journeys":
             return siteData.getJourney(siteKey);
         case "get_ux_trends":
-            return siteData.getUxTrends(siteKey, { page: page || "all", runs: clampInt(input.runs, 2, 30, 10) });
+            return siteData.getUxTrends(siteKey, { page: page || "all", weeks: clampInt(input.weeks, 2, 26, 8) });
         case "get_attention": {
             const { depth_profile, zone_breakdown, sessions, insight, first_impression } = await computeAttentionProfile(siteKey, page);
             const depth = depth_profile.map(b => ({ depth: b.depth, activity_vs_busiest_band: Math.round(b.weight * 100) / 100 }));

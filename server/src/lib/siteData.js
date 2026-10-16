@@ -1,4 +1,6 @@
 const { Session, AnalysisResult } = require("../db/models");
+const { ENGAGED } = require("./tracking");
+const { windowMeasures } = require("./compare");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -64,7 +66,7 @@ async function getTimeseries(siteKey, { days = 14, page = null } = {}) {
             _id: { $dateToString: { format: "%Y-%m-%d", date: { $toDate: { $convert: { input: "$start_time", to: "long", onError: 0, onNull: 0 } } } } },
             desktop: { $sum: { $cond: [isMobile, 0, 1] } },
             mobile: { $sum: { $cond: [isMobile, 1, 0] } },
-            engaged: { $sum: { $cond: [{ $and: [{ $gt: [{ $ifNull: ["$summary.duration_ms", 0] }, 5000] }, { $gt: [{ $ifNull: ["$summary.total_events", 0] }, 3] }] }, 1, 0] } }
+            engaged: { $sum: { $cond: [ENGAGED, 1, 0] } }
         } }
     ]);
     const byDay = Object.fromEntries(rows.map(r => [r._id, { date: r._id, desktop: r.desktop, mobile: r.mobile, engaged: r.engaged }]));
@@ -85,50 +87,33 @@ async function getTimeseries(siteKey, { days = 14, page = null } = {}) {
     };
 }
 
-// Uses session-weighted metrics because cluster labels can change between runs.
-async function getUxTrends(siteKey, { page = "all", runs = 10, since = null } = {}) {
-    const results = (await AnalysisResult.find({
-        site_key: siteKey,
-        page:     analysisPageFilter(page),
-        k:        { $gt: 0 }, // skip failed/insufficient-data runs, they have no feature means
-        ...(since ? { ran_at: { $gte: since } } : {})
-    }).sort({ ran_at: -1 }).limit(runs).lean()).reverse();
-
-    const points = results.map(r => {
-        const clusters = r.clusters || [];
-        const total    = clusters.reduce((s, c) => s + (c.n || 0), 0) || 1;
-
-        function weightedAvg(key) {
-            let sum = 0;
-            for (const c of clusters) {
-                const v = c.feature_means?.[key];
-                if (v != null) sum += v * (c.n || 0);
-            }
-            return sum / total;
-        }
-
-        const hasDesktopFeatures = clusters.some(c => c.feature_means?.dwell_before_click != null);
-        const hesitation = hasDesktopFeatures ? weightedAvg("dwell_before_click") : weightedAvg("dwell_before_tap");
-        const readingPauses = hasDesktopFeatures
-            ? weightedAvg("pause_rate")
-            : weightedAvg("attention_pause_rate") || weightedAvg("scroll_pause_rate");
-        const scrollDepth = weightedAvg("scroll_depth_reached") || weightedAvg("scroll_depth_norm");
-
-        const topClick = (r.click_summary || [])[0] || null;
-        const ctr = topClick && r.session_count > 0 ? topClick.count / r.session_count : null;
-
+// Calendar weeks from Monday (UTC), like the goal chart, so two refreshes on the same day can't fake a trend.
+// The last week is the current one, still in progress.
+async function getUxTrends(siteKey, { page = "all", weeks = 8, since = null, now = Date.now() } = {}) {
+    const WEEK_MS = 7 * DAY_MS;
+    const today = Math.floor(now / DAY_MS) * DAY_MS;
+    const monday = today - ((new Date(today).getUTCDay() + 6) % 7) * DAY_MS;
+    const oldest = since ? new Date(since).getTime() : -Infinity;
+    const windows = [];
+    for (let i = weeks - 1; i >= 0; i--) {
+        const from = monday - i * WEEK_MS;
+        if (from + WEEK_MS > oldest) windows.push({ from, to: Math.min(from + WEEK_MS, now) });
+    }
+    const pageKey = page === "all" ? null : page;
+    const measured = await Promise.all(windows.map(w => windowMeasures(siteKey, pageKey, w.from, w.to)));
+    const points = windows.map((w, i) => {
+        const m = measured[i];
         return {
-            ran_at:          r.ran_at,
-            session_count:   r.session_count,
-            hesitation_ms:   hesitation || null,
-            reading_pauses:  readingPauses || null,
-            scroll_depth:    scrollDepth || null,
-            ctr:             ctr,
-            top_click_text:  topClick?.text || null
+            week_start:        new Date(w.from).toISOString(),
+            visits:            m.visits,
+            engaged:           m.visits ? m.engaged : null,
+            time_on_page_ms:   m.visits ? m.timeOnPage : null,
+            actions_per_visit: m.visits ? m.actionsPerVisit : null,
+            scroll_depth:      m.scrollDepth,
+            phone_share:       m.visits ? m.phoneShare : null
         };
     });
-
-    return { page, points, has_ctr_history: points.some(p => p.ctr != null) };
+    return { page, points };
 }
 
 async function getPages(siteKey) {

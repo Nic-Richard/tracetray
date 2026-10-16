@@ -27,18 +27,13 @@ async function run() {
 
         // Mobile sessions use touch and scroll events instead of cursor movement. Visits without full detail
         // (trimmed, left out of the sample, or over the plan's allowance) have nothing to measure.
-        const filter = {
-            ...siteKeyFilter,
-            ...pageFilter,
-            end_time: { $ne: null },
-            detailed: { $ne: false },
-            "events.0": { $exists: true },
-            $or: [
-                { "summary.mouse_moves": { $gt: 0 } },
-                { "summary.taps": { $gt: 0 } },
-                { "summary.scrolls": { $gt: 0 } }
-            ]
-        };
+        const interacted = [
+            { "summary.mouse_moves": { $gt: 0 } },
+            { "summary.taps": { $gt: 0 } },
+            { "summary.scrolls": { $gt: 0 } }
+        ];
+        const visitFilter = { ...siteKeyFilter, ...pageFilter, end_time: { $ne: null }, detailed: { $ne: false } };
+        const filter = { ...visitFilter, "events.0": { $exists: true }, $or: interacted };
         // The most recent visits are plenty for clustering and keep memory flat however busy a site gets.
         const recent = device => Session.find({ ...filter, ...device }).sort({ start_time: -1 }).limit(MAX_SESSIONS_PER_DEVICE).lean();
         const [desktopSessions, mobileSessions] = await Promise.all([
@@ -60,10 +55,36 @@ async function run() {
             session_id: session.session_id,
             goal_hits: session.goal_hits || [],
             duration_ms: session.end_time ? session.end_time - session.start_time : 0,
+            active_ms: basicFeatures.activeMs(session),
             total_events: (session.events || []).length,
             ...mobileFeatures(session),
             ...scrollFeatures(session)
         }));
+
+        // Visits that never moved, scrolled or tapped can't be grouped, but they're counted (with the goals they
+        // reached) over the same stretch of time as the grouped ones, so the groups can be read against every visit.
+        const inactiveOf = async (sessions, device) => {
+            if (sessions.length === 0) return { visits: 0, inactive: 0, inactive_goal_hits: {} };
+            const since = sessions[sessions.length - 1].start_time;
+            const rows = await Session.aggregate([
+                { $match: { ...visitFilter, ...device, start_time: { $gte: since }, $nor: interacted } },
+                { $project: { hits: { $setUnion: [{ $ifNull: ["$goal_hits", []] }, []] } } },
+                { $facet: {
+                    count: [{ $count: "n" }],
+                    hits: [{ $unwind: "$hits" }, { $group: { _id: "$hits", n: { $sum: 1 } } }]
+                } }
+            ]);
+            const inactive = rows[0]?.count[0]?.n || 0;
+            return {
+                visits: sessions.length + inactive,
+                inactive,
+                inactive_goal_hits: Object.fromEntries((rows[0]?.hits || []).map(h => [h._id, h.n]))
+            };
+        };
+        const meta = {
+            desktop: await inactiveOf(desktopSessions, { device_type: { $ne: "mobile" } }),
+            mobile: await inactiveOf(mobileSessions, { device_type: "mobile" })
+        };
 
         // Desktop and mobile datasets are analyzed separately.
         const datasetDir = path.join(__dirname, "..", "data", "features");
@@ -73,7 +94,7 @@ async function run() {
         const mobileFile  = path.join(datasetDir, `dataset_${siteKey}_mobile.json`);
 
         // Remove stale datasets for this site only.
-        const keepFiles = [`dataset_${siteKey}_desktop.json`, `dataset_${siteKey}_mobile.json`];
+        const keepFiles = [`dataset_${siteKey}_desktop.json`, `dataset_${siteKey}_mobile.json`, `dataset_${siteKey}_meta.json`];
         const sitePrefix = `dataset_${siteKey}_`;
         const oldFiles  = fs.readdirSync(datasetDir).filter(f =>
             f.startsWith(sitePrefix) && f.endsWith(".json") && !keepFiles.includes(f)
@@ -84,6 +105,7 @@ async function run() {
 
         fs.writeFileSync(desktopFile, JSON.stringify(desktopDataset, null, 2));
         fs.writeFileSync(mobileFile, JSON.stringify(mobileDataset, null, 2));
+        fs.writeFileSync(path.join(datasetDir, `dataset_${siteKey}_meta.json`), JSON.stringify(meta));
 
         console.log(`done. desktop: ${desktopDataset.length} sessions -> ${desktopFile}`);
         console.log(`done. mobile:  ${mobileDataset.length} sessions -> ${mobileFile}`);

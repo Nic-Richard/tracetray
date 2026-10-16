@@ -51,15 +51,8 @@ async function runAnalysis(siteKey, pageFilter = null) {
 
         // Mobile results are stored without a separate model interpretation.
         if (mobileResult) {
-            clusterResult.mobile = {
-                session_count:    mobileResult.session_count,
-                k:                mobileResult.k,
-                silhouette_score: mobileResult.silhouette_score,
-                clusters:         mobileResult.clusters,
-                kruskal_wallis:   mobileResult.kruskal_wallis,
-                k_rationale:      mobileResult.k_rationale,
-                failure:          mobileResult.failure || null
-            };
+            const { device, ...mobile } = mobileResult;
+            clusterResult.mobile = { ...mobile, failure: mobile.failure || null };
         }
 
         clusterResult.click_summary = await getClickSummary(siteKey, pageFilter, 15);

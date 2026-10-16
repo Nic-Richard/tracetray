@@ -2,6 +2,7 @@
 // so a site owner can see whether a redesign changed how visitors behave.
 const { Session, AnalysisResult } = require("../db/models");
 const { groupShares } = require("./groupShifts");
+const { ENGAGED } = require("./tracking");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_DAYS = 14;
@@ -10,10 +11,10 @@ const MIN_GOAL_REACHED = 30;
 
 async function windowMeasures(siteKey, page, from, to, goalId = null) {
     const [row] = await Session.aggregate([
-        { $match: { site_key: siteKey, page, end_time: { $ne: null }, start_time: { $gte: from, $lt: to } } },
+        { $match: { site_key: siteKey, ...(page ? { page } : {}), end_time: { $ne: null }, start_time: { $gte: from, $lt: to } } },
         { $project: {
             mobile: { $cond: [{ $eq: ["$device_type", "mobile"] }, 1, 0] },
-            engaged: { $cond: [{ $and: [{ $gt: ["$summary.duration_ms", 5000] }, { $gt: ["$summary.total_events", 3] }] }, 1, 0] },
+            engaged: { $cond: [ENGAGED, 1, 0] },
             duration: { $min: [{ $ifNull: ["$summary.duration_ms", 0] }, MAX_VISIT_MS] },
             actions: { $add: [{ $ifNull: ["$summary.clicks", 0] }, { $ifNull: ["$summary.taps", 0] }] },
             depth: { $ifNull: ["$max_scroll_depth", { $max: { $map: { input: { $filter: { input: { $ifNull: ["$events", []] }, cond: { $eq: ["$$this.type", "scroll"] } } }, in: "$$this.scroll_depth" } } }] },
@@ -84,4 +85,4 @@ async function compareAroundChange(siteKey, page, changedOn, now = Date.now(), g
     };
 }
 
-module.exports = { compareAroundChange, goalVerdict };
+module.exports = { compareAroundChange, goalVerdict, windowMeasures };

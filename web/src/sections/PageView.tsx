@@ -7,7 +7,7 @@ import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
 import { heatColor } from "../lib/heat";
 import { readSession, writeSession } from "../lib/storage";
-import { interpretationOf, visitorTypes } from "../lib/analysis";
+import { interpretationOf, visitCount, visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
 import GroupPages from "../components/GroupPages";
 import WhoVisits from "../components/WhoVisits";
@@ -113,7 +113,7 @@ function DevicePanel({ timeseries, result }: { timeseries: Timeseries; result: A
         </div>
         <div className="device-notes">
           {comparison && <p>{comparison}</p>}
-          {phoneTypes.length > 0 && (
+          {phoneTypes.length > 0 && result?.mobile?.structure !== "none" && (
             <div className="group-chips" aria-label="Phone visitor groups">
               {phoneTypes.map((type, i) => <span key={type.id}><i style={{ background: phoneColors[i] }} />{type.headline} <b className="num">{Math.round(type.share * 100)}%</b></span>)}
             </div>
@@ -131,18 +131,17 @@ function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }:
   const group = isPageGroup(page);
   const visits = timeseries?.total_sessions ?? 0;
   const desktopShare = visits ? timeseries!.series.reduce((sum, d) => sum + d.desktop, 0) / visits : null;
-  const groups = result?.clusters?.length || 0;
-  const phoneGroups = result?.mobile?.clusters?.length || 0;
+  const analyzed = visitCount(result, "desktop") + visitCount(result, "mobile");
+  const inactive = (result?.inactive_count || 0) + (result?.mobile?.inactive_count || 0);
+  const inactiveKnown = result?.inactive_count != null;
 
   return (
     <div className="content">
       <div className="figures">
         <Figure accent="var(--d1)" label="Visits, last 30 days" value={timeseries ? compactNumber(visits) : "–"} note={desktopShare === null ? undefined : `${percent(desktopShare)} on desktop`} />
-        <Figure accent="var(--d2)" label="Engaged visits" value={timeseries && visits ? percent(timeseries.engagement_rate) : "–"} note="Stayed over 5 seconds and did something" />
-        <Figure accent="var(--d5)" label="Visitor groups" value={groups + phoneGroups ? String(groups + phoneGroups) : "–"} note={result ? `${groups} on desktop, ${phoneGroups} on phones` : "Not analyzed yet"} />
-        {group
-          ? <Figure accent="var(--d3)" label="Pages in this group" value={compactNumber(groupSize || 0)} note={pagePath(page)} />
-          : <Figure accent="var(--d3)" label="Last analyzed" value={result ? timeAgo(result.ran_at) : "Never"} note={result ? "Refresh after you change the page" : undefined} />}
+        <Figure accent="var(--d2)" label="Engaged visits" value={timeseries && visits ? percent(timeseries.engagement_rate) : "–"} note="Stayed 10 seconds or more and scrolled, clicked or tapped" />
+        <Figure accent="var(--d5)" label="Left without interacting" value={inactiveKnown && analyzed ? percent(inactive / analyzed) : "–"} note={inactiveKnown && analyzed ? "Didn't scroll, click, tap or move the cursor" : "Shows after the next analysis"} />
+        <Figure accent="var(--d3)" label="Last analyzed" value={result ? timeAgo(result.ran_at) : "Never"} note={result ? "Refresh after you change the page" : undefined} />
       </div>
       <GroupingNudge page={page} />
       <div className="split">

@@ -64,7 +64,7 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     resetPage: (siteKey: string, page: string) => request<{ deleted_sessions: number }>("POST", "/api/pages/reset", { siteKey, body: { page } }),
     stats: (siteKey: string, page: string) => request<Stats>("GET", "/api/stats", { siteKey, query: { page } }),
     timeseries: (siteKey: string, page?: string | null, days = 14) => request<Timeseries>("GET", "/api/sessions/timeseries", { siteKey, query: { page, days } }),
-    uxTrends: (siteKey: string, page: string, runs = 10) => request<UxTrends>("GET", "/api/ux-trends", { siteKey, query: { page, runs } }),
+    uxTrends: (siteKey: string, page: string, weeks = 8) => request<UxTrends>("GET", "/api/ux-trends", { siteKey, query: { page, weeks } }),
     pageChanges: (siteKey: string, page: string) => request<PageChange[]>("GET", "/api/page-changes", { siteKey, query: { page } }),
     addPageChange: (siteKey: string, change: { page: string; day: string; note: string }) => request<PageChange>("POST", "/api/page-changes", { siteKey, body: change }),
     deletePageChange: (siteKey: string, id: string) => request<{ deleted: boolean }>("DELETE", `/api/page-changes/${encodeURIComponent(id)}`, { siteKey }),

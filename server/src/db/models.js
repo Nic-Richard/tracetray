@@ -58,6 +58,7 @@ const AnalysisResult = mongoose.model("AnalysisResult", new mongoose.Schema({
         feature:     String,
         H_statistic: Number,
         p_value:     Number,
+        effect_size: Number,
         significant: String
     }],
     click_summary: [{

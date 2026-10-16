@@ -1,154 +1,114 @@
 const { Session } = require("../db/models");
 const { RECENT_SESSION_LIMIT } = require("../config");
+const cursorDepths = require("../../../analysis/featureModules/pagePosition");
 
-// Builds a desktop attention profile from cursor depth and early-session movement.
+// A multiple of three, so the thirds of the page fall on band boundaries.
+const BANDS = 21;
+const FIRST_IMPRESSION_MS = 5000;
+
+const zonesOf = bands => {
+    const total = bands.reduce((a, b) => a + b, 0) || 1;
+    const sum = (from, to) => bands.slice(from, to).reduce((a, b) => a + b, 0) / total;
+    return { top: sum(0, 7), middle: sum(7, 14), bottom: sum(14, 21) };
+};
+
+function speed(moves) {
+    let distance = 0, time = 0;
+    for (let i = 1; i < moves.length; i++) {
+        const dt = moves[i].timestamp - moves[i - 1].timestamp;
+        if (!(dt > 0) || dt > 1000) continue;
+        distance += Math.hypot(moves[i].x - moves[i - 1].x, moves[i].y - moves[i - 1].y);
+        time += dt;
+    }
+    return time > 0 ? distance / time : null;
+}
+
+function attentionInsight({ top, middle, bottom }) {
+    const ranked = [["top", top], ["middle", middle], ["bottom", bottom]].sort((a, b) => b[1] - a[1]);
+    const [lead, share] = ranked[0];
+    const [quiet, quietShare] = ranked[2];
+    const p = v => `${Math.round(v * 100)}%`;
+    if (share >= 0.5 && share >= ranked[1][1] * 1.25) {
+        if (lead === "top") return `Most cursor activity stays near the top: ${p(share)} happens in the top third of the page, so many visitors don't go much further.`;
+        if (lead === "middle") return `Cursor activity gathers in the middle of the page, with ${p(share)} in the middle third.`;
+        return `Visitors spend much of their time low on the page: ${p(share)} of cursor activity is in the bottom third.`;
+    }
+    if (quietShare < 0.01) return `Almost no cursor activity reaches the ${quiet} third of the page.`;
+    if (quietShare < 0.12) return `The ${quiet} third of the page gets little attention: only ${p(quietShare)} of cursor activity happens there.`;
+    return "Cursor activity is spread fairly evenly from the top of the page to the bottom.";
+}
+
+// Where desktop visitors' cursors spend time on the page, each visit counting equally, and how the first five
+// seconds compare with the rest of the visit.
 async function computeAttentionProfile(siteKey, page) {
-    const sessionFilter = {
+    const sessions = await Session.find({
         site_key: siteKey,
         end_time: { $ne: null },
         detailed: { $ne: false },
         events_trimmed_at: { $exists: false },
         "summary.mouse_moves": { $gt: 0 },
         ...(page ? { page } : {})
-    };
+    }, { events: 1, start_time: 1, end_time: 1, _id: 0 }).sort({ start_time: -1 }).limit(RECENT_SESSION_LIMIT).lean();
 
-    const sessions = await Session.find(sessionFilter, { events: 1, start_time: 1, _id: 0 })
-        .sort({ start_time: -1 }).limit(RECENT_SESSION_LIMIT).lean();
-
-    const BANDS               = 20;
-    const FIRST_IMPRESSION_MS = 5000; // window counted as the start of a visit
-    const bandTotals          = new Array(BANDS).fill(0);
-    let   totalMoves          = 0;
-    let   sessionsWithDepth   = 0;
-
-// Compare early cursor activity with the rest of the same session.
-    let earlyVelocitySum = 0, earlyVelocityCount = 0;
-    let restVelocitySum  = 0, restVelocityCount  = 0;
-    let earlyPauseCount  = 0, restPauseCount      = 0;
-    const earlyBandTotals = new Array(BANDS).fill(0);
-
-    function averageVelocity(points) {
-        if (points.length < 2) return null;
-        let distance = 0;
-        for (let i = 1; i < points.length; i++) {
-            const dx = points[i].x - points[i-1].x;
-            const dy = points[i].y - points[i-1].y;
-            distance += Math.sqrt(dx*dx + dy*dy);
-        }
-        return distance / points.length;
-    }
+    const bands = new Array(BANDS).fill(0);
+    const earlyBands = new Array(BANDS).fill(0);
+    let visits = 0, totalMoves = 0;
+    let earlySpeedSum = 0, restSpeedSum = 0, speedVisits = 0;
+    let earlyPauses = 0, earlySeconds = 0, restPauses = 0, restSeconds = 0;
 
     for (const session of sessions) {
-        const moves = (session.events || []).filter(e => e.type === "mousemove" && e.y != null && e.x != null);
-        if (moves.length === 0) continue;
+        const placed = cursorDepths(session.events).filter(p => p.depth !== null);
+        if (placed.length === 0) continue;
+        const start = session.start_time;
+        const duration = Math.max(0, session.end_time - start);
 
-        const ys     = moves.map(e => e.y);
-        const minY   = Math.min(...ys);
-        const maxY   = Math.max(...ys);
-        const rangeY = maxY - minY || 1;
-
-        for (const e of moves) {
-            const normalisedDepth = (e.y - minY) / rangeY;
-            const band             = Math.min(Math.floor(normalisedDepth * BANDS), BANDS - 1);
-            bandTotals[band]++;
-            totalMoves++;
+        const own = new Array(BANDS).fill(0), ownEarly = new Array(BANDS).fill(0);
+        for (const { event, depth } of placed) {
+            const band = Math.min(Math.floor(depth * BANDS), BANDS - 1);
+            own[band]++;
+            if (event.timestamp - start <= FIRST_IMPRESSION_MS) ownEarly[band]++;
         }
+        own.forEach((count, i) => { bands[i] += count / placed.length; });
+        const earlyCount = ownEarly.reduce((a, b) => a + b, 0);
+        if (earlyCount) ownEarly.forEach((count, i) => { earlyBands[i] += count / earlyCount; });
+        visits++;
+        totalMoves += placed.length;
 
-        sessionsWithDepth++;
+        const moves = placed.map(p => p.event);
+        const early = speed(moves.filter(m => m.timestamp - start <= FIRST_IMPRESSION_MS));
+        const rest = speed(moves.filter(m => m.timestamp - start > FIRST_IMPRESSION_MS));
+        if (early !== null && rest !== null) { earlySpeedSum += early; restSpeedSum += rest; speedVisits++; }
 
-        const sessionStart = session.start_time || moves[0].timestamp;
-        const earlyMoves = [];
-        const restMoves  = [];
-        for (const e of moves) {
-            const elapsed = (e.timestamp || 0) - sessionStart;
-            if (elapsed <= FIRST_IMPRESSION_MS) earlyMoves.push(e); else restMoves.push(e);
-        }
-
-        const earlyVelocity = averageVelocity(earlyMoves);
-        const restVelocity  = averageVelocity(restMoves);
-        if (earlyVelocity != null) { earlyVelocitySum += earlyVelocity; earlyVelocityCount++; }
-        if (restVelocity  != null) { restVelocitySum  += restVelocity;  restVelocityCount++;  }
-
-        earlyPauseCount += (session.events || []).filter(e => e.type === "cursor_pause" && ((e.timestamp||0) - sessionStart) <= FIRST_IMPRESSION_MS).length;
-        restPauseCount  += (session.events || []).filter(e => e.type === "cursor_pause" && ((e.timestamp||0) - sessionStart) > FIRST_IMPRESSION_MS).length;
-
-        for (const e of earlyMoves) {
-            const normalisedDepth = (e.y - minY) / rangeY;
-            const band             = Math.min(Math.floor(normalisedDepth * BANDS), BANDS - 1);
-            earlyBandTotals[band]++;
+        // Pauses are compared per second, since the first five seconds are a small part of most visits.
+        if (duration > FIRST_IMPRESSION_MS * 2) {
+            for (const e of session.events || []) {
+                if (e.type !== "cursor_pause") continue;
+                if (e.timestamp - start <= FIRST_IMPRESSION_MS) earlyPauses++; else restPauses++;
+            }
+            earlySeconds += FIRST_IMPRESSION_MS / 1000;
+            restSeconds += (duration - FIRST_IMPRESSION_MS) / 1000;
         }
     }
 
-    const maxBand = Math.max(...bandTotals, 1);
-    const depthProfile = bandTotals.map((count, i) => ({
-        band:   i,
-        depth:  i / BANDS,        // 0 = top of page, 1 = bottom
-        weight: count / maxBand,
-        count
-    }));
-
-    const third  = Math.floor(BANDS / 3);
-    const topSum = bandTotals.slice(0, third).reduce((a,b) => a+b, 0);
-    const midSum = bandTotals.slice(third, third*2).reduce((a,b) => a+b, 0);
-    const botSum = bandTotals.slice(third*2).reduce((a,b) => a+b, 0);
-    const total  = topSum + midSum + botSum || 1;
-    const topPct = topSum/total, midPct = midSum/total, botPct = botSum/total;
-
-    let insight;
-    if (topPct > 0.5) {
-        insight = `Most attention stays in the upper portion of the page. ${(topPct*100).toFixed(0)}% of cursor activity happens before visitors reach the middle.`;
-    } else if (botPct > 0.4) {
-        insight = `A larger than usual share of attention reaches the lower portion of the page. ${(botPct*100).toFixed(0)}% of cursor activity happens in the bottom third, suggesting visitors are scrolling through rather than stopping early.`;
-    } else if (midPct === Math.max(topPct, midPct, botPct)) {
-        insight = `Attention concentrates in the middle of the page. The top and bottom thirds see comparatively less cursor activity.`;
-    } else {
-        insight = `Attention is fairly evenly spread across the page from top to bottom.`;
-    }
-
-    const avgEarlyVelocity = earlyVelocityCount > 0 ? earlyVelocitySum / earlyVelocityCount : null;
-    const avgRestVelocity  = restVelocityCount  > 0 ? restVelocitySum  / restVelocityCount  : null;
-
-    let velocityDeltaPct = null;
-    if (avgEarlyVelocity != null && avgRestVelocity != null && avgRestVelocity > 0) {
-        velocityDeltaPct = ((avgEarlyVelocity - avgRestVelocity) / avgRestVelocity) * 100;
-    }
-
-    const maxEarlyBand = Math.max(...earlyBandTotals, 1);
-    const earlyDepthProfile = earlyBandTotals.map((count, i) => ({
-        band:   i,
-        depth:  i / BANDS,
-        weight: count / maxEarlyBand,
-        count
-    }));
-
-    const earlyTopSum = earlyBandTotals.slice(0, third).reduce((a,b)=>a+b,0);
-    const earlyMidSum = earlyBandTotals.slice(third, third*2).reduce((a,b)=>a+b,0);
-    const earlyBotSum = earlyBandTotals.slice(third*2).reduce((a,b)=>a+b,0);
-    const earlyTotal  = earlyTopSum + earlyMidSum + earlyBotSum || 1;
-
-    const firstImpression = {
-        window_ms:           FIRST_IMPRESSION_MS,
-        early_avg_velocity:  avgEarlyVelocity,
-        rest_avg_velocity:   avgRestVelocity,
-        velocity_delta_pct:  velocityDeltaPct,
-        early_pause_count:   earlyPauseCount,
-        rest_pause_count:    restPauseCount,
-        early_depth_profile: earlyDepthProfile,
-        early_zone_breakdown: {
-            top:    earlyTopSum / earlyTotal,
-            middle: earlyMidSum / earlyTotal,
-            bottom: earlyBotSum / earlyTotal
-        }
-    };
+    const maxBand = Math.max(...bands, 1e-9);
+    const zones = zonesOf(bands);
+    const enoughSpeed = speedVisits >= 5;
+    const enoughPauses = earlySeconds >= 25 && restSeconds > 0;
 
     return {
-        depth_profile:    depthProfile,
-        total_moves:      totalMoves,
-        sessions:         sessionsWithDepth,
-        insight,
-        zone_breakdown:   { top: topPct, middle: midPct, bottom: botPct },
-        first_impression: firstImpression
+        depth_profile: bands.map((weight, i) => ({ band: i, depth: i / BANDS, weight: weight / maxBand, share: visits ? weight / visits : 0 })),
+        total_moves: totalMoves,
+        sessions: visits,
+        insight: visits ? attentionInsight(zones) : null,
+        zone_breakdown: zones,
+        first_impression: {
+            window_ms: FIRST_IMPRESSION_MS,
+            velocity_delta_pct: enoughSpeed && restSpeedSum > 0 ? ((earlySpeedSum - restSpeedSum) / restSpeedSum) * 100 : null,
+            early_pauses_per_min: enoughPauses ? (earlyPauses / earlySeconds) * 60 : null,
+            rest_pauses_per_min: enoughPauses ? (restPauses / restSeconds) * 60 : null,
+            early_zone_breakdown: earlyBands.some(b => b > 0) ? zonesOf(earlyBands) : null
+        }
     };
 }
 
-module.exports = { computeAttentionProfile };
+module.exports = { computeAttentionProfile, attentionInsight };

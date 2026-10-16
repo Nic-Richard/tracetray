@@ -53,7 +53,7 @@ export default function GoalLine({ page }: { page: string }) {
           </select>
         ) : goal.name}</b>
         <small>
-          {checking ? "Checking past visits…" : `${goal.reached.toLocaleString()} of ${goal.visits.toLocaleString()} visits reached it in the last 30 days`} · {describeGoal(goal)}
+          {checking ? "Checking past visits…" : `${goal.reached.toLocaleString()} of ${goal.visits.toLocaleString()} visits reached it in the last 30 days`}<span className="sep" aria-hidden="true">·</span>{describeGoal(goal)}
         </small>
       </span>
       {goal.target != null && goal.rate !== null && (

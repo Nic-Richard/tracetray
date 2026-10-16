@@ -20,6 +20,8 @@ module.exports = function mobileFeatures(session) {
         .filter(duration => duration > 0);
 
     return {
+        taps: taps.length,
+        attention_pauses: attentionPauses.length,
         tap_rate: taps.length / durationS,
         attention_pause_rate: attentionPauses.length / durationS,
         avg_attention_pause_ms: pauseDurations.length > 0

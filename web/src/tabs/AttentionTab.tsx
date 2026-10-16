@@ -43,7 +43,7 @@ export default function AttentionTab({ page, result }: { page: string; result: A
           <div className="panel-body attention">
             <div className="depth-col">
             <div className="depth" role="img" aria-label="Cursor activity from the top of the page to the bottom">
-              {data.depth_profile.map(band => <i key={band.band} style={{ opacity: 0.08 + band.weight * 0.92 }} title={`${Math.round(band.depth * 100)}% down: ${band.count.toLocaleString()} movements`} />)}
+              {data.depth_profile.map(band => <i key={band.band} style={{ opacity: 0.08 + band.weight * 0.92 }} title={`${Math.round(band.depth * 100)}% down: ${percent(band.share)} of cursor activity`} />)}
               <span className="depth-top">Top of page</span><span className="depth-bottom">Bottom</span>
             </div>
             <div className="depth-legend" aria-hidden="true"><small>Cursor activity</small><span>Less</span><i /><span>More</span></div>
@@ -57,16 +57,16 @@ export default function AttentionTab({ page, result }: { page: string; result: A
                 </div>
               ))}
               {data.insight && <p className="muted">{data.insight}</p>}
-              <p className="muted">Measured against how far each visitor's own cursor travels, so it holds across screen sizes.</p>
+              <p className="muted">Measured as a share of each page's full height, with every visit counting equally.</p>
             </div>
           </div>
         </section>
         <section className="panel">
           <div className="panel-head"><h2>First five seconds</h2></div>
           <div className="panel-body facts">
-            <div style={{ "--fill": "var(--d1)" } as React.CSSProperties}><b className="num">{fi?.velocity_delta_pct == null ? "–" : `${Math.abs(fi.velocity_delta_pct).toFixed(0)}% ${fi.velocity_delta_pct > 0 ? "faster" : "slower"}`}</b><span>cursor speed than the rest of the visit</span></div>
-            <div style={{ "--fill": "var(--d2)" } as React.CSSProperties}><b className="num">{fi?.early_pause_count ?? "–"}</b><span>pauses, against {fi?.rest_pause_count ?? "–"} in the rest of the visit</span></div>
-            <div style={{ "--fill": "var(--d3)" } as React.CSSProperties}><b>{earlyZone ? `${earlyZone.charAt(0).toUpperCase()}${earlyZone.slice(1)} of the page` : "–"}</b><span>where early movement concentrates</span></div>
+            {fi?.velocity_delta_pct != null && <div style={{ "--fill": "var(--d1)" } as React.CSSProperties}><b className="num">{Math.abs(fi.velocity_delta_pct) < 10 ? "About the same" : `${Math.abs(fi.velocity_delta_pct).toFixed(0)}% ${fi.velocity_delta_pct > 0 ? "faster" : "slower"}`}</b><span>cursor speed than later in the visit</span></div>}
+            {fi?.early_pauses_per_min != null && fi.rest_pauses_per_min != null && <div style={{ "--fill": "var(--d2)" } as React.CSSProperties}><b className="num">{fi.early_pauses_per_min.toFixed(1)}</b><span>pauses a minute, against {fi.rest_pauses_per_min.toFixed(1)} later in the visit</span></div>}
+            {earlyZone && <div style={{ "--fill": "var(--d3)" } as React.CSSProperties}><b>{`${earlyZone.charAt(0).toUpperCase()}${earlyZone.slice(1)} third of the page`}</b><span>where early movement concentrates</span></div>}
             {note && <p className="muted">{note}</p>}
           </div>
         </section>
