@@ -120,7 +120,7 @@ function phoneEvents(start, persona, path) {
     const pageHeight = path.startsWith("/products") ? 5600 : 4400;
     const viewport = 760;
     const depth = between(...p.depth);
-    const events = scrollEvents(start, durationMs, Math.max(depth, viewport / pageHeight), pageHeight, viewport, Math.max(1, Math.round(depth * 14)), rand() < 0.3, 300);
+    const events = scrollEvents(start, durationMs, Math.max(depth, viewport / pageHeight), pageHeight, viewport, Math.max(1, Math.round(depth * 14)), KIND[persona] === "browser", 300);
     const scrolls = [...events];
     const taps = Math.round(between(...p.taps));
     const pauses = Math.round(between(...p.pauses));

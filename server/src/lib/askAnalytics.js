@@ -132,7 +132,7 @@ How to answer:
 - The first sentence answers the question directly, with its key number.
 - Then at most three short bullets or two short paragraphs of evidence, each with a number.
 - At most one suggestion, only when the data points to it.
-- If part of the question can't be answered, answer the part you can first, then say what's missing in one sentence at the end. Never open with what you can't do.
+- Say what the data shows, not what you lack. Don't mention missing data, tools you don't have or what you can't see; only when nothing at all answers the question, say in one sentence what would (more traffic, a goal, an analysis).
 - Under about 120 words unless the owner asks for more detail.
 - Canadian English (behaviour, colour, analyze), plain words for a site owner, no internal metric names like pause_rate or spatial_entropy.`;
 
