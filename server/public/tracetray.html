@@ -129,13 +129,9 @@ section { padding: 104px 0; }
 .row-copy li i { width: 10px; height: 10px; border-radius: 3px; }
 .row-copy li b { color: var(--ink); }
 .frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 30px 60px -36px rgba(28, 32, 48, 0.5); }
-.pair { position: relative; padding-bottom: 90px; }
-.pair .frame:first-child { width: 72%; }
-.pair .frame:last-child { position: absolute; right: 0; bottom: 0; width: 34%; }
 .card-shot { max-width: 340px; justify-self: center; }
 .row.tall { grid-template-columns: minmax(0, 500px) auto; justify-content: center; gap: 96px; }
 .row.flip.tall { grid-template-columns: auto minmax(0, 500px); }
-.who-crop { max-height: 560px; overflow: hidden; max-width: 460px; justify-self: center; }
 
 /* Comparison and extras */
 .gap { padding-bottom: 0; }
@@ -207,8 +203,6 @@ footer span { margin-left: auto; }
   .steps, .plans, .compare, .extras-grid, .extras-grid.three { grid-template-columns: 1fr; }
   section { padding: 72px 0; }
   .row + .row { margin-top: 72px; }
-  .pair { padding-bottom: 0; display: grid; gap: 16px; }
-  .pair .frame:first-child, .pair .frame:last-child { position: static; width: 100%; }
 }
 @media (max-width: 560px) {
   .wrap { padding: 0 16px; }
@@ -273,7 +267,7 @@ footer span { margin-left: auto; }
       <div class="compare">
         <div><h3>Pageview analytics</h3><p>Traffic, sources and exits. Not what happens on the page.</p></div>
         <div><h3>Heatmaps and recordings</h3><p>Where people clicked, one visit at a time. They copy the page as it's shown, so sensitive details can end up in recordings, and ad blockers often stop them.</p></div>
-        <div class="us"><h3>TraceTray</h3><p>Who your visitors are by behaviour and what each group needs. It never sees page content, typing or form input, and stores nothing on visitors' devices.</p></div>
+        <div class="us"><h3>TraceTray</h3><p>Who your visitors are by behaviour and what each group needs. It never records what visitors see or type, and stores nothing on their devices.</p></div>
       </div>
     </div>
   </section>
@@ -323,67 +317,56 @@ footer span { margin-left: auto; }
 
   <section class="features" id="see">
     <div class="wrap">
-      <div class="row tall">
+      <div class="row">
         <div class="row-copy">
-          <h2>Who is reading and who is scanning</h2>
-          <p class="lead-line">See the few kinds of visitor each page gets, such as people who decide fast, people who compare and people who skim, and how many of each.</p>
-          <p>Every visit becomes a profile of 13 behavioural measures on desktop and 8 on phones: cursor speed, pause rate, scroll depth, hesitation before clicks, how widely attention ranges and more. Machine learning clusters similar profiles into groups.</p>
-          <ul class="method">
-            <li>The number of groups is chosen by how cleanly the data separates, up to five.</li>
-            <li>Every split is checked against data with no groups in it and on random samples. If none holds up, TraceTray says visitors behave alike.</li>
-            <li>Only differences large enough to matter are highlighted.</li>
-          </ul>
+          <h2>Where attention goes on your page</h2>
+          <p>See it on the page itself: where cursors spend time, where the first screen ends, and how far down people get before they leave.</p>
         </div>
-        <div class="frame who-crop"><img src="/assets/home/who.webp" width="766" height="1036" alt="Who visits: Quick deciders 67% and Re-checkers 33%, each with how often they reach Shop hiking packs against the average"></div>
+        <div class="frame"><img src="/assets/home/attention.webp" width="2000" height="1300" alt="The shop's homepage shaded where the cursor spends time, with lines where the first screen ends and how far visitors get, beside the share of activity in each third of the page"></div>
+      </div>
+
+      <div class="row flip">
+        <div class="row-copy">
+          <h2>Goals for every page</h2>
+          <p>Pick what a page is for, such as a buy button, a sign-up form or the next page, and see how many visits get there, week by week.</p>
+        </div>
+        <div class="frame"><img src="/assets/home/goals.webp" width="1416" height="948" alt="Product pages: 47% of visits reached Added to cart in the last 30 days, with the rate for each of the last 12 weeks"></div>
+      </div>
+
+      <div class="row">
+        <div class="row-copy">
+          <h2>What to change, and why</h2>
+          <p>When a group of visitors falls short of the page's goal, TraceTray shows why from the numbers: what they click instead, where they leave the page, or how long they hesitate. No suggestion appears without the figures behind it.</p>
+        </div>
+        <div class="frame"><img src="/assets/home/advice.webp" width="1320" height="422" alt="What to try: re-checkers click Size guide instead of Add to cart; 81% of them click it and only 20% add to cart, against 46% overall"></div>
       </div>
 
       <div class="row flip tall">
         <div class="row-copy">
-          <h2>What to change, and why</h2>
-          <p>When a group falls short of the page's goal, TraceTray shows why from the numbers: what they click instead, where they leave the page, or how long they hesitate. No suggestion appears without the figures behind it.</p>
-          <p>Groups keep the same names between analyses, so changes are easy to track.</p>
+          <h2>The kinds of visitor each page gets</h2>
+          <p>Each visit is measured on 13 behaviours on desktop and 8 on phones, and machine learning groups visits that behave alike, such as people who decide fast and people who compare.</p>
+          <ul class="method">
+            <li>The number of groups is chosen by how cleanly the data separates, up to five.</li>
+            <li>Every split is checked against data with no groups in it and on random samples. If none holds up, TraceTray says visitors behave alike.</li>
+          </ul>
         </div>
-        <div class="frame card-shot"><img src="/assets/home/type-card.webp" width="640" height="1212" alt="The Re-checkers group: none reach Added to cart, how they differ from the page average, and a suggestion to look at Reviews"></div>
+        <div class="frame card-shot"><img src="/assets/home/who.webp" width="766" height="1558" alt="Who visits the product pages: re-checkers 35%, quick deciders 28%, header scanners 22% and bottom-of-page roamers 15%, each with how often they add to cart against the average"></div>
       </div>
 
       <div class="row">
         <div class="row-copy">
           <h2>Detailed visitor journeys</h2>
-          <p>Follow visitors across your whole site: where they arrive, the paths they take, and where they leave. Spot the step where a checkout or sign-up loses people.</p>
+          <p>Follow visitors across your whole site: where they arrive, the paths they take, and where they leave. Set up a funnel to see which step of a checkout or sign-up loses people.</p>
         </div>
         <div class="frame"><img src="/assets/home/journeys.webp" width="2000" height="2200" alt="Journeys: where visitors arrive and leave, and the most common moves between pages"></div>
       </div>
 
       <div class="row flip">
         <div class="row-copy">
-          <h2>Ask your analytics</h2>
-          <p>Ask in plain English. TraceTray queries your pages, traffic, clicks, journeys and past analyses, then explains the answer.</p>
-          <ul class="questions">
-            <li>Where do people leave the site?</li>
-            <li>How do mobile visitors behave differently from desktop?</li>
-            <li>Has anything changed since I redesigned the homepage?</li>
-          </ul>
-        </div>
-        <div class="frame"><img src="/assets/home/ask.webp" width="1720" height="1160" alt="Ask answering &ldquo;Where do people leave the site?&rdquo; with exits by page and where a fix would pay off"></div>
-      </div>
-
-      <div class="row">
-        <div class="row-copy">
-          <h2>Where attention goes on your page</h2>
-          <p>See it on the page itself: where cursors spend time, where the first screen ends, how far down people get, and whether they reach your pricing, sign-up form or buy button. On phones, see where people stop to read.</p>
-        </div>
-        <div class="pair">
-          <div class="frame"><img src="/assets/home/attention.webp" width="2000" height="1200" alt="A picture of the shop's homepage shaded where the cursor spends time, with lines where the first screen ends and how far visitors get"></div>
-          <div class="frame"><img src="/assets/home/attention-phone.webp" width="1180" height="1100" alt="On phones: the homepage shaded where visitors stop to read, with where the first screen ends"></div>
-        </div>
-      </div>
-
-      <div class="row flip">
-        <div class="row-copy">
           <h2>Mobile, measured on its own terms</h2>
-          <p>Phones have no cursor, so TraceTray reads taps, scrolling and reading pauses, and analyzes mobile visits separately.</p>
+          <p>Phones have no cursor, so TraceTray reads taps, scrolling and where people stop to read, and analyzes mobile visits separately.</p>
         </div>
-        <div class="frame"><img src="/assets/home/devices.webp" width="2000" height="344" alt="Desktop and phones: 61% desktop, 39% phones, and how far down each gets"></div>
+        <div class="frame"><img src="/assets/home/attention-phone.webp" width="1600" height="1150" alt="On phones: the homepage shaded where visitors stop to read, with how far down they get, how often they tap and how long they stop"></div>
       </div>
 
       <div class="row">
@@ -393,6 +376,19 @@ footer span { margin-left: auto; }
         </div>
         <div class="frame"><img src="/assets/home/pages.webp" width="2200" height="1520" alt="The page tree with product, collection and post pages grouped, and the 24 product pages in one view"></div>
       </div>
+
+      <div class="row flip">
+        <div class="row-copy">
+          <h2>Ask your analytics</h2>
+          <p>Ask in plain English. TraceTray queries your pages, traffic, clicks, journeys and past analyses, then explains the answer.</p>
+          <ul class="questions">
+            <li>Where do people leave the site?</li>
+            <li>Why don&rsquo;t some visitors add to cart?</li>
+            <li>Has anything changed since I redesigned the homepage?</li>
+          </ul>
+        </div>
+        <div class="frame"><img src="/assets/home/ask.webp" width="1754" height="752" alt="Ask answering &ldquo;Why don&rsquo;t re-checkers on the product pages add to cart?&rdquo;: only 20% of them reach Added to cart against 46%, with what they do, the likely blocker and one suggestion"></div>
+      </div>
     </div>
   </section>
 
@@ -401,7 +397,7 @@ footer span { margin-left: auto; }
       <div class="section-head"><h2>Private by design</h2></div>
       <div class="extras-grid three">
         <div><h3>No cookies or device storage</h3><p>Visits are grouped with an ID that changes daily, and the IP address is never stored.</p></div>
-        <div><h3>Never records what visitors see</h3><p>No screen recordings, page content, keystrokes or form input from visits. Pictures of your pages come from TraceTray opening the public page itself.</p></div>
+        <div><h3>Never records what visitors see</h3><p>No screen recordings, page content, keystrokes or form input from visits.</p></div>
         <div><h3>Your data stays yours</h3><p>Not sold, not shared and not used for ads.</p></div>
       </div>
       <p class="privacy-link"><a href="/collects">See exactly what TraceTray collects</a></p>

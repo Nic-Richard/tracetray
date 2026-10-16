@@ -8,7 +8,8 @@ const { Account, Session } = require("../src/db/models");
 const { regroupSite } = require("../src/lib/pageDays");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const VISITORS = 1500;
+const VISITORS = 3200;
+const HISTORY_DAYS = 84;
 
 const PRODUCTS = [
     "ridge-40-pack", "summit-25-daypack", "trailhead-55-pack", "cedar-2-tent", "alpine-ultralight-tent", "basecamp-4-tent",
@@ -29,9 +30,9 @@ const between = (a, b) => a + rand() * (b - a);
 
 // Desktop shoppers: how long they stay, how they move, where on the page they look, what they click.
 const DESKTOP = {
-    buyer:    { weight: 40, duration: [18, 50], speed: [0.6, 1.1], pauses: [1, 3], depth: [0.3, 0.55], yBias: 0.9, dwell: [400, 900], clicks: ["Add to cart", "Colour: Moss", "Size: M"] },
-    comparer: { weight: 35, duration: [90, 240], speed: [0.15, 0.35], pauses: [8, 18], depth: [0.75, 1], yBias: 0.55, dwell: [2000, 4200], clicks: ["Size guide", "Reviews", "Compare", "Next image"], backtrack: true },
-    scanner:  { weight: 25, duration: [5, 14], speed: [1.2, 2.2], pauses: [0, 1], depth: [0.08, 0.22], yBias: 2.2, dwell: [200, 500], clicks: [] }
+    buyer:    { weight: 40, duration: [25, 60], speed: [0.5, 0.9], pauses: [2, 5], depth: [0.4, 0.65], yBias: 0.9, dwell: [400, 900] },
+    comparer: { weight: 35, duration: [90, 240], speed: [0.15, 0.35], pauses: [8, 18], depth: [0.75, 1], yBias: 0.55, dwell: [2000, 4200], backtrack: true },
+    scanner:  { weight: 25, duration: [4, 10], speed: [1.6, 2.6], pauses: [0, 1], depth: [0.05, 0.15], yBias: 2.6, dwell: [200, 500] }
 };
 const PHONE = {
     tapper:  { weight: 40, duration: [20, 60], taps: [3, 7], pauses: [1, 3], pauseMs: [800, 1600], depth: [0.4, 0.7] },
@@ -51,6 +52,20 @@ function journey() {
 }
 
 const target = text => ({ tag: rand() < 0.6 ? "BUTTON" : "A", id: null, text, href: null });
+
+// What each kind of shopper clicks, so the demo's groups, goals and suggestions tell one consistent story.
+const KIND = { buyer: "decider", tapper: "decider", comparer: "browser", reader: "browser", scanner: "leaver", bouncer: "leaver" };
+function clickChoices(kind, path) {
+    if (path === "/") return { decider: [["Shop hiking packs", 90], ["New arrivals", 10]], browser: [["New arrivals", 70], ["Shop hiking packs", 15], ["Journal", 15]], leaver: [["New arrivals", 1]] }[kind];
+    if (path.startsWith("/products")) return { decider: [["Add to cart", 80], ["Colour: Moss", 12], ["Size: M", 8]], browser: [["Size guide", 52], ["Reviews", 40], ["Add to cart", 8]], leaver: [["Reviews", 1]] }[kind];
+    if (path.startsWith("/collections")) return [["Ridge 40L Pack", 40], ["Summit 25 Daypack", 35], ["Filter: Waterproof", 25]];
+    if (path === "/cart") return [["Checkout", 80], ["Remove", 20]];
+    if (path === "/checkout") return [["Pay now", 1]];
+    return [["Shop the gear", 1]];
+}
+const clickCount = kind => kind === "leaver" ? (rand() < 0.1 ? 1 : 0) : kind === "decider" ? 2 + Math.floor(rand() * 2) : 1 + Math.floor(rand() * 4);
+// Where the storefront's main button sits, as a share of the page, so its clicks land on it in the demo picture.
+const HERO_BUTTON = { desktop: 0.173, mobile: 0.13 };
 
 function scrollEvents(start, durationMs, depth, pageHeight, viewport, steps, backtrack, stepPx) {
     const events = [{ type: "page_load", scroll_depth: viewport / pageHeight, page_height: pageHeight, viewport_height: viewport, measured: true, timestamp: start }];
@@ -86,14 +101,13 @@ function desktopEvents(start, persona, path) {
     }
     const pauseCount = Math.round(between(...p.pauses));
     for (let i = 0; i < pauseCount; i++) events.push({ type: "cursor_pause", duration: Math.round(between(600, 3000)), timestamp: Math.round(start + rand() * durationMs) });
-    const clickTargets = path.startsWith("/products") ? p.clicks
-        : path.startsWith("/collections") ? ["Ridge 40L Pack", "Summit 25 Daypack", "Filter: Waterproof"]
-        : path === "/cart" ? ["Checkout", "Remove"] : path === "/checkout" ? ["Pay now"] : ["Shop hiking packs", "New arrivals"];
-    const clickCount = persona === "scanner" ? (rand() < 0.2 ? 1 : 0) : 1 + Math.floor(rand() * (persona === "comparer" ? 4 : 2));
-    for (let i = 0; i < clickCount && clickTargets.length; i++) {
-        const t = Math.round(start + between(0.3, 0.95) * durationMs);
-        const text = i === 0 && persona === "buyer" && path.startsWith("/products") ? "Add to cart" : pick(clickTargets);
-        const y = Math.round(between(120, viewport - 120));
+    const firstScroll = (scrolls[1]?.timestamp ?? start + durationMs) - start;
+    const count = clickCount(KIND[persona]);
+    for (let i = 0; i < count; i++) {
+        const text = weighted(clickChoices(KIND[persona], path));
+        const hero = path === "/" && text === "Shop hiking packs";
+        const t = Math.round(start + (hero ? between(0.2, 0.9) * firstScroll : between(0.3, 0.95) * durationMs));
+        const y = hero ? Math.round(HERO_BUTTON.desktop * pageHeight + between(-12, 12)) : Math.round(between(120, viewport - 120));
         events.push({ type: "cursor_pause", duration: Math.round(between(...p.dwell)), timestamp: t - Math.round(between(...p.dwell)) });
         events.push({ type: "click", tag: "BUTTON", text, target: target(text), x: Math.round(between(200, 1100)), y, py: scrollAt(scrolls, t) + y, timestamp: t });
     }
@@ -115,10 +129,14 @@ function phoneEvents(start, persona, path) {
         events.push({ type: "attention_pause", duration: Math.round(between(...p.pauseMs)), ended_by: i < taps ? "tap" : "scroll",
             viewport_midpoint: scrollAt(scrolls, t) + viewport / 2, page_height: pageHeight, viewport_height: viewport, timestamp: t });
     }
-    const tapTargets = path.startsWith("/products") ? ["Add to cart", "Size guide", "Reviews"] : ["Shop hiking packs", "New arrivals", "Menu"];
-    for (let i = 0; i < taps; i++) {
-        const text = pick(tapTargets);
-        events.push({ type: "tap", x: Math.round(between(20, 370)), y: Math.round(between(100, 700)), text, target: target(text), timestamp: Math.round(start + rand() * durationMs) });
+    const firstScroll = (scrolls[1]?.timestamp ?? start + durationMs) - start;
+    const count = KIND[persona] === "leaver" ? (rand() < 0.1 ? 1 : 0) : Math.max(1, Math.min(taps, 3));
+    for (let i = 0; i < count; i++) {
+        const text = weighted(clickChoices(KIND[persona], path));
+        const hero = path === "/" && text === "Shop hiking packs";
+        const t = Math.round(start + (hero ? between(0.2, 0.9) * firstScroll : rand() * durationMs));
+        const y = hero ? Math.round(HERO_BUTTON.mobile * pageHeight) : Math.round(between(100, 700));
+        events.push({ type: "tap", x: Math.round(between(20, 370)), y, text, target: target(text), timestamp: t });
     }
     return { events: events.sort((a, b) => a.timestamp - b.timestamp), durationMs };
 }
@@ -142,8 +160,8 @@ function isLocal(uri) {
     const docs = [];
     const now = Date.now();
     for (let v = 0; v < VISITORS; v++) {
-        // Traffic grows through the month, like a store that's starting to get found.
-        const daysAgo = Math.floor(30 * rand() ** 1.6);
+        // Traffic grows over the weeks, like a store that's starting to get found.
+        const daysAgo = Math.floor(HISTORY_DAYS * rand() ** 1.6);
         let start = now - daysAgo * DAY_MS - Math.floor(rand() * DAY_MS * 0.9);
         const mobile = rand() < 0.38;
         const persona = mobile ? weighted(Object.entries(PHONE).map(([k, p]) => [k, p.weight])) : weighted(Object.entries(DESKTOP).map(([k, p]) => [k, p.weight]));
