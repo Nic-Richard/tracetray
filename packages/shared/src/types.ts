@@ -278,6 +278,8 @@ export interface Interpretation {
   cluster_stories?: Record<string, ClusterStory>;
   mobile_cluster_stories?: Record<string, ClusterStory>;
   top_suggestions?: string[];
+  /** Suggestions with the numbers behind them; only for groups that clearly fall short of the goal. */
+  advice?: { action: string; evidence: string; device: "desktop" | "mobile"; group: string }[];
   /** Set for a device whose visitors didn't split into reliable groups: a description of them as one. */
   alike?: { desktop: string | null; mobile: string | null };
   data_note?: string;

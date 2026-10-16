@@ -7,6 +7,7 @@ const { mainGoalFor } = require("./goalHits");
 const { getClickSummary } = require("./clickSummary");
 const { computeAttentionProfile } = require("./attentionProfile");
 const { interpretClusters } = require("./interpretClusters");
+const { goalPosition } = require("./goalPosition");
 const { analysisRunning } = require("./analysisState");
 const logger = require("./logger");
 
@@ -65,7 +66,7 @@ async function runAnalysis(siteKey, pageFilter = null) {
             }
             const attentionResult = await computeAttentionProfile(siteKey, pageFilter || null);
             const main = pageFilter ? await mainGoalFor(siteKey, pageFilter) : null;
-            const goal = main && { id: main.id, name: main.name };
+            const goal = main && { id: main.id, name: main.name, type: main.type, match: main.match, position: await goalPosition(siteKey, pageFilter, main) };
             if (goal) clusterResult.goal = goal;
             clusterResult.interpretation = interpretClusters({
                 desktop:         clusterResult,

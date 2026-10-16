@@ -7,8 +7,7 @@ import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
 import { heatColor } from "../lib/heat";
 import { readSession, writeSession } from "../lib/storage";
-import { interpretationOf, visitCount, visitorTypes } from "../lib/analysis";
-import { groupColors } from "../lib/palette";
+import { interpretationOf, visitCount } from "../lib/analysis";
 import GroupPages from "../components/GroupPages";
 import WhoVisits from "../components/WhoVisits";
 import TrafficPanel from "../components/TrafficPanel";
@@ -94,8 +93,6 @@ function DevicePanel({ timeseries, result }: { timeseries: Timeseries; result: A
   const mobile = timeseries.series.reduce((sum, d) => sum + d.mobile, 0);
   const total = desktop + mobile;
   if (!total) return null;
-  const phoneTypes = visitorTypes(result, "mobile");
-  const phoneColors = groupColors(phoneTypes.map(t => t.key));
   const comparison = interpretationOf(result)?.device_comparison;
   return (
     <section className="panel">
@@ -113,11 +110,6 @@ function DevicePanel({ timeseries, result }: { timeseries: Timeseries; result: A
         </div>
         <div className="device-notes">
           {comparison && <p>{comparison}</p>}
-          {phoneTypes.length > 0 && result?.mobile?.structure !== "none" && (
-            <div className="group-chips" aria-label="Phone visitor groups">
-              {phoneTypes.map((type, i) => <span key={type.id}><i style={{ background: phoneColors[i] }} />{type.headline} <b className="num">{Math.round(type.share * 100)}%</b></span>)}
-            </div>
-          )}
         </div>
       </div>
     </section>
@@ -145,7 +137,10 @@ function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }:
       </div>
       <GroupingNudge page={page} />
       <div className="split">
-        {group ? <GroupPages page={page} groupSize={groupSize || 0} /> : timeseries ? <TrafficPanel timeseries={timeseries} /> : <section className="panel"><p className="empty">Loading visits…</p></section>}
+        <div className="split-stack">
+          {group ? <GroupPages page={page} groupSize={groupSize || 0} /> : timeseries ? <TrafficPanel timeseries={timeseries} /> : <section className="panel"><p className="empty">Loading visits…</p></section>}
+          {result && <SummaryPanel result={result} page={page} />}
+        </div>
         {result ? <WhoVisits result={result} page={page} /> : (
           <section className="panel">
             <div className="empty">
@@ -157,7 +152,6 @@ function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }:
         )}
       </div>
       {timeseries && <DevicePanel timeseries={timeseries} result={result} />}
-      {result && <SummaryPanel result={result} page={page} />}
     </div>
   );
 }

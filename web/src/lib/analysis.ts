@@ -62,6 +62,26 @@ export function alikeNote(result: AnalysisResult | null | undefined, device: Dev
   return interpretationOf(result)?.alike?.[device] || "No split into groups held up for these visitors, so they're treated as one.";
 }
 
+/** The page's goal rate across every visit on the device, including those that never interacted. */
+export function deviceGoal(result: AnalysisResult | null | undefined, device: Device): { name: string; rate: number } | null {
+  const source = deviceAnalysis(result, device);
+  const goal = result?.goal;
+  const visits = visitCount(result, device);
+  if (!goal || !source || !visits) return null;
+  const reached = (source.clusters || []).reduce((sum, c) => sum + (c.goal_hits?.[goal.id] || 0), 0) + (source.inactive_goal_hits?.[goal.id] || 0);
+  return { name: goal.name, rate: reached / visits };
+}
+
+export function deviceAverages(result: AnalysisResult | null | undefined, device: Device): { depth: number | null; actions: number | null } {
+  const clusters = deviceAnalysis(result, device)?.clusters || [];
+  const mean = (feature: string) => {
+    const rows = clusters.filter(c => typeof c.feature_means[feature] === "number");
+    const n = rows.reduce((sum, c) => sum + c.n, 0);
+    return n ? rows.reduce((sum, c) => sum + (c.feature_means[feature] as number) * c.n, 0) / n : null;
+  };
+  return { depth: mean("scroll_depth_reached"), actions: mean(device === "mobile" ? "tap_rate" : "click_rate") };
+}
+
 export const INACTIVE_TEXT: Record<Device, string> = {
   desktop: "They left without moving the cursor, scrolling or clicking.",
   mobile: "They left without scrolling or tapping."

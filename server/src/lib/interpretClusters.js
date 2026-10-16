@@ -96,114 +96,77 @@ const PAGE_TYPES = {
     help: "Help or docs page", checkout: "Cart or checkout", signin: "Sign-up or sign-in page", other: "Unclear"
 };
 
-// Suggestions are picked by page type first, then the archetype's default.
 const ARCHETYPES = {
     desktop: [
         {
             key: "deep_readers", name: "Deep readers", traits: { pause_rate: 1, avg_cursor_velocity: -1 },
-            meaning: "They're reading closely, so the words on this page matter to them.",
-            suggest: {
-                default: "Put the point you most want them to take away in the text they're already reading, and keep the next step right after it.",
-                article: "Add a clear next read or call to action at the end of the article, where these readers finish.",
-                pricing: "Make plan differences easy to compare in the text; these visitors are reading the details."
-            }
+            meaning: "They're reading closely, so the words on this page matter to them."
         },
         {
             key: "hesitant", name: "Hesitant browsers", traits: { dwell_before_click: 1, click_rate: -1 },
-            meaning: "They take a long time to decide and often don't click at all, which can mean the options aren't clear.",
-            suggest: {
-                default: "Make the main button's label say exactly what happens next, and cut competing buttons near it.",
-                pricing: "Spell out what each plan includes and costs, so the choice is quicker.",
-                checkout: "Show the total, shipping and returns before the final button; doubt is what slows this group down.",
-                signin: "Say what they get by signing up, right next to the form."
-            }
+            meaning: "They take a long time to decide and often don't click at all, which can mean the options aren't clear."
         },
         {
             key: "deliberate", name: "Deliberate clickers", traits: { dwell_before_click: 1, click_rate: 1 },
-            meaning: "They take their time, then act.",
-            suggest: { default: "Keep the supporting detail they read right next to the buttons they end up clicking." }
+            meaning: "They take their time, then act."
         },
         {
             key: "explorers", name: "Active explorers", traits: { move_density: 1, click_rate: 1, spatial_entropy: 1 },
-            meaning: "They move around and click a lot, which usually means they're looking for something.",
-            suggest: {
-                default: "Check the most clicked items. If clicks land on things that aren't links, make them clickable or add clearer navigation.",
-                homepage: "Give them shortcuts to your most visited sections near the top of the page."
-            }
+            meaning: "They move around and click a lot, which usually means they're looking for something."
         },
         {
             key: "header_scanners", name: "Header scanners", traits: { top_zone_ratio: 1, scroll_depth_reached: -1 },
-            meaning: "They stay in the top section and rarely go further down.",
-            suggest: { default: "Put your most important message and action in the top section, since this group may never see the rest." }
+            meaning: "They stay in the top section and rarely go further down."
         },
         {
             key: "skimmers", name: "Content skimmers", traits: { pause_rate: -1, avg_cursor_velocity: 1 },
-            meaning: "They move fast and rarely stop, so they're skimming rather than reading.",
-            suggest: {
-                default: "Use clear headings, short paragraphs and bold key phrases so a quick scan still gets the message across.",
-                article: "Add a two-line summary at the top for readers who skim.",
-                help: "Put the answer first and the explanation after it."
-            }
+            meaning: "They move fast and rarely stop, so they're skimming rather than reading."
         },
         {
             key: "passive", name: "Passive visitors", traits: { move_density: -1, click_rate: -1 },
-            meaning: "They barely interact. Some read without touching the mouse; others leave the page open in another tab.",
-            suggest: { default: "Make sure the first screen says what the page is for and what to do next; this group gives you very little time." }
+            meaning: "They barely interact. Some read without touching the mouse; others leave the page open in another tab."
         },
         {
             key: "bottom_readers", name: "Bottom-of-page readers", traits: { bottom_zone_ratio: 1, scroll_depth_reached: 1 },
-            meaning: "They spend most of their time further down the page.",
-            suggest: { default: "Repeat your main action lower on the page so they don't have to scroll back up to find it." }
+            meaning: "They spend most of their time further down the page."
         },
         {
             key: "quick_deciders", name: "Quick deciders", traits: { click_rate: 1, dwell_before_click: -1 },
-            meaning: "They know what they want and click fast.",
-            suggest: { default: "Keep their path short. Don't add steps between them and what they came for." }
+            meaning: "They know what they want and click fast."
         },
         {
             key: "rechecking", name: "Re-checkers", traits: { direction_change_rate: 1 },
-            meaning: "They scroll back up to look again, often to compare options or find something they missed.",
-            suggest: {
-                default: "Keep key details like prices and options summarized near the main action so they don't have to scroll back.",
-                pricing: "Add a comparison table, or keep a short plan summary in view while they scroll."
-            }
+            meaning: "They scroll back up to look again, often to compare options or find something they missed."
         }
     ],
     mobile: [
         {
             key: "m_readers", name: "Mobile readers", traits: { attention_pause_rate: 1, scroll_velocity_rate: -1 },
-            meaning: "They stop scrolling often to read.",
-            suggest: { default: "Keep paragraphs short on mobile and put the next step right after the section they stop on." }
+            meaning: "They stop scrolling often to read."
         },
         {
             key: "m_skimmers", name: "Thumb skimmers", traits: { scroll_velocity_rate: 1, attention_pause_rate: -1 },
-            meaning: "They flick through the page quickly without stopping much.",
-            suggest: { default: "Use bold headings and images that carry the message on their own, since this group barely stops." }
+            meaning: "They flick through the page quickly without stopping much."
         },
         {
             key: "m_tappers", name: "Active tappers", traits: { tap_rate: 1, scroll_depth_reached: 1 },
-            meaning: "They scroll far and tap a lot, so they're engaged and exploring.",
-            suggest: { default: "Make sure tap targets are large and well spaced; this group is using them." }
+            meaning: "They scroll far and tap a lot, so they're engaged and exploring."
         },
         {
             key: "m_quick_exits", name: "Quick exits", traits: { tap_rate: -1, scroll_depth_reached: -1 },
-            meaning: "They barely scroll or tap before leaving.",
-            suggest: { default: "Check what the first screen looks like on a phone; this group decides from it alone." }
+            meaning: "They barely scroll or tap before leaving."
         },
         {
             key: "m_hesitant", name: "Hesitant tappers", traits: { dwell_before_tap: 1, tap_rate: -1 },
-            meaning: "They take a long time before tapping, and tap rarely.",
-            suggest: { default: "Make the main button obvious on a small screen and say what happens when they tap it." }
+            meaning: "They take a long time before tapping, and tap rarely."
         },
         {
             key: "m_rechecking", name: "Re-checkers", traits: { direction_change_rate: 1 },
-            meaning: "They scroll back up to look again.",
-            suggest: { default: "Keep a short summary of key details near the main button so they don't have to scroll back." }
+            meaning: "They scroll back up to look again."
         },
         {
             key: "m_deep", name: "Deep scrollers", traits: { scroll_depth_reached: 1 },
-            meaning: "They make it most of the way down the page.",
-            suggest: { default: "Put a clear action at the bottom of the page, where this group ends up." }
+            meaning: "They make it most of the way down the page."
         }
     ]
 };
@@ -294,7 +257,7 @@ function composedName(strong, usedFeatures) {
     return `${pick[0].side.adj} ${pick[0].side.noun}`;
 }
 
-function describeCluster(cluster, base, significance, archetypes, taken, used, pageType) {
+function describeCluster(cluster, base, significance, archetypes, taken, used) {
     const traits = clusterTraits(cluster, base, significance);
     const strong = traits.filter(t => Math.abs(t.z) >= STRONG && t.side);
     const evidence = strong.slice(0, 3).map(t => t.side.say(t.value, t.average));
@@ -317,8 +280,7 @@ function describeCluster(cluster, base, significance, archetypes, taken, used, p
 
     const meaning = archetype?.meaning || "";
     const body = `They ${evidence.join(", ").replace(/, ([^,]*)$/, " and $1")}. ${meaning}`.trim();
-    const suggestion = archetype ? (archetype.suggest[pageType] || archetype.suggest.default) : null;
-    return { key: archetype?.key || "composed", headline, body, summary: meaning, traits: traitData, suggestions: suggestion ? [suggestion] : [] };
+    return { key: archetype?.key || "composed", headline, body, summary: meaning, traits: traitData, suggestions: [] };
 }
 
 // A group's goal rate against the page's. "above" or "below" only when the gap is about two standard errors
@@ -345,10 +307,71 @@ function addGoal(story, standing, goal, deviceLabel) {
     const sentence = goalSentence(standing, goal, deviceLabel);
     if (!sentence) return;
     story.body = `${sentence} ${story.body}`;
-    if (standing.standing === "above") story.suggestions = [];
 }
 
-function describeDevice(result, archetypes, pageType, deviceLabel, goal = null) {
+// What the goal is, as a thing on the page ("the link to /products/"), or reaching a page ("going on to Order placed").
+function goalTarget(goal) {
+    const match = goal?.match || {};
+    if (goal?.type === "click") return match.href ? `the link to ${match.href}` : match.text ? `“${match.text}”` : `#${match.id}`;
+    if (goal?.type === "form") return "the form";
+    return `going on to ${goal?.name}`;
+}
+
+const clickLabel = target => target.text ? `“${target.text}”` : target.href ? `the link to ${target.href}` : `#${target.id}`;
+
+function isGoalTarget(goal, target) {
+    const match = goal?.type === "click" ? goal.match || {} : {};
+    if (match.id) return target.id === match.id;
+    if (match.href) return target.href === match.href;
+    if (match.text) return String(target.text || "").toLowerCase() === String(match.text).toLowerCase();
+    return false;
+}
+
+const ratio = (cluster, base, feature) => {
+    const value = cluster.feature_means?.[feature], average = base.means[feature];
+    return typeof value === "number" && average > 0 ? value / average : null;
+};
+
+// Only a group that clearly falls short of the goal gets a suggestion, and only when its numbers say why:
+// it leaves before reaching the goal on the page, it mostly clicks something else, or it hesitates.
+// Anything vaguer is left to the site owner reading the groups.
+function adviceFor(cluster, story, base, goal, deviceLabel, visits) {
+    const standing = story.goal;
+    if (!goal || standing?.standing !== "below") return null;
+    const target = goalTarget(goal);
+    const group = story.headline.toLowerCase();
+    const who = `${story.headline} (${pct((cluster.n || 0) / visits)} of ${deviceLabel} visits)`;
+    const reach = standing.reached === 0 ? `none of them reach ${goal.name}` : `only ${pct(standing.rate)} reach ${goal.name}`;
+    const vs = `against ${pct(standing.average)} overall`;
+
+    const depth = cluster.feature_means?.scroll_depth_reached;
+    const position = goal.position?.[deviceLabel === "mobile" ? "mobile" : "desktop"];
+    if (typeof depth === "number" && typeof position === "number" && depth + 0.05 < position) {
+        return {
+            action: `Move ${target} higher, or repeat it before ${pct(depth)} of the way down.`,
+            evidence: `${who} leave about ${pct(depth)} of the way down, but ${target} sits at about ${pct(position)}, so ${reach} (${vs}).`
+        };
+    }
+    const rival = (cluster.top_clicks || []).find(t => t.share >= 0.25 && !isGoalTarget(goal, t));
+    if (rival) {
+        return {
+            action: `Look at ${clickLabel(rival)}: ${group} ${deviceLabel === "mobile" ? "tap" : "click"} it instead of ${target}.`,
+            evidence: `${pct(rival.share)} of ${group} (${pct((cluster.n || 0) / visits)} of ${deviceLabel} visits) ${deviceLabel === "mobile" ? "tap" : "click"} ${clickLabel(rival)}, and ${reach} (${vs}).`,
+            rival: clickLabel(rival)
+        };
+    }
+    const wait = ratio(cluster, base, deviceLabel === "mobile" ? "dwell_before_tap" : "dwell_before_click");
+    const waitMs = cluster.feature_means?.[deviceLabel === "mobile" ? "dwell_before_tap" : "dwell_before_click"];
+    if (goal.type !== "page" && wait !== null && wait >= 1.5 && waitMs >= 1000) {
+        return {
+            action: `Make it clearer what ${target} leads to; ${group} hesitate before acting.`,
+            evidence: `${who} wait about ${secs(waitMs)} before ${deviceLabel === "mobile" ? "tapping" : "clicking"}, ${wait.toFixed(1)}× the page average, and ${reach} (${vs}).`
+        };
+    }
+    return null;
+}
+
+function describeDevice(result, archetypes, deviceLabel, goal = null) {
     const clusters = (result?.clusters || []).filter(c => (c.n || 0) > 0);
     if (clusters.length === 0) return null;
     const base = baselines(clusters);
@@ -357,7 +380,7 @@ function describeDevice(result, archetypes, pageType, deviceLabel, goal = null) 
     // Largest groups claim archetypes first.
     const ordered = [...clusters].sort((a, b) => (b.n || 0) - (a.n || 0));
     const stories = {};
-    for (const c of ordered) stories[c.id] = describeCluster(c, base, significance, archetypes, taken, used, pageType);
+    for (const c of ordered) stories[c.id] = describeCluster(c, base, significance, archetypes, taken, used);
 
     // With a goal and enough visits reaching it, groups are judged by it, and suggestions start with the
     // groups falling furthest short. The average counts every visit on the device, including those that
@@ -373,8 +396,15 @@ function describeDevice(result, archetypes, pageType, deviceLabel, goal = null) 
         const missing = c => (c.n || 0) * Math.max(0, average - standings[c.id].rate);
         priority = [...ordered].sort((a, b) => missing(b) - missing(a) || (b.n || 0) - (a.n || 0));
     }
+    const advice = [];
+    if (result.structure !== "none") {
+        for (const c of priority) {
+            const item = adviceFor(c, stories[c.id], base, goal, deviceLabel, visits);
+            if (item) { stories[c.id].suggestions = [item.action]; advice.push({ ...item, device: deviceLabel, group: stories[c.id].headline }); }
+        }
+    }
     const alike = result.structure === "none" ? alikeNote(result, deviceLabel, goal, goalAverage) : null;
-    return { stories, ordered, priority, base, visits, alike, structure: result.structure || null };
+    return { stories, ordered, priority, base, visits, alike, advice, structure: result.structure || null };
 }
 
 function alikeNote(result, label, goal, goalAverage) {
@@ -452,15 +482,14 @@ function summarise(device, label) {
 
 function interpretClusters({ desktop, mobile = null, pageUrl = null, firstImpression = null, goal = null }) {
     const pageType = guessPageType(pageUrl);
-    const d = describeDevice(desktop, ARCHETYPES.desktop, pageType, "desktop", goal);
-    const m = describeDevice(mobile, ARCHETYPES.mobile, pageType, "mobile", goal);
-
-    const suggestions = [];
-    for (const device of [d, m].filter(device => device && device.structure !== "none")) {
-        for (const c of device.priority) {
-            for (const s of device.stories[c.id].suggestions) if (!suggestions.includes(s)) suggestions.push(s);
-        }
+    const d = describeDevice(desktop, ARCHETYPES.desktop, "desktop", goal);
+    const m = describeDevice(mobile, ARCHETYPES.mobile, "mobile", goal);
+    // The same finding on phones adds nothing once desktop has it.
+    const advice = [...(d?.advice || [])];
+    for (const item of m?.advice || []) {
+        if (!advice.some(a => (a.rival && a.rival === item.rival) || a.action === item.action)) advice.push(item);
     }
+    advice.splice(2);
 
     let siteSummary = summarise(d, "desktop");
     if (d?.structure === "none" && m?.structure === "none") siteSummary = "Desktop and phone visitors behave much alike on this page, so they aren't split into groups.";
@@ -472,7 +501,8 @@ function interpretClusters({ desktop, mobile = null, pageUrl = null, firstImpres
         site_summary: siteSummary || "Not enough visitors yet to describe how people use this page.",
         cluster_stories: d?.stories || {},
         mobile_cluster_stories: m?.stories || {},
-        top_suggestions: suggestions.slice(0, 2),
+        top_suggestions: advice.map(a => a.action),
+        advice,
         alike: { desktop: d?.alike || null, mobile: m?.alike || null },
         data_note: dataNote(desktop),
         first_impression_note: firstImpressionNote(firstImpression),

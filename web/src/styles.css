@@ -201,8 +201,17 @@ td.page-cell { width: 100%; max-width: 0; }
 .who-row { display: grid; grid-template-columns: 12px minmax(0, 1fr); column-gap: 12px; row-gap: 3px; }
 .who-row > .dot { grid-row: 1; margin-top: 6px; }
 .who-row > :not(.dot) { grid-column: 2; }
-.who-row b { font-weight: 700; font-size: 16px; display: flex; justify-content: space-between; gap: 12px; }
+.who-row > b { font-weight: 700; font-size: 16px; display: flex; justify-content: space-between; gap: 12px; }
 .who-row p { color: var(--ink-2); font-size: 14.5px; }
+.who-figures { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.who-figures span { font-weight: 600; color: var(--ink); }
+.who-goal { display: grid; gap: 4px; max-width: 360px; margin-top: 6px; }
+.who-goal-track { position: relative; height: 8px; background: var(--canvas); border-radius: 4px; }
+.who-goal-track i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; }
+.who-goal-track span { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
+.who-goal small { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; }
+.who-goal small b { color: var(--ink); }
+.who-note { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
 .dot { width: 12px; height: 12px; border-radius: 4px; display: inline-block; flex-shrink: 0; }
 .ask-link { justify-self: start; background: none; border: 0; padding: 0; color: var(--link); font-weight: 600; font-size: 14px; cursor: pointer; }
 .ask-link:hover { text-decoration: underline; }
@@ -212,6 +221,11 @@ td.page-cell { width: 100%; max-width: 0; }
 .summary ul { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; max-width: 80ch; }
 .summary li { padding: 12px 16px; border-radius: 11px; background: color-mix(in srgb, var(--d3) 11%, var(--panel)); border: 1px solid color-mix(in srgb, var(--d3) 28%, transparent); color: var(--ink); }
 .summary .note { margin-top: 14px; color: var(--muted); font-size: 14px; }
+.split-stack { display: grid; gap: 24px; align-content: start; min-width: 0; }
+.advice { display: grid; gap: 14px; }
+.advice-item { display: grid; gap: 4px; padding-left: 14px; border-left: 3px solid var(--d3); }
+.summary .advice-action { color: var(--ink); font-weight: 600; font-size: 15.5px; margin: 0; }
+.summary .advice-why { color: var(--muted); font-size: 14px; margin: 0; }
 
 /* Ask */
 .ask { max-width: 900px; width: 100%; margin-inline: auto; display: grid; gap: 16px; }

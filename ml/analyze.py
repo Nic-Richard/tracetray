@@ -302,6 +302,20 @@ def goal_counts(hits_column):
     return counts
 
 
+def top_clicks(targets_column, limit=3, min_share=0.1):
+    """The targets most visits in a group clicked, each with the share of the group's visits that clicked it."""
+    counts, targets, n = {}, {}, 0
+    for targets_list in targets_column:
+        n += 1
+        if isinstance(targets_list, list):
+            for t in targets_list:
+                key = json.dumps(t, sort_keys=True)
+                counts[key] = counts.get(key, 0) + 1
+                targets[key] = t
+    ranked = sorted(counts.items(), key=lambda kv: -kv[1])[:limit]
+    return [{**targets[k], "share": round(c / n, 4)} for k, c in ranked if n and c / n >= min_share]
+
+
 def json_safe(value):
     # NaN is not valid JSON, and the server parses this output with JSON.parse.
     if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
@@ -400,8 +414,9 @@ def main(device, site_key):
 
     df_out = df[["session_id"] + engineered + ["cluster_km"]].copy()
     df_out["behaviour_label"] = df_out["cluster_km"].map(names)
-    if "goal_hits" in df_raw.columns:
-        df_out["goal_hits"] = df_raw["goal_hits"].values
+    for column in ("goal_hits", "click_targets"):
+        if column in df_raw.columns:
+            df_out[column] = df_raw[column].values
 
     quality = {
         "silhouette": sil,
@@ -447,7 +462,8 @@ if __name__ == "__main__":
                 "label":         label,
                 "n":             int(members.sum()),
                 "feature_means": cluster_means.loc[cl_id].round(4).to_dict(),
-                "goal_hits":     goal_counts(df_out.loc[members, "goal_hits"]) if "goal_hits" in df_out.columns else {}
+                "goal_hits":     goal_counts(df_out.loc[members, "goal_hits"]) if "goal_hits" in df_out.columns else {},
+                "top_clicks":    top_clicks(df_out.loc[members, "click_targets"]) if "click_targets" in df_out.columns else []
             })
 
         best_k = int(df_out["cluster_km"].nunique())

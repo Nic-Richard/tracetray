@@ -1,8 +1,28 @@
 import { useState } from "react";
 import { pagePath, percent, type AnalysisResult, type Device } from "@tracetray/shared";
-import { alikeNote, inactiveVisits, INACTIVE_TEXT, visitorTypes } from "../lib/analysis";
+import { alikeNote, deviceAverages, deviceGoal, inactiveVisits, INACTIVE_TEXT, interpretationOf, visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
 import { useAskAbout } from "../lib/askLink";
+
+interface Row {
+  id: number;
+  headline: string;
+  share: number;
+  text: string;
+  color: string;
+  goal: { rate: number; average: number; standing?: string } | null;
+  figures?: string[];
+}
+
+function GoalBar({ goal, name }: { goal: NonNullable<Row["goal"]>; name: string }) {
+  const tone = goal.standing === "above" ? "var(--good)" : goal.standing === "below" ? "var(--danger)" : "var(--d-neutral)";
+  return (
+    <div className="who-goal" aria-label={`${percent(goal.rate)} reached ${name}, against ${percent(goal.average)} on average`}>
+      <div className="who-goal-track"><i style={{ width: percent(goal.rate), background: tone }} /><span style={{ left: percent(goal.average) }} /></div>
+      <small><span><b>{percent(goal.rate)}</b> reached {name}</span>{goal.average !== goal.rate && <span>average {percent(goal.average)}</span>}</small>
+    </div>
+  );
+}
 
 export default function WhoVisits({ result, page }: { result: AnalysisResult; page: string }) {
   const [device, setDevice] = useState<Device>("desktop");
@@ -12,10 +32,34 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
   const colors = groupColors(types.map(t => t.key));
   const alike = alikeNote(result, device);
   const inactive = inactiveVisits(result, device);
-  const rows = alike
-    ? [{ id: -1, headline: "Visitors behave alike", share: 1 - (inactive?.share || 0), body: alike, color: "var(--d1)" }]
-    : types.map((t, i) => ({ id: t.id, headline: t.headline, share: t.share, body: t.story?.body?.replace(/^\d+% of (desktop|mobile) visitors\. /, "") || "", color: colors[i] }));
-  if (inactive) rows.push({ id: -2, headline: "Left without interacting", share: inactive.share, body: `${INACTIVE_TEXT[device]}${inactive.goal ? ` ${percent(inactive.goal.rate)} of them reached ${inactive.goal.name}.` : ""}`, color: "var(--d-neutral)" });
+  const goal = deviceGoal(result, device);
+  const note = device === "desktop" ? interpretationOf(result)?.data_note : null;
+
+  let rows: Row[];
+  if (alike) {
+    const averages = deviceAverages(result, device);
+    rows = [{
+      id: -1, headline: "Visitors behave alike", share: 1 - (inactive?.share || 0), color: "var(--d1)",
+      text: "No split into groups held up, so they're shown as one.",
+      goal: goal && { rate: goal.rate, average: goal.rate },
+      figures: [
+        averages.depth != null ? `${percent(averages.depth)} of the way down` : "",
+        averages.actions != null ? `${(averages.actions * 60).toFixed(1)} ${device === "mobile" ? "taps" : "clicks"} a minute` : ""
+      ].filter(Boolean)
+    }];
+  } else {
+    rows = types.map((t, i) => ({
+      id: t.id, headline: t.headline, share: t.share, color: colors[i],
+      text: t.story?.summary ?? "",
+      goal: t.story?.goal ? { rate: t.story.goal.rate, average: t.story.goal.average, standing: t.story.goal.standing } : null
+    }));
+  }
+  if (inactive) {
+    rows.push({
+      id: -2, headline: "Left without interacting", share: inactive.share, color: "var(--d-neutral)", text: INACTIVE_TEXT[device],
+      goal: inactive.goal && goal ? { rate: inactive.goal.rate, average: goal.rate } : null
+    });
+  }
 
   return (
     <section className="panel">
@@ -42,7 +86,9 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
                 <div className="who-row" key={row.id}>
                   <span className="dot" style={{ background: row.color }} />
                   <b>{row.headline} <span className="num" style={{ color: row.color }}>{Math.round(row.share * 100)}%</span></b>
-                  {row.body && <p>{row.body}</p>}
+                  {row.text && <p>{row.text}</p>}
+                  {row.figures && row.figures.length > 0 && <p className="who-figures">{row.figures.map(f => <span key={f}>{f}</span>)}</p>}
+                  {row.goal && goal && <GoalBar goal={row.goal} name={goal.name} />}
                   {row.id >= 0 && (
                     <button type="button" className="ask-link" onClick={() =>
                       askAbout(`On ${pagePath(page)}, what does the "${row.headline}" group (${Math.round(row.share * 100)}% of ${device} visitors) tell me, and what should I change?`)}>
@@ -52,6 +98,7 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
                 </div>
               ))}
             </div>
+            {note && <p className="note who-note">{note}</p>}
           </>
         )}
       </div>

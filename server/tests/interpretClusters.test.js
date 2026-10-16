@@ -21,7 +21,7 @@ test("clear behaviour gets the matching archetype, with the numbers behind it", 
     assert.match(result.cluster_stories[0].body, /^They .*pause about 48% more often than average\./);
     assert.equal(result.page_type, "Homepage");
     assert.match(result.site_summary, /^58% of desktop visitors are deep readers\./);
-    assert.ok(result.top_suggestions.length >= 1);
+    assert.deepEqual(result.top_suggestions, [], "no goal, so nothing to measure a suggestion against");
 });
 
 test("the same data always gets the same names", () => {
@@ -49,16 +49,25 @@ test("behaviour that fits no archetype gets a name from its strongest traits, an
     assert.equal(new Set(names).size, names.length);
 });
 
-test("suggestions depend on the page type", () => {
-    const hesitant = { session_count: 80, clusters: [
-        cluster(0, 40, { dwell_before_click: 2400, click_rate: 0.01 }),
-        cluster(1, 40, { dwell_before_click: 600, click_rate: 0.06 }),
-    ] };
-    const pricing = interpretClusters({ desktop: hesitant, pageUrl: "https://example.com/pricing" });
-    const blog = interpretClusters({ desktop: hesitant, pageUrl: "https://example.com/blog/hello" });
-    assert.equal(pricing.cluster_stories[0].headline, "Hesitant browsers");
-    assert.match(pricing.cluster_stories[0].suggestions[0], /plan/);
-    assert.doesNotMatch(blog.cluster_stories[0].suggestions[0], /plan/);
+test("a group falling short gets a suggestion only when its numbers say why", () => {
+    const goal = { id: "g1", name: "checkout", type: "click", match: { href: "/cart" }, position: { desktop: 0.8, mobile: null } };
+    const result = interpretClusters({ desktop: { session_count: 300, clusters: [
+        { ...cluster(0, 100, { scroll_depth_reached: 0.95, click_rate: 0.05 }), goal_hits: { g1: 60 } },
+        { ...cluster(1, 100, { scroll_depth_reached: 0.45, click_rate: 0.05 }), goal_hits: { g1: 2 } },
+        { ...cluster(2, 100, { scroll_depth_reached: 0.95, click_rate: 0.12 }), goal_hits: { g1: 3 }, top_clicks: [{ text: null, href: "/cart", id: null, share: 0.6 }, { text: "Join the list", href: "/signup", id: null, share: 0.7 }] },
+    ] }, goal });
+    const [early, busy] = result.advice;
+    assert.match(early.action, /^Move the link to \/cart higher, or repeat it before 45% of the way down\.$/);
+    assert.match(early.evidence, /leave about 45% of the way down, but the link to \/cart sits at about 80%/);
+    assert.match(busy.action, /^Look at “Join the list”: .+ click it instead of the link to \/cart\.$/);
+    assert.match(busy.evidence, /^70% of .* click “Join the list”, and only 3% reach checkout/);
+    assert.deepEqual(result.cluster_stories[0].suggestions, []);
+
+    const unplaced = interpretClusters({ desktop: { session_count: 200, clusters: [
+        { ...cluster(0, 100, { scroll_depth_reached: 0.95, click_rate: 0.05 }), goal_hits: { g1: 60 } },
+        { ...cluster(1, 100, { scroll_depth_reached: 0.45, click_rate: 0.05 }), goal_hits: { g1: 2 } },
+    ] }, goal: { ...goal, position: null } });
+    assert.deepEqual(unplaced.advice, [], "leaving early proves nothing without knowing where the goal sits");
 });
 
 test("mobile groups are named too and devices are compared in plain numbers", () => {
@@ -111,13 +120,14 @@ test("with a goal, groups that clearly reach it more are called working and the 
     const withGoal = structuredClone(readerAndScanner);
     withGoal.clusters[0].goal_hits = { g1: 35 };
     withGoal.clusters[1].goal_hits = { g1: 2 };
-    const result = interpretClusters({ desktop: withGoal, pageUrl: "https://example.com/", goal: { id: "g1", name: "checkout" } });
+    const result = interpretClusters({ desktop: withGoal, pageUrl: "https://example.com/", goal: { id: "g1", name: "checkout", type: "click", match: { text: "Checkout" }, position: { desktop: 0.6 } } });
     const [readers, scanners] = [result.cluster_stories[0], result.cluster_stories[1]];
     assert.equal(readers.goal.standing, "above");
     assert.match(readers.body, /^50% of them reach checkout, against 31% of desktop visits, so what they rely on is working\./);
     assert.deepEqual(readers.suggestions, []);
     assert.equal(scanners.goal.standing, "below");
     assert.match(scanners.body, /Only 4% of them reach checkout/);
+    assert.match(scanners.suggestions[0], /^Move “Checkout” higher/);
     assert.equal(result.top_suggestions[0], scanners.suggestions[0]);
     assert.match(result.site_summary, /^58% of desktop visitors are deep readers\./);
 });

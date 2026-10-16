@@ -15,6 +15,18 @@ const Session = mongoose.model("Session", SessionSchema, "sessions");
 
 const MAX_SESSIONS_PER_DEVICE = 3000;
 
+// The links and buttons a visit clicked or tapped, once each, so each group's most clicked targets can be named.
+function clickTargets(session) {
+    const seen = new Map();
+    for (const e of session.events || []) {
+        if ((e.type !== "click" && e.type !== "tap") || !e.target || typeof e.target !== "object") continue;
+        const target = { text: e.target.text || null, href: e.target.href || null, id: e.target.id || null };
+        if (!target.text && !target.href && !target.id) continue;
+        seen.set(JSON.stringify(target), target);
+    }
+    return [...seen.values()];
+}
+
 async function run() {
     try {
         await mongoose.connect(process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/sessionDB");
@@ -41,10 +53,12 @@ async function run() {
             recent({ device_type: "mobile" })
         ]);
 
-        // goal_hits isn't a feature; it rides along so each group's goal rate can be counted.
+        // goal_hits and click_targets aren't features; they ride along so each group's goal rate and most
+        // clicked targets can be counted.
         const desktopDataset = desktopSessions.map(session => ({
             session_id: session.session_id,
             goal_hits: session.goal_hits || [],
+            click_targets: clickTargets(session),
             ...basicFeatures(session),
             ...movementFeatures(session),
             ...spatialFeatures(session),
@@ -54,6 +68,7 @@ async function run() {
         const mobileDataset = mobileSessions.map(session => ({
             session_id: session.session_id,
             goal_hits: session.goal_hits || [],
+            click_targets: clickTargets(session),
             duration_ms: session.end_time ? session.end_time - session.start_time : 0,
             active_ms: basicFeatures.activeMs(session),
             total_events: (session.events || []).length,
