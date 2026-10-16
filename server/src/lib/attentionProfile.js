@@ -38,6 +38,49 @@ function attentionInsight({ top, middle, bottom }) {
     return "Cursor activity is spread fairly evenly from the top of the page to the bottom.";
 }
 
+const quantile = (sorted, q) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] : null;
+
+function reachOf(sessions) {
+    const deepest = [], folds = [];
+    for (const session of sessions) {
+        let max = null, fold = null;
+        for (const e of session.events || []) {
+            const measured = e.type === "scroll" || (e.type === "page_load" && e.measured === true);
+            if (!measured || !(e.page_height > 0)) continue;
+            if (typeof e.scroll_depth === "number") max = Math.max(max ?? 0, Math.min(1, e.scroll_depth));
+            if (fold === null && e.viewport_height > 0) fold = Math.min(1, e.viewport_height / e.page_height);
+        }
+        if (max !== null) deepest.push(max);
+        if (fold !== null) folds.push(fold);
+    }
+    if (deepest.length < 5) return null;
+    deepest.sort((a, b) => a - b);
+    folds.sort((a, b) => a - b);
+    // The depth that 75% of visits reach is the 25th percentile of how deep each visit got.
+    return { visits: deepest.length, p75: quantile(deepest, 0.25), p50: quantile(deepest, 0.5), p25: quantile(deepest, 0.75), fold: quantile(folds, 0.5) };
+}
+
+function readingBands(sessions) {
+    const bands = new Array(BANDS).fill(0);
+    let visits = 0;
+    for (const session of sessions) {
+        const own = new Array(BANDS).fill(0);
+        let count = 0;
+        for (const e of session.events || []) {
+            if (e.type !== "attention_pause" || !(e.page_height > 0) || typeof e.viewport_midpoint !== "number") continue;
+            const depth = Math.max(0, Math.min(1, e.viewport_midpoint / e.page_height));
+            own[Math.min(Math.floor(depth * BANDS), BANDS - 1)] += e.duration || 1;
+            count += e.duration || 1;
+        }
+        if (!count) continue;
+        own.forEach((v, i) => { bands[i] += v / count; });
+        visits++;
+    }
+    if (visits < 5) return null;
+    const max = Math.max(...bands, 1e-9);
+    return { visits, bands: bands.map(b => b / max) };
+}
+
 // Where desktop visitors' cursors spend time on the page, each visit counting equally, and how the first five
 // seconds compare with the rest of the visit.
 async function computeAttentionProfile(siteKey, page) {
@@ -49,6 +92,16 @@ async function computeAttentionProfile(siteKey, page) {
         "summary.mouse_moves": { $gt: 0 },
         ...(page ? { page } : {})
     }, { events: 1, start_time: 1, end_time: 1, _id: 0 }).sort({ start_time: -1 }).limit(RECENT_SESSION_LIMIT).lean();
+
+    const phoneSessions = await Session.find({
+        site_key: siteKey,
+        device_type: "mobile",
+        end_time: { $ne: null },
+        detailed: { $ne: false },
+        events_trimmed_at: { $exists: false },
+        "events.0": { $exists: true },
+        ...(page ? { page } : {})
+    }, { events: 1, _id: 0 }).sort({ start_time: -1 }).limit(RECENT_SESSION_LIMIT).lean();
 
     const bands = new Array(BANDS).fill(0);
     const earlyBands = new Array(BANDS).fill(0);
@@ -107,7 +160,9 @@ async function computeAttentionProfile(siteKey, page) {
             early_pauses_per_min: enoughPauses ? (earlyPauses / earlySeconds) * 60 : null,
             rest_pauses_per_min: enoughPauses ? (restPauses / restSeconds) * 60 : null,
             early_zone_breakdown: earlyBands.some(b => b > 0) ? zonesOf(earlyBands) : null
-        }
+        },
+        reach: { desktop: reachOf(sessions), mobile: reachOf(phoneSessions) },
+        phone_reading: readingBands(phoneSessions)
     };
 }
 

@@ -26,3 +26,11 @@ test("no query string is stored, from pages, hash routes or referrers", () => {
     assert.equal(groupPage("https://shop.example/app/#/weather?email=jane@example.com").page, "https://shop.example/app/#/weather");
     assert.equal(groupPage("https://shop.example/p?email=jane@example.com").page, "https://shop.example/p");
 });
+
+test("page pictures only go to public addresses", async () => {
+    const { privateAddress, publicUrl } = require("../src/lib/pageShots");
+    for (const ip of ["127.0.0.1", "10.2.3.4", "172.20.0.1", "192.168.1.1", "169.254.169.254", "100.64.0.1", "::1", "fd00::1", "::ffff:10.0.0.1"]) assert.equal(privateAddress(ip), true, ip);
+    for (const ip of ["8.8.8.8", "172.32.0.1", "2606:4700::1111"]) assert.equal(privateAddress(ip), false, ip);
+    assert.equal(await publicUrl("file:///etc/passwd"), false);
+    assert.equal(await publicUrl("http://localhost:5000/"), false);
+});

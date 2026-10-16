@@ -108,4 +108,19 @@ pageDaySchema.index({ site_key: 1, page: 1, path: 1, day: 1 }, { unique: true })
 pageDaySchema.index({ site_key: 1, day: 1 });
 const PageDay = mongoose.model("PageDay", pageDaySchema, "page_days");
 
-module.exports = { Account, Session, AnalysisResult, BugReport, PageDay };
+const PageShot = mongoose.model("PageShot", new mongoose.Schema({
+    site_key:     { type: String, required: true },
+    page:         { type: String, required: true },
+    device:       { type: String, enum: ["desktop", "mobile"], required: true },
+    address:      String,
+    file:         String,
+    width:        Number,
+    page_height:  Number,
+    shown_height: Number,
+    taken_at:     Date,
+    viewed_at:    Date,
+    error:        String,
+    last_error:   String
+}).index({ site_key: 1, page: 1, device: 1 }, { unique: true }), "page_shots");
+
+module.exports = { Account, Session, AnalysisResult, BugReport, PageDay, PageShot };

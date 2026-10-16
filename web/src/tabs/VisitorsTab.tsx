@@ -3,6 +3,7 @@ import type React from "react";
 import { pagePath, percent, type AnalysisResult, type Device } from "@tracetray/shared";
 import { alikeNote, deviceAnalysis, inactiveVisits, INACTIVE_TEXT, visitCount, visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
+import TraitBars from "../components/TraitBars";
 import { useAskAbout } from "../lib/askLink";
 
 // Whole percentages, like the sentences beside them, unless that would round a few visits down to 0%.
@@ -78,8 +79,8 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
                 {type.story?.summary !== undefined ? type.story.summary && <p>{type.story.summary}</p> : !type.story?.traits?.length && type.story?.body && <p>{type.story.body}</p>}
                 {(type.story?.traits?.length || 0) > 0 && (
                   <>
-                    <h3>Compared with the page average</h3>
-                    <ul>{type.story!.traits!.map(trait => <li key={trait.feature}>They {trait.description}.</li>)}</ul>
+                    <h3>Against the page average</h3>
+                    <TraitBars traits={type.story!.traits!} color={colors[i]} />
                   </>
                 )}
                 {(type.story?.suggestions?.length || 0) > 0 && (

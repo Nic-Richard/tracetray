@@ -16,11 +16,11 @@ const readerAndScanner = {
 
 test("clear behaviour gets the matching archetype, with the numbers behind it", () => {
     const result = interpretClusters({ desktop: readerAndScanner, pageUrl: "https://example.com/" });
-    assert.equal(result.cluster_stories[0].headline, "Deep readers");
+    assert.equal(result.cluster_stories[0].headline, "Methodical readers");
     assert.match(result.cluster_stories[1].headline, /Content skimmers|Header scanners/);
     assert.match(result.cluster_stories[0].body, /^They .*pause about 48% more often than average\./);
     assert.equal(result.page_type, "Homepage");
-    assert.match(result.site_summary, /^58% of desktop visitors are deep readers\./);
+    assert.match(result.site_summary, /^58% of desktop visitors are methodical readers\./);
     assert.deepEqual(result.top_suggestions, [], "no goal, so nothing to measure a suggestion against");
 });
 
@@ -129,7 +129,7 @@ test("with a goal, groups that clearly reach it more are called working and the 
     assert.match(scanners.body, /Only 4% of them reach checkout/);
     assert.match(scanners.suggestions[0], /^Move “Checkout” higher/);
     assert.equal(result.top_suggestions[0], scanners.suggestions[0]);
-    assert.match(result.site_summary, /^58% of desktop visitors are deep readers\./);
+    assert.match(result.site_summary, /^58% of desktop visitors are methodical readers\./);
 });
 
 test("visits that never interacted count toward the goal average, and a group that never reaches it says so", () => {
@@ -149,6 +149,14 @@ test("when no grouping holds up, visitors are described as alike and no group is
     assert.deepEqual(result.top_suggestions, []);
 });
 
+test("a name doesn't repeat itself", () => {
+    const result = interpretClusters({ desktop: { session_count: 100, clusters: [
+        cluster(0, 50, { click_rate: 0.12 }),
+        cluster(1, 50, { click_rate: 0.04 }),
+    ] } });
+    assert.equal(result.cluster_stories[0].headline, "Click-happy visitors");
+});
+
 test("a later group isn't named after the same trait as an earlier one", () => {
     const result = interpretClusters({ desktop: { session_count: 90, clusters: [
         cluster(0, 40, { direction_change_rate: 0.3, click_rate: 0.05 }),
@@ -156,7 +164,7 @@ test("a later group isn't named after the same trait as an earlier one", () => {
         cluster(2, 20, { direction_change_rate: 0.02, click_rate: 0.05 }),
     ] } });
     const names = [0, 1].map(id => result.cluster_stories[id].headline);
-    assert.equal(names.filter(name => /Re-check/.test(name)).length, 1, names.join(", "));
+    assert.equal(names.filter(name => /Re-check|Comparison/.test(name)).length, 1, names.join(", "));
 });
 
 test("a goal reached only a handful of times doesn't judge any group", () => {

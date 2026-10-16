@@ -319,7 +319,7 @@ export interface AnalysisResult extends DeviceAnalysis {
   page: string;
   ran_at: string;
   /** The page's main goal when the analysis ran; groups are judged by it. */
-  goal?: { id: string; name: string };
+  goal?: { id: string; name: string; position?: { desktop: number | null; mobile: number | null } | null };
   mobile?: DeviceAnalysis | null;
   click_summary?: ClickCount[];
   interpretation?: Interpretation;
@@ -385,12 +385,31 @@ export interface ZoneBreakdown {
   bottom: number;
 }
 
+/** Depths from 0 (top) to 1 (bottom). */
+export interface Reach {
+  visits: number;
+  p75: number;
+  p50: number;
+  p25: number;
+  fold: number | null;
+}
+
+export interface PageShotInfo {
+  width: number;
+  page_height: number;
+  shown_height: number;
+  taken_at: string;
+}
+
 export interface AttentionProfile {
   depth_profile: { band: number; depth: number; weight: number; share: number }[];
   total_moves: number;
   sessions: number;
   insight: string | null;
   zone_breakdown: ZoneBreakdown;
+  reach?: Record<"desktop" | "mobile", Reach | null>;
+  phone_reading?: { visits: number; bands: number[] } | null;
+  shots?: Partial<Record<"desktop" | "mobile", PageShotInfo>>;
   first_impression: {
     window_ms: number;
     velocity_delta_pct: number | null;

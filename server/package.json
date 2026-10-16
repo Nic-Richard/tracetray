@@ -18,6 +18,7 @@
     "dotenv": "^16.4.0",
     "express": "^5.2.1",
     "mongoose": "^9.2.3",
+    "puppeteer-core": "^23.11.1",
     "stripe": "^22.2.1"
   },
   "type": "commonjs",

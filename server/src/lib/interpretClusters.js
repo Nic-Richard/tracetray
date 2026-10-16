@@ -65,6 +65,10 @@ const TRAITS = {
         kind: "rate",
         up:   { adj: "Re-checking", noun: "comparers", say: (c, b) => asMuch(c / b, "scroll back up") }
     },
+    scroll_burst_rate: {
+        kind: "rate",
+        up:   { adj: "Stop-start", noun: "scrollers", say: (c, b) => asMuch(c / b, "scroll in bursts") }
+    },
     tap_rate: {
         kind: "rate",
         up:   { adj: "Tap-happy", noun: "tappers", say: (c, b) => asMuch(c / b, "tap") },
@@ -137,6 +141,26 @@ const ARCHETYPES = {
         {
             key: "rechecking", name: "Re-checkers", traits: { direction_change_rate: 1 },
             meaning: "They scroll back up to look again, often to compare options or find something they missed."
+        },
+        {
+            key: "window_shoppers", name: "Window shoppers", traits: { scroll_depth_reached: 1, click_rate: -1 },
+            meaning: "They look through the whole page but rarely click anything."
+        },
+        {
+            key: "searchers", name: "Searchers", traits: { move_density: 1, spatial_entropy: 1, click_rate: -1 },
+            meaning: "They move all over the page without clicking much, as if looking for something they can't find."
+        },
+        {
+            key: "methodical", name: "Methodical readers", traits: { pause_rate: 1, scroll_depth_reached: 1, avg_cursor_velocity: -1 },
+            meaning: "They work through the page slowly and read most of it."
+        },
+        {
+            key: "speed_scrollers", name: "Speed scrollers", traits: { scroll_burst_rate: 1, pause_rate: -1 },
+            meaning: "They scroll in quick bursts and rarely stop."
+        },
+        {
+            key: "comparers", name: "Comparison shoppers", traits: { direction_change_rate: 1, click_rate: 1 },
+            meaning: "They go back and forth and click between options."
         }
     ],
     mobile: [
@@ -167,6 +191,22 @@ const ARCHETYPES = {
         {
             key: "m_deep", name: "Deep scrollers", traits: { scroll_depth_reached: 1 },
             meaning: "They make it most of the way down the page."
+        },
+        {
+            key: "m_window_shoppers", name: "Window shoppers", traits: { scroll_depth_reached: 1, tap_rate: -1 },
+            meaning: "They scroll through the whole page but rarely tap anything."
+        },
+        {
+            key: "m_speed", name: "Speed scrollers", traits: { scroll_burst_rate: 1, attention_pause_rate: -1 },
+            meaning: "They scroll in quick bursts and rarely stop."
+        },
+        {
+            key: "m_lingering", name: "Lingering readers", traits: { avg_attention_pause_ms: 1, attention_pause_rate: 1 },
+            meaning: "They stop often, and for a long time, to read."
+        },
+        {
+            key: "m_first_screen", name: "First-screen readers", traits: { attention_pause_rate: 1, scroll_depth_reached: -1 },
+            meaning: "They read what's on the first screens and rarely go further."
         }
     ]
 };
@@ -253,8 +293,10 @@ function matchArchetype(traits, archetypes, taken) {
 function composedName(strong, usedFeatures) {
     const fresh = strong.filter(t => !usedFeatures.has(t.feature));
     const pick = fresh.length ? fresh : strong;
-    if (pick.length >= 2 && pick[1].side.adj !== pick[0].side.adj) return `${pick[1].side.adj} ${pick[0].side.noun}`;
-    return `${pick[0].side.adj} ${pick[0].side.noun}`;
+    // Avoids names like "Click-happy clickers".
+    const name = (adj, noun) => adj.toLowerCase().includes(noun.slice(0, 3).toLowerCase()) ? `${adj} visitors` : `${adj} ${noun}`;
+    if (pick.length >= 2 && pick[1].side.adj !== pick[0].side.adj) return name(pick[1].side.adj, pick[0].side.noun);
+    return name(pick[0].side.adj, pick[0].side.noun);
 }
 
 function describeCluster(cluster, base, significance, archetypes, taken, used) {

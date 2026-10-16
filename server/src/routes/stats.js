@@ -9,6 +9,7 @@ const { resolveSiteKey } = require("../lib/siteAccount");
 const { lockedPages, isPageLocked, limitsFor } = require("../lib/limits");
 const { getClickSummary } = require("../lib/clickSummary");
 const { computeAttentionProfile } = require("../lib/attentionProfile");
+const { refreshShots, shotInfo, shotFile } = require("../lib/pageShots");
 const logger = require("../lib/logger");
 
 router.get("/api/stats", requireAuth(), async (req, res) => {
@@ -167,11 +168,30 @@ router.get("/api/attention-profile", requireAuth(), async (req, res) => {
 
         const page   = req.query.page || null;
         const result = await computeAttentionProfile(siteKey, page);
+        if (page) refreshShots(siteKey, page).catch(err => logger.error("page shot refresh failed:", err));
 
-        res.json(result);
+        res.json({ ...result, shots: page ? await shotInfo(siteKey, page) : {} });
     } catch (err) {
         logger.error("attention profile error:", err);
         res.status(500).json({ error: "failed to generate attention profile" });
+    }
+});
+
+router.get("/api/page-shot", requireAuth(), async (req, res) => {
+    try {
+        const account = await Account.findOne({ clerk_user_id: getAuth(req).userId }).lean();
+        if (!account) return res.status(404).json({ error: "account not found" });
+        const siteKey = resolveSiteKey(req, account);
+        if (!siteKey) return res.status(403).json({ error: "website not available" });
+
+        const device = req.query.device === "mobile" ? "mobile" : "desktop";
+        const file = req.query.page ? await shotFile(siteKey, String(req.query.page), device) : null;
+        if (!file) return res.status(404).json({ error: "no picture of this page yet" });
+        res.set("Cache-Control", "private, max-age=3600");
+        res.sendFile(file);
+    } catch (err) {
+        logger.error("page shot error:", err);
+        res.status(500).json({ error: "failed to load the page picture" });
     }
 });
 

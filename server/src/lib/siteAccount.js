@@ -5,6 +5,7 @@ const { Account, Session, AnalysisResult, BugReport, PageDay } = require("../db/
 const { TRACETRAY_MODE, MAX_SITES_PER_ACCOUNT } = require("../config");
 const { analysisRunning } = require("./analysisState");
 const { planLimits } = require("./plans");
+const { removeShots } = require("./pageShots");
 
 function generateSiteKey() {
     return "tt_" + crypto.randomBytes(12).toString("base64url");
@@ -52,9 +53,10 @@ async function deleteSiteData(siteKey) {
     ]);
 
     delete analysisRunning[siteKey];
+    await removeShots({ site_key: siteKey });
 
     const featureDir = path.join(__dirname, "..", "..", "..", "data", "features");
-    for (const device of ["desktop", "mobile"]) {
+    for (const device of ["desktop", "mobile", "meta"]) {
         const file = path.join(featureDir, `dataset_${siteKey}_${device}.json`);
         if (fs.existsSync(file)) fs.unlinkSync(file);
     }

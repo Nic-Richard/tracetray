@@ -13,6 +13,9 @@ server/public/app/
 !.env.deploy.example
 !.env.docker.example
 
+# Page pictures for Attention
+shots/
+
 # Generated analysis data
 data/features/*
 data/output/*

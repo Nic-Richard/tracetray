@@ -1,5 +1,3 @@
-// Where on the page a click goal sits: the median depth (0 top, 1 bottom) of the clicks that reached it, per
-// device, since phones lay pages out differently. Null on a device with too few clicks to place it.
 const { Session } = require("../db/models");
 const cursorDepths = require("../../../analysis/featureModules/pagePosition");
 const { clickMatches } = require("./goals");

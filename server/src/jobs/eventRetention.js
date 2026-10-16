@@ -1,4 +1,5 @@
 const { Session } = require("../db/models");
+const { removeUnviewedShots } = require("../lib/pageShots");
 const logger = require("../lib/logger");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -32,9 +33,10 @@ function startEventRetentionJob() {
     const sessionDays = Number(process.env.SESSION_RETENTION_DAYS);
     const trimEvents = Number.isFinite(days) && days >= 7;
     const deleteSessions = Number.isFinite(sessionDays) && sessionDays >= 90;
-    if (!trimEvents && !deleteSessions) return;
     const run = async () => {
         try {
+            const pictures = await removeUnviewedShots();
+            if (pictures) logger.info(`removed ${pictures} page pictures nobody opened in 60 days`);
             const trimmed = trimEvents ? await trimOldEvents(days) : 0;
             if (trimmed) logger.info(`trimmed raw events from ${trimmed} sessions older than ${days} days`);
             const deleted = deleteSessions ? await deleteOldSessions(sessionDays) : 0;

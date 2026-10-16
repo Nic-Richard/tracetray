@@ -25,8 +25,7 @@ const MIN_SESSIONS = 16;
 const TABS = [
   { key: "", label: "Overview" },
   { key: "visitors", label: "Visitors" },
-  { key: "attention", label: "Attention" },
-  { key: "clicks", label: "Clicks" },
+  { key: "attention", label: "Attention and clicks" },
   { key: "trends", label: "Trends" },
   { key: "details", label: "Details" }
 ];
@@ -310,7 +309,7 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
           {status && <p className={`page-status${status.error ? " error" : ""}`} role="status">{status.text}</p>}
           <nav className="tabs" aria-label="Page views">
             {TABS.map(item => (
-              <NavLink key={item.key} end to={{ pathname: `/pages${item.key ? `/${item.key}` : ""}`, search }} className={({ isActive }) => `tab${isActive ? " active" : ""}`}>
+              <NavLink key={item.key} end to={{ pathname: `/pages${item.key ? `/${item.key}` : ""}`, search }} className={({ isActive }) => `tab${isActive || (item.key === "attention" && tab === "clicks") ? " active" : ""}`}>
                 {item.label}
               </NavLink>
             ))}
@@ -329,8 +328,12 @@ export default function PageView({ onPickPage }: { onPickPage: () => void }) {
         )}
         {stats.data?.last_analysis && tab === "visitors" && <VisitorsTab result={stats.data.last_analysis} page={page} />}
         {stats.data?.last_analysis && tab === "details" && <DetailsTab result={stats.data.last_analysis} />}
-        {stats.data && tab === "attention" && <AttentionTab page={page} result={stats.data.last_analysis} />}
-        {stats.data && tab === "clicks" && <ClicksTab clicks={stats.data.click_summary} page={page} />}
+        {stats.data && (tab === "attention" || tab === "clicks") && (
+          <div className="merged-tabs">
+            <AttentionTab page={page} result={stats.data.last_analysis} />
+            <ClicksTab clicks={stats.data.click_summary} page={page} />
+          </div>
+        )}
         {stats.data && tab === "trends" && <TrendsTab page={page} />}
       </div>
     </>
