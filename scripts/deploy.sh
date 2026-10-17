@@ -27,7 +27,7 @@ done
 node --check "$ROOT_DIR/server/server.js"
 
 echo "Building the React dashboard..."
-(cd "$ROOT_DIR" && npm ci --silent && npm run build:web)
+(cd "$ROOT_DIR" && npm ci --workspace=web --workspace=@tracetray/shared --silent && npm run build:web)
 if [[ ! -f "$ROOT_DIR/server/public/app/index.html" ]]; then
   echo "The React dashboard build is missing."
   exit 1

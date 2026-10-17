@@ -5,6 +5,10 @@ analysis/node_modules/
 
 # Built React dashboard (built by scripts/deploy.sh)
 server/public/app/
+mobile/.expo/
+mobile/android/
+mobile/ios/
+mobile/dist/
 
 # Environment files
 .env
@@ -12,6 +16,7 @@ server/public/app/
 !.env.example
 !.env.deploy.example
 !.env.docker.example
+!mobile/.env.example
 
 # Page pictures for Attention
 shots/

@@ -27,5 +27,9 @@ jobs:
       - run: npm ci
       - name: Dashboard types and build
         run: npm run build:web
+      - name: Mobile types and connection tests
+        run: npm run check:mobile && npm test -w mobile
+      - name: Android bundle
+        run: npm run build:mobile
       - name: Python syntax
         run: python3 -m compileall -q ml

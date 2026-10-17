@@ -3,11 +3,15 @@
   "private": true,
   "workspaces": [
     "web",
+    "mobile",
     "packages/shared"
   ],
   "scripts": {
     "dev:web": "npm run dev -w web",
     "build:web": "npm run build -w web",
-    "check:web": "npm run check -w web"
+    "check:web": "npm run check -w web",
+    "dev:mobile": "npm run dev -w mobile",
+    "check:mobile": "npm run check -w mobile",
+    "build:mobile": "npm run build -w mobile"
   }
 }
