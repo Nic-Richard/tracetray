@@ -24,8 +24,8 @@ See `mobile/README.md` for local builds and the remaining tooling audit findings
 
 Reuse `packages/shared` for API types, `createApi` and formatting. Its API client already
 accepts a base URL and sends Clerk bearer tokens. Keep the existing server and website
-ownership checks. The web UI uses HTML, CSS and Chart.js, so its screens need native
-implementations; the shared data layer does not need replacing.
+ownership checks. Ordinary screens use native views. Complex charts reuse bundled web components; the
+shared data layer does not need replacing.
 
 Use Expo and React Native in a `mobile` workspace, with Expo Router and Clerk's Expo SDK.
 Choose compatible stable package versions together when scaffolding. Preserve the
@@ -127,5 +127,14 @@ References checked during planning:
 The foundation and native visitor-group checkpoints are complete locally. Group cards,
 goal comparisons, trait bars, suggestions and analysis display rules now share logic
 with web. Native tests also found and fixed an API-client identity change that reset
-navigation when Clerk re-rendered. Next: visits/goals trends and individual members of
-page groups, then Attention, Journeys and Ask.
+navigation when Clerk re-rendered. Visits/goals/behaviour trends and searchable page-group members are also complete
+locally. Trends use the actual web chart components in one locally bundled WebView,
+with native data fetching and no authentication or network bridge. Weekly goal bars
+now reveal values when tapped, on web and Android. Android 15 checks cover actual demo
+charts, group search/sorting, light/dark changes, scrolling and back navigation. Headless
+fixtures cover empty/missing measurements, hostile goal names and network isolation.
+
+Next: Attention with authenticated page pictures, then Journeys, recent Sessions and Ask.
+Before/after comparisons and change notes still need a mobile flow. Pagination and plan
+limits exist for group members but were not exercised on Android: the QA group has 24
+members. Physical-phone and production-auth checks remain outstanding.

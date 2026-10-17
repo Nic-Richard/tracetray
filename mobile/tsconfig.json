@@ -12,5 +12,8 @@
     ".expo/types/**/*.ts",
     "../packages/shared/src",
     "expo-env.d.ts"
+  ],
+  "exclude": [
+    "surfaces"
   ]
 }

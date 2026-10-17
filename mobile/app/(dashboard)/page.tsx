@@ -1,13 +1,14 @@
-import { useLocalSearchParams } from "expo-router";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { compactNumber, pageLabel, pagePath, percent, timeAgo, visitCount } from "@tracetray/shared";
+import { compactNumber, isPageGroup, pageLabel, pagePath, percent, timeAgo, visitCount } from "@tracetray/shared";
 import { useApi } from "../../lib/api";
 import { useSite } from "../../lib/site";
 import { useLoad } from "../../lib/useLoad";
 import { useTheme } from "../../lib/theme";
 import { Failure, Loading } from "../../components/Status";
 import VisitorGroups, { Suggestions } from "../../components/VisitorGroups";
+import GroupPages from "../../components/GroupPages";
 
 export default function PageScreen() {
   const params = useLocalSearchParams<{ page?: string | string[]; site?: string | string[] }>();
@@ -32,6 +33,8 @@ export default function PageScreen() {
   return <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={result.loading} onRefresh={result.reload} tintColor={colors.accent} />}>
       <View style={{ gap: 6 }}><Text style={styles.muted}>{selectedSite?.name}</Text><Text style={styles.title}>{pageLabel(page)}</Text><Text style={styles.muted}>{pagePath(page)}</Text></View>
+      <Pressable style={styles.button} onPress={() => router.push({ pathname: "/trends", params: { page, site: siteKey } })}><Text style={styles.buttonText}>View trends</Text></Pressable>
+      {isPageGroup(page) ? <GroupPages key={`${siteKey}:${page}`} page={page} site={siteKey} /> : null}
       <View style={styles.panel}>
         <Text style={styles.heading}>Last 30 days</Text>
         <View style={styles.wrap}>

@@ -3,7 +3,8 @@
 Expo 58 / React Native 0.88 with Expo Router, Clerk native email sign-in and secure token
 storage. The app uses `@tracetray/shared` and the existing server. Its current screens
 cover website selection, page search and page overviews with visits, goal rates,
-desktop/mobile visitor groups, trait comparisons and evidence-based suggestions.
+desktop/mobile visitor groups, trait comparisons, evidence-based suggestions, searchable
+page-group members and visits/goal/behaviour trends.
 
 ## Development
 
@@ -26,6 +27,20 @@ email/password, device-trust email codes and authenticator codes. More sign-in o
 opens Clerk's hosted page for other methods, including Google, and returns through the callback
 registered by the Clerk Expo plugin. Register `com.tracetray.app` in Clerk's native
 application settings before testing production authentication.
+
+## Shared web charts
+
+The Trends screen bundles the same `TrafficPanel`, `GoalTrendChart` and `TrendCharts`
+components used by the website, including Chart.js, CSS and Instrument Sans. Native code
+fetches owned-site data through Clerk and passes only chart data and the theme into one
+WebView. The surface has no API bridge, session tokens, remote assets or network access;
+its messages only report readiness, height and display failures. Navigation is blocked.
+
+`npm run surfaces -w mobile` regenerates the ignored `mobile/generated/trends.json`.
+Development, type checks, exports and APK builds run it automatically. Restart development
+or rerun that command after editing shared chart components or styles. Native and DOM
+surface types are checked separately. Adding WebView requires a fresh local APK once.
+Weekly goal bars support tapping/keyboard selection on web and Android.
 
 ## Local APK
 

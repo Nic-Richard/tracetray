@@ -14,9 +14,14 @@
   "scripts": {
     "dev": "expo start",
     "android": "expo run:android",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit && tsc --noEmit -p surfaces/tsconfig.json",
     "build": "expo export --platform android --output-dir dist",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "surfaces": "node scripts/build-surfaces.mjs",
+    "predev": "npm run surfaces",
+    "prebuild": "npm run surfaces",
+    "precheck": "npm run surfaces",
+    "preandroid": "npm run surfaces"
   },
   "dependencies": {
     "@clerk/expo": "^4.13.0",
@@ -36,10 +41,14 @@
     "react": "^19.3.1",
     "react-native": "0.88.0",
     "react-native-safe-area-context": "~5.10.1",
-    "react-native-screens": "~4.30.0"
+    "react-native-screens": "~4.30.0",
+    "react-native-webview": "14.0.1"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.28.2",
+    "react-dom": "^19.3.1",
     "typescript": "~6.0.3"
   }
 }

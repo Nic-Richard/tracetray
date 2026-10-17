@@ -28,6 +28,8 @@ try {
     $env:JAVA_HOME = $jdkPath
     $env:ANDROID_HOME = $sdkPath
     $ErrorActionPreference = 'Continue'
+    & $nodePath 'scripts/build-surfaces.mjs'
+    if ($LASTEXITCODE -ne 0) { throw 'Shared surface build failed.' }
     & $nodePath '..\node_modules\expo\bin\cli' prebuild --platform android --no-install
     if ($LASTEXITCODE -ne 0) { throw 'Expo prebuild failed.' }
 
