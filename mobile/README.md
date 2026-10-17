@@ -2,7 +2,8 @@
 
 Expo 58 / React Native 0.88 with Expo Router, Clerk native email sign-in and secure token
 storage. The app uses `@tracetray/shared` and the existing server. Its current screens
-cover website selection, page search and page overviews with visits and goal rates.
+cover website selection, page search and page overviews with visits, goal rates,
+desktop/mobile visitor groups, trait comparisons and evidence-based suggestions.
 
 ## Development
 

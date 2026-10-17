@@ -28,7 +28,7 @@ jobs:
       - name: Dashboard types and build
         run: npm run build:web
       - name: Mobile types and connection tests
-        run: npm run check:mobile && npm test -w mobile
+        run: npm run check:mobile && npm test -w mobile && npm test -w packages/shared
       - name: Android bundle
         run: npm run build:mobile
       - name: Python syntax

@@ -124,6 +124,8 @@ References checked during planning:
 
 ## Next checkpoint
 
-The foundation checkpoint is complete locally. Next: native visitor-group cards and
-traits, evidence-based suggestions, visits/goals trends and individual members of page
-groups. Share the analysis display rules with web before adding a second implementation.
+The foundation and native visitor-group checkpoints are complete locally. Group cards,
+goal comparisons, trait bars, suggestions and analysis display rules now share logic
+with web. Native tests also found and fixed an API-client identity change that reset
+navigation when Clerk re-rendered. Next: visits/goals trends and individual members of
+page groups, then Attention, Journeys and Ask.

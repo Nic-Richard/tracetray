@@ -3,11 +3,13 @@ import { StyleSheet, useColorScheme } from "react-native";
 
 const light = {
   ink: "#1c2030", muted: "#646a80", canvas: "#eef1f6", panel: "#ffffff",
-  line: "#dfe3ec", accent: "#3f3fc4", danger: "#b4233a", good: "#0d8a6a", rail: "#1c2030"
+  line: "#dfe3ec", accent: "#3f3fc4", danger: "#b4233a", good: "#0d8a6a", rail: "#1c2030",
+  groups: ["#5457e0", "#0e9d8b", "#d98b17", "#d43f78", "#8a52d6", "#2f86d1", "#8a90a3"]
 };
 const dark = {
   ink: "#eceef4", muted: "#9aa0b4", canvas: "#11131b", panel: "#1a1d28",
-  line: "#2b2f3e", accent: "#a9a9ff", danger: "#f07a8c", good: "#45d0a5", rail: "#0c0e15"
+  line: "#2b2f3e", accent: "#a9a9ff", danger: "#f07a8c", good: "#45d0a5", rail: "#0c0e15",
+  groups: ["#8a8cff", "#2fd0b9", "#f5b64a", "#f06d9c", "#b088ff", "#6cb4ff", "#8b92a8"]
 };
 
 export function useTheme() {

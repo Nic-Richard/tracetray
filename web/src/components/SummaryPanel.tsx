@@ -1,10 +1,9 @@
-import { pagePath, type AnalysisResult } from "@tracetray/shared";
-import { interpretationOf } from "../lib/analysis";
+import { analysisAdvice, pagePath, type AnalysisResult } from "@tracetray/shared";
 import { useAskAbout } from "../lib/askLink";
 
 export default function SummaryPanel({ result, page }: { result: AnalysisResult; page: string }) {
   const askAbout = useAskAbout();
-  const advice = interpretationOf(result)?.advice || [];
+  const advice = analysisAdvice(result);
   if (advice.length === 0) return null;
 
   return (

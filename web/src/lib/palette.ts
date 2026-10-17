@@ -1,26 +1,11 @@
 import { useEffect, useState } from "react";
+import { groupColorSlots } from "@tracetray/shared";
 
-const HUES = ["--d1", "--d2", "--d3", "--d4", "--d5", "--d6"];
-
-// Each kind of group keeps its colour on every page, so "Deep readers" always looks the same.
-const PREFERRED: Record<string, string> = {
-  deep_readers: "--d1", skimmers: "--d2", explorers: "--d3", hesitant: "--d4", deliberate: "--d5", header_scanners: "--d6",
-  passive: "--d6", bottom_readers: "--d5", quick_deciders: "--d2", rechecking: "--d4",
-  window_shoppers: "--d3", searchers: "--d5", methodical: "--d1", speed_scrollers: "--d2", comparers: "--d4",
-  m_readers: "--d1", m_skimmers: "--d2", m_tappers: "--d3", m_quick_exits: "--d4", m_hesitant: "--d5", m_rechecking: "--d6", m_deep: "--d6",
-  m_window_shoppers: "--d3", m_speed: "--d2", m_lingering: "--d1", m_first_screen: "--d4"
-};
+const HUES = ["--d1", "--d2", "--d3", "--d4", "--d5", "--d6", "--d-neutral"];
 
 /** Colours for one page's groups, in display order; two groups on a page never share a colour. */
 export function groupColors(keys: (string | undefined)[]): string[] {
-  const used = new Set<string>();
-  return keys.map(key => {
-    if (key === "typical") return "var(--d-neutral)";
-    let hue = key ? PREFERRED[key] : undefined;
-    if (!hue || used.has(hue)) hue = HUES.find(h => !used.has(h)) || HUES[used.size % HUES.length];
-    used.add(hue);
-    return `var(${hue})`;
-  });
+  return groupColorSlots(keys).map(slot => `var(${HUES[slot]})`);
 }
 
 export function cssVar(name: string): string {

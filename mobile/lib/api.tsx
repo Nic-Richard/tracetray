@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useRef, type ReactNode } from "react";
 import { useAuth } from "@clerk/expo";
 import Constants from "expo-constants";
 import { createApi, type Api } from "@tracetray/shared";
@@ -12,7 +12,10 @@ const ApiContext = createContext<Api | null>(null);
 
 export function ApiProvider({ children }: { children: ReactNode }) {
   const { getToken } = useAuth();
-  const api = useMemo(() => createApi({ baseUrl: apiOrigin(), getToken: () => getToken() }), [getToken]);
+  // Clerk's Expo hook returns a new token callback each render.
+  const token = useRef(getToken);
+  token.current = getToken;
+  const api = useMemo(() => createApi({ baseUrl: apiOrigin(), getToken: () => token.current() }), []);
   return <ApiContext.Provider value={api}>{children}</ApiContext.Provider>;
 }
 

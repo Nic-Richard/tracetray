@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type React from "react";
-import { pagePath, percent, type AnalysisResult, type Device } from "@tracetray/shared";
-import { alikeNote, deviceAnalysis, inactiveVisits, INACTIVE_TEXT, visitCount, visitorTypes } from "../lib/analysis";
+import { pagePath, percent, visitCount, visitorIntro, type AnalysisResult, type Device } from "@tracetray/shared";
+import { alikeNote, deviceAnalysis, inactiveVisits, INACTIVE_TEXT, visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
 import TraitBars from "../components/TraitBars";
 import { useAskAbout } from "../lib/askLink";
@@ -9,33 +9,20 @@ import { useAskAbout } from "../lib/askLink";
 // Whole percentages, like the sentences beside them, unless that would round a few visits down to 0%.
 const rate = (value: number) => percent(value, value > 0 && value < 0.01 ? 1 : 0);
 
-function intro(result: AnalysisResult, device: Device, groups: number): string {
-  const source = deviceAnalysis(result, device);
-  if (!source?.session_count) return `No ${device} groups yet.`;
-  const visits = visitCount(result, device);
-  const inactive = source.inactive_count || 0;
-  const lead = `${visits.toLocaleString()} ${device} visits`;
-  const left = inactive ? `${inactive.toLocaleString()} left without interacting. ` : "";
-  if (source.structure === "none") return `${lead}. ${left}${inactive ? "The rest" : "They"} behave much alike, so they're described as one.`;
-  const sorted = `${inactive ? `The other ${source.session_count.toLocaleString()}` : "They"} are sorted into ${groups} groups by how people ${device === "mobile" ? "scrolled, paused and tapped" : "moved, paused, clicked and scrolled"}.`;
-  const overlap = source.structure === "some" ? " The groups overlap, so read them as tendencies." : "";
-  return `${lead}. ${left}${sorted}${overlap}`;
-}
-
 export default function VisitorsTab({ result, page }: { result: AnalysisResult; page: string }) {
   const [device, setDevice] = useState<Device>("desktop");
   const askAbout = useAskAbout();
   const types = visitorTypes(result, device);
   const colors = groupColors(types.map(t => t.key));
   const source = deviceAnalysis(result, device);
-  const hasMobile = (result.mobile?.clusters?.length || 0) > 0;
+  const hasMobile = visitCount(result, "mobile") > 0;
   const alike = alikeNote(result, device);
   const inactive = inactiveVisits(result, device);
 
   return (
     <div className="content">
       <div className="tab-intro">
-        <p>{intro(result, device, types.length)}</p>
+        <p>{visitorIntro(result, device, types.length)}</p>
         <div className="seg" role="group" aria-label="Device">
           <button type="button" className={device === "desktop" ? "on" : ""} onClick={() => setDevice("desktop")}>Desktop</button>
           <button type="button" className={device === "mobile" ? "on" : ""} onClick={() => setDevice("mobile")} disabled={!hasMobile}>Mobile</button>

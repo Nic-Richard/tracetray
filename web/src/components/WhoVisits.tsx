@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { pagePath, percent, type AnalysisResult, type Device } from "@tracetray/shared";
+import { pagePath, percent, visitCount, type AnalysisResult, type Device } from "@tracetray/shared";
 import { alikeNote, deviceAverages, deviceGoal, inactiveVisits, INACTIVE_TEXT, interpretationOf, visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
 import { useAskAbout } from "../lib/askLink";
@@ -27,7 +27,7 @@ function GoalBar({ goal, name, color }: { goal: NonNullable<Row["goal"]>; name: 
 export default function WhoVisits({ result, page }: { result: AnalysisResult; page: string }) {
   const [device, setDevice] = useState<Device>("desktop");
   const askAbout = useAskAbout();
-  const hasMobile = (result.mobile?.clusters?.length || 0) > 0;
+  const hasMobile = visitCount(result, "mobile") > 0;
   const types = visitorTypes(result, device);
   const colors = groupColors(types.map(t => t.key));
   const alike = alikeNote(result, device);

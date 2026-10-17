@@ -1,12 +1,13 @@
 import { useLocalSearchParams } from "expo-router";
 import { RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { compactNumber, pageLabel, pagePath, percent, timeAgo } from "@tracetray/shared";
+import { compactNumber, pageLabel, pagePath, percent, timeAgo, visitCount } from "@tracetray/shared";
 import { useApi } from "../../lib/api";
 import { useSite } from "../../lib/site";
 import { useLoad } from "../../lib/useLoad";
 import { useTheme } from "../../lib/theme";
 import { Failure, Loading } from "../../components/Status";
+import VisitorGroups, { Suggestions } from "../../components/VisitorGroups";
 
 export default function PageScreen() {
   const params = useLocalSearchParams<{ page?: string | string[]; site?: string | string[] }>();
@@ -26,7 +27,7 @@ export default function PageScreen() {
   const { stats, visits, goals } = result.data;
   const analysis = stats.last_analysis;
   const inactive = (analysis?.inactive_count || 0) + (analysis?.mobile?.inactive_count || 0);
-  const analyzed = [analysis, analysis?.mobile].reduce((sum, device) => sum + (device?.inactive_count || 0) + (device?.clusters || []).reduce((total, group) => total + group.n, 0), 0);
+  const analyzed = visitCount(analysis, "desktop") + visitCount(analysis, "mobile");
   const inactiveShare = analysis?.inactive_count != null && analyzed ? inactive / analyzed : null;
   return <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={result.loading} onRefresh={result.reload} tintColor={colors.accent} />}>
@@ -52,6 +53,8 @@ export default function PageScreen() {
         <Text style={styles.muted}>Left without interacting{inactiveShare === null ? " · Shows after analysis" : " · Didn't scroll, click, tap or move the cursor"}</Text>
         <Text style={styles.muted}>{stats.total_sessions.toLocaleString()} visits recorded in total</Text>
       </View>
+      {analysis ? <Suggestions result={analysis} /> : null}
+      {analysis ? <VisitorGroups result={analysis} /> : null}
     </ScrollView>
   </SafeAreaView>;
 }
