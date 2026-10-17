@@ -1,44 +1,16 @@
 import { Fragment, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useSearchParams } from "react-router";
-import type { AskTurn } from "@tracetray/shared";
+import { ASK_STARTERS as STARTERS, ASK_LOOKUPS as LOOKUPS, answerBlocks, answerSpans, askHistory, type AskEntry as Entry } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 
-const STARTERS = [
-  "Which pages got the most visits in the last 30 days?",
-  "Where are my visitors coming from?",
-  "Where do people leave the site?",
-  "How do mobile visitors behave differently from desktop?",
-  "Has anything changed across my recent analyses?"
-];
-
-const LOOKUPS: Record<string, string> = {
-  list_pages: "Pages", get_pages_in_group: "Pages in a group", get_overview: "Overview", get_traffic_trend: "Daily traffic",
-  get_top_clicks: "Clicks", get_traffic_sources: "Traffic sources", get_visitor_journeys: "Journeys",
-  get_ux_trends: "Weekly trends", get_attention: "Attention", get_goals: "Goals"
-};
-
-interface Entry {
-  question: string;
-  answer?: string;
-  lookups?: string[];
-  error?: string;
-}
-
 function bold(text: string): ReactNode[] {
-  return text.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <strong key={i}>{part}</strong> : <Fragment key={i}>{part}</Fragment>));
+  return answerSpans(text).map((part, i) => (part.bold ? <strong key={i}>{part.text}</strong> : <Fragment key={i}>{part.text}</Fragment>));
 }
 
 // Answers use short paragraphs, "- " bullets and **bold**; anything else shows as plain text.
 function Answer({ text }: { text: string }) {
-  const blocks: (string | string[])[] = [];
-  for (const raw of text.split("\n")) {
-    const line = raw.trim();
-    const bullet = /^[-*•] /.test(line);
-    const last = blocks[blocks.length - 1];
-    if (bullet) Array.isArray(last) ? last.push(line.slice(2)) : blocks.push([line.slice(2)]);
-    else if (line) blocks.push(line.replace(/^#+\s*/, ""));
-  }
+  const blocks = answerBlocks(text);
   return <>{blocks.map((block, i) => (Array.isArray(block)
     ? <ul key={i}>{block.map((item, j) => <li key={j}>{bold(item)}</li>)}</ul>
     : <p key={i}>{bold(block)}</p>))}</>;
@@ -65,10 +37,7 @@ export default function Ask() {
   async function ask(question: string) {
     question = question.trim();
     if (!question || busy) return;
-    const history: AskTurn[] = entries
-      .filter(e => e.answer)
-      .slice(-3)
-      .flatMap(e => [{ role: "user" as const, text: e.question }, { role: "assistant" as const, text: e.answer! }]);
+    const history = askHistory(entries);
     setBusy(true);
     setInput("");
     setEntries(current => [...current, { question }]);

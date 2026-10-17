@@ -39,6 +39,7 @@ export default function Pages() {
         {site ? <View style={styles.wrap}>
           <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/journeys", params: { site: site.key } })}><Text style={styles.buttonText}>Journeys</Text></Pressable>
           <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/sessions", params: { site: site.key } })}><Text style={styles.buttonText}>Recent visits</Text></Pressable>
+          <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/ask", params: { site: site.key } })}><Text style={styles.buttonText}>Ask</Text></Pressable>
         </View> : null}
         <View style={styles.row}><Text style={styles.heading}>Pages</Text><Text style={styles.muted}>{pages.data?.length ?? ""}</Text></View>
         <TextInput accessibilityLabel="Find a page" placeholder="Find a page" placeholderTextColor={colors.muted} style={styles.input} value={query} onChangeText={setQuery} autoCapitalize="none" autoCorrect={false} clearButtonMode="while-editing" />

@@ -141,8 +141,13 @@ Android 15. Native journey rankings and recent-visit cards also passed; an unown
 deep link shows an error before requesting its data. Shared fixtures cover picture
 fallback, cropping, phone-only/empty states, escaped text and network isolation.
 
-Next: Ask (fixtures only unless a paid call is approved), website/goal management,
-usage, bug reports and account controls. Expected paths also need their mobile flow.
+Native Ask is complete locally, using shared answer formatting/history rules and a
+fixture API that blocks paid routes. Android 15 checks cover prefilled questions,
+formatted answers/lookups, follow-ups, duplicate taps, retry/limit states, conversation
+reset, unowned websites and leaving pending requests. Keyboard avoidance and scrolling
+were corrected during these checks. No live model call or physical-phone test.
+
+Next: website/goal management, usage, bug reports and account controls. Expected paths also need their mobile flow.
 Before/after comparisons and change notes still need a mobile flow. Pagination and plan
 limits exist for group members but were not exercised on Android: the QA group has 24
 members. Physical-phone and production-auth checks remain outstanding.

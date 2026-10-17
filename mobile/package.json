@@ -20,6 +20,7 @@
     "build": "expo export --platform android --output-dir dist",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "surfaces": "node scripts/build-surfaces.mjs",
+    "fixtures": "node scripts/fixture-api.mjs",
     "predev": "npm run surfaces",
     "prebuild": "npm run surfaces",
     "precheck": "npm run surfaces",

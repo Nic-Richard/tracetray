@@ -5,7 +5,8 @@ storage. The app uses `@tracetray/shared` and the existing server. Its current s
 cover website selection, page search and page overviews with visits, goal rates,
 desktop/mobile visitor groups, trait comparisons, evidence-based suggestions, searchable
 page-group members, visits/goal/behaviour trends, Attention pictures/overlays, journeys
-and recent visits.
+and recent visits. Ask supports native questions/follow-ups and page context, with shared
+answer formatting.
 
 ## Development
 
@@ -28,6 +29,25 @@ email/password, device-trust email codes and authenticator codes. More sign-in o
 opens Clerk's hosted page for other methods, including Google, and returns through the callback
 registered by the Clerk Expo plugin. Register `com.tracetray.app` in Clerk's native
 application settings before testing production authentication.
+
+## Ask checks without model charges
+
+Start Docker, then run `npm run fixtures -w mobile` in a separate terminal. This local
+API listens on `127.0.0.1:5001`; it forwards selected dashboard reads/account lookup to
+Docker and mocks every Ask request. Other writes, including analysis and checkout,
+are blocked. The tests verify that paid routes never reach the upstream API.
+
+For the Android emulator, start Metro with `EXPO_PUBLIC_API_URL=http://10.0.2.2:5001`.
+Use the normal development Clerk login. Ordinary questions get a deterministic answer;
+`Fixture retry` fails once, `Fixture limit` returns a monthly limit, and `Fixture delayed`
+waits five seconds. `GET /__fixtures` exposes only the fixture questions/history in memory
+so duplicate submissions and follow-ups can be checked. Stop the fixture API and clear
+the environment override after QA. The fixture server is never imported into the app.
+
+Starter questions and page-context links prefill text and wait for an explicit submission. Conversation
+history stays in memory, resets for a different website, and sends at most the last three
+answered questions. Retries exclude failed/pending turns. No live model call has been
+used to validate the mobile flow; production responses and physical phones still need QA.
 
 ## Shared web views
 
