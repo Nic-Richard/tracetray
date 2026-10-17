@@ -1,14 +1,10 @@
 import type React from "react";
-import { pageLabel, percent } from "@tracetray/shared";
+import { journeyLabel, pageLabel, percent } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
 import { useAskAbout } from "../lib/askLink";
 import ExpectedPaths from "../components/ExpectedPaths";
-
-function pathLabel(path: string): string {
-  return path.split(/ -> | → /).map(pageLabel).join(" → ");
-}
 
 function Ranked({ title, note, rows, color }: { title: string; note: string; rows: { label: string; count: number }[]; color: string }) {
   const max = Math.max(1, ...rows.map(r => r.count));
@@ -60,8 +56,8 @@ export default function Journeys() {
             <Ranked color="var(--d2)" title="Where visitors arrive" note="first page" rows={data.top_entries.map(r => ({ label: pageLabel(r.page), count: r.count }))} />
             <Ranked color="var(--d4)" title="Where visitors leave" note="last page" rows={data.top_exits.map(r => ({ label: pageLabel(r.page), count: r.count }))} />
           </div>
-          <Ranked color="var(--d1)" title="Most common moves" note="from one page to the next" rows={data.top_transitions.map(r => ({ label: pathLabel(r.path), count: r.count }))} />
-          <Ranked color="var(--d5)" title="Most common paths" note="first three pages" rows={data.top_paths.map(r => ({ label: pathLabel(r.path), count: r.count }))} />
+          <Ranked color="var(--d1)" title="Most common moves" note="from one page to the next" rows={data.top_transitions.map(r => ({ label: journeyLabel(r.path), count: r.count }))} />
+          <Ranked color="var(--d5)" title="Most common paths" note="first three pages" rows={data.top_paths.map(r => ({ label: journeyLabel(r.path), count: r.count }))} />
           <p><button type="button" className="ask-link" onClick={() => askAbout("Where do people leave the site, and what could keep them going?")}>Ask where visitors drop off</button></p>
         </>
       )}

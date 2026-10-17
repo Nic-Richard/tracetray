@@ -47,6 +47,16 @@ export function compactNumber(value: number): string {
   return String(value);
 }
 
+export function journeyLabel(path: string): string {
+  return path.split(/ -> | → /).map(pageLabel).join(" → ");
+}
+
+export function visitDuration(ms: number | undefined): string {
+  if (!ms || ms < 0 || !Number.isFinite(ms)) return "–";
+  const seconds = Math.round(ms / 1000);
+  return seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${seconds % 60} s`;
+}
+
 export function percent(value: number | null | undefined, digits = 0): string {
   return value === null || value === undefined || !Number.isFinite(value) ? "–" : `${(value * 100).toFixed(digits)}%`;
 }

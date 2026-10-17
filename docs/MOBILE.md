@@ -134,7 +134,15 @@ now reveal values when tapped, on web and Android. Android 15 checks cover actua
 charts, group search/sorting, light/dark changes, scrolling and back navigation. Headless
 fixtures cover empty/missing measurements, hostile goal names and network isolation.
 
-Next: Attention with authenticated page pictures, then Journeys, recent Sessions and Ask.
+Attention, Journeys and recent visits are also complete locally. Attention reuses web
+pictures/overlays with authenticated native image loading; desktop and phone pictures,
+goal/reach lines, independent picture scrolling, themes and refresh/back passed on
+Android 15. Native journey rankings and recent-visit cards also passed; an unowned-site
+deep link shows an error before requesting its data. Shared fixtures cover picture
+fallback, cropping, phone-only/empty states, escaped text and network isolation.
+
+Next: Ask (fixtures only unless a paid call is approved), website/goal management,
+usage, bug reports and account controls. Expected paths also need their mobile flow.
 Before/after comparisons and change notes still need a mobile flow. Pagination and plan
 limits exist for group members but were not exercised on Android: the QA group has 24
 members. Physical-phone and production-auth checks remain outstanding.

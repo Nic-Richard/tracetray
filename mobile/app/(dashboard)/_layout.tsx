@@ -13,6 +13,9 @@ export default function DashboardLayout() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="page" options={{ title: "Page overview" }} />
       <Stack.Screen name="trends" options={{ title: "Trends" }} />
+      <Stack.Screen name="attention" options={{ title: "Attention" }} />
+      <Stack.Screen name="journeys" options={{ title: "Journeys" }} />
+      <Stack.Screen name="sessions" options={{ title: "Recent visits" }} />
     </Stack>
   </SiteProvider>;
 }

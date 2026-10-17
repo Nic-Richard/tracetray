@@ -6,3 +6,7 @@ main { display: grid; gap: 20px; }
 .panel { margin: 0; }
 .panel-head { flex-wrap: wrap; gap: 8px; }
 .tab-intro { margin: 0; }
+.attention-surface > .content { padding: 0 20px 20px; display: grid; gap: 20px; }
+.attention-surface .attention.pictured, .attention-surface .phone-attention.pictured { grid-template-columns: 1fr; }
+.attention-surface .page-picture { max-height: 65vh; }
+.attention-surface .page-line span { max-width: 95%; overflow: hidden; text-overflow: ellipsis; }

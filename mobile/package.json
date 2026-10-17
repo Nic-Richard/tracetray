@@ -7,7 +7,9 @@
   "expo": {
     "install": {
       "exclude": [
-        "react"
+        "react",
+        "react-dom",
+        "@types/react-dom"
       ]
     }
   },

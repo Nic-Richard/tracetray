@@ -1,13 +1,7 @@
-import { pageLabel, timeAgo } from "@tracetray/shared";
+import { pageLabel, timeAgo, visitDuration } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
-
-function duration(ms: number | undefined): string {
-  if (!ms || ms < 0) return "–";
-  const seconds = Math.round(ms / 1000);
-  return seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${seconds % 60} s`;
-}
 
 export default function Sessions() {
   const api = useApi();
@@ -34,7 +28,7 @@ export default function Sessions() {
                       <td>{timeAgo(s.start_time)}</td>
                       <td><span className="cell-page"><span title={s.page}>{pageLabel(s.page)}</span></span></td>
                       <td><span className="device"><span className="dot" style={{ background: s.device_type === "mobile" ? "var(--mobile)" : "var(--desktop)" }} />{s.device_type === "mobile" ? "Phone" : "Desktop"}</span></td>
-                      <td className="right num">{duration(s.summary?.duration_ms)}</td>
+                      <td className="right num">{visitDuration(s.summary?.duration_ms)}</td>
                       <td className="right num hide-sm">{(s.device_type === "mobile" ? s.summary?.taps : s.summary?.clicks) ?? 0}</td>
                     </tr>
                   ))}

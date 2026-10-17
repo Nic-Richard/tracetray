@@ -34,6 +34,7 @@ export default function PageScreen() {
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={result.loading} onRefresh={result.reload} tintColor={colors.accent} />}>
       <View style={{ gap: 6 }}><Text style={styles.muted}>{selectedSite?.name}</Text><Text style={styles.title}>{pageLabel(page)}</Text><Text style={styles.muted}>{pagePath(page)}</Text></View>
       <Pressable style={styles.button} onPress={() => router.push({ pathname: "/trends", params: { page, site: siteKey } })}><Text style={styles.buttonText}>View trends</Text></Pressable>
+      <Pressable style={styles.button} onPress={() => router.push({ pathname: "/attention", params: { page, site: siteKey } })}><Text style={styles.buttonText}>View attention</Text></Pressable>
       {isPageGroup(page) ? <GroupPages key={`${siteKey}:${page}`} page={page} site={siteKey} /> : null}
       <View style={styles.panel}>
         <Text style={styles.heading}>Last 30 days</Text>
