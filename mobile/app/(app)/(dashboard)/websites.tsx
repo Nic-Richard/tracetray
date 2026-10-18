@@ -3,9 +3,9 @@ import { router } from "expo-router";
 import { Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Site } from "@tracetray/shared";
-import { useApi } from "../../lib/api";
-import { useSite } from "../../lib/site";
-import { useTheme } from "../../lib/theme";
+import { useApi } from "../../../lib/api";
+import { useSite } from "../../../lib/site";
+import { useTheme } from "../../../lib/theme";
 
 function WebsiteRow({ site, disabled, saving, rename, remove }: { site: Site; disabled: boolean; saving: boolean; rename: (name: string) => Promise<boolean>; remove: () => void }) {
   const { styles, colors } = useTheme();

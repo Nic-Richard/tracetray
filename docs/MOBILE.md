@@ -170,10 +170,17 @@ focused. Android 15 fixtures cover all three creation types, search, invalid tar
 failure/retry, duplicate taps, limits, main selection, edits, removal and site guards.
 Real goal mutations/backfills and physical-phone checks remain unverified.
 
-Next: email preferences and account lifecycle/deletion. A link delivered during initial
-app loading produced an Expo Router '__root' navigation warning and initially stayed
-on Home; warm links and in-app navigation work. Reproduce/fix that startup race before
-release. Empty/error page/form pickers and production plan UI still need native QA.
+Startup links now survive configuration/auth restoration. Root navigation stays mounted
+while loading runs beneath it; an Android prebuild plugin retains the newest intent
+before JavaScript starts. Home remains behind linked screens for Back navigation.
+A fresh x86_64 debug APK passes Android 15 checks for links before JavaScript, the
+latest link during an eight-second configuration delay, configuration failure/retry,
+cold unowned-site guards, sign-out/sign-in and Back to Home. No '__root' navigation
+errors appear. Production authentication, hosted callbacks, real phones and actual
+notification-provider delivery remain unverified.
+
+Next: email preferences and account lifecycle/deletion. Empty/error page/form pickers
+and production plan UI still need native QA.
 Expected paths also need their mobile flow.
 Before/after comparisons and change notes still need a mobile flow. Pagination and plan
 limits exist for group members but were not exercised on Android: the QA group has 24

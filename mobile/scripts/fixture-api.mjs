@@ -18,7 +18,7 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-export function createFixtureApi(upstreamFetch = fetch) {
+export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0 } = {}) {
   const questions = [];
   const reports = [];
   const attempts = new Map();
@@ -151,6 +151,7 @@ export function createFixtureApi(upstreamFetch = fetch) {
         method: request.method, headers,
         ...(request.method === "POST" ? { body: "{}" } : {})
       });
+      if (path === "/api/config" && configDelayMs) await new Promise(resolve => setTimeout(resolve, configDelayMs));
       if (request.method === "GET" && path === "/api/goals" && upstream.ok) {
         const list = await upstream.json();
         list.cap = list.goals.length + 2;
@@ -170,5 +171,6 @@ export function createFixtureApi(upstreamFetch = fetch) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  createFixtureApi().listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports/websites/goals are mocked and other writes are blocked."));
+  const configDelayMs = Math.min(30_000, Math.max(0, Number(process.env.FIXTURE_CONFIG_DELAY_MS) || 0));
+  createFixtureApi(fetch, { configDelayMs }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports/websites/goals are mocked and other writes are blocked."));
 }

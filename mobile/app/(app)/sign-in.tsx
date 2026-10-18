@@ -3,7 +3,7 @@ import { useSignIn } from "@clerk/expo";
 import { useHostedAuth } from "@clerk/expo/hosted-auth";
 import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTheme } from "../lib/theme";
+import { useTheme } from "../../lib/theme";
 
 export default function SignIn() {
   const { startHostedAuth } = useHostedAuth();

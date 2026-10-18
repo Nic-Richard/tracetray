@@ -2,11 +2,11 @@ import { useLocalSearchParams } from "expo-router";
 import { FlatList, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { pageLabel, pagePath, timeAgo, visitDuration } from "@tracetray/shared";
-import { useApi } from "../../lib/api";
-import { useSite } from "../../lib/site";
-import { useLoad } from "../../lib/useLoad";
-import { useTheme } from "../../lib/theme";
-import { Failure, Loading } from "../../components/Status";
+import { useApi } from "../../../lib/api";
+import { useSite } from "../../../lib/site";
+import { useLoad } from "../../../lib/useLoad";
+import { useTheme } from "../../../lib/theme";
+import { Failure, Loading } from "../../../components/Status";
 
 export default function SessionsScreen() {
   const params = useLocalSearchParams<{ site?: string | string[] }>();

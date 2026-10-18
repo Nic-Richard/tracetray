@@ -3,11 +3,11 @@ import { router } from "expo-router";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { compactNumber, pageLabel, pagePath } from "@tracetray/shared";
-import { useApi } from "../../lib/api";
-import { useSite } from "../../lib/site";
-import { useLoad } from "../../lib/useLoad";
-import { useTheme } from "../../lib/theme";
-import SitePicker from "../../components/SitePicker";
+import { useApi } from "../../../lib/api";
+import { useSite } from "../../../lib/site";
+import { useLoad } from "../../../lib/useLoad";
+import { useTheme } from "../../../lib/theme";
+import SitePicker from "../../../components/SitePicker";
 
 export default function Pages() {
   const api = useApi();

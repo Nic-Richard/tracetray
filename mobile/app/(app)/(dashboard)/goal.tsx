@@ -3,12 +3,12 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { describeGoal, formLabel, pageLabel, pagePath, parseGoalTarget, type Goal, type GoalList, type GoalType } from "@tracetray/shared";
-import ChoicePicker from "../../components/ChoicePicker";
-import { Failure, Loading } from "../../components/Status";
-import { useApi } from "../../lib/api";
-import { useSite } from "../../lib/site";
-import { useLoad } from "../../lib/useLoad";
-import { useTheme } from "../../lib/theme";
+import ChoicePicker from "../../../components/ChoicePicker";
+import { Failure, Loading } from "../../../components/Status";
+import { useApi } from "../../../lib/api";
+import { useSite } from "../../../lib/site";
+import { useLoad } from "../../../lib/useLoad";
+import { useTheme } from "../../../lib/theme";
 
 function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string; goal?: Goal; list: GoalList }) {
   const api = useApi();

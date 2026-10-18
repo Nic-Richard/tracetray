@@ -3,12 +3,12 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { describeGoal, goalAppliesToPage, pageLabel, pagePath, percent, type Goal } from "@tracetray/shared";
-import { Failure, Loading } from "../../components/Status";
-import { useApi } from "../../lib/api";
-import { useSite } from "../../lib/site";
-import { useLoad } from "../../lib/useLoad";
-import { useRefreshOnFocus } from "../../lib/useRefreshOnFocus";
-import { useTheme } from "../../lib/theme";
+import { Failure, Loading } from "../../../components/Status";
+import { useApi } from "../../../lib/api";
+import { useSite } from "../../../lib/site";
+import { useLoad } from "../../../lib/useLoad";
+import { useRefreshOnFocus } from "../../../lib/useRefreshOnFocus";
+import { useTheme } from "../../../lib/theme";
 
 function Goals({ siteKey, page }: { siteKey: string; page: string }) {
   const api = useApi();

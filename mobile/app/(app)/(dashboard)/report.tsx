@@ -3,10 +3,10 @@ import { router, useLocalSearchParams } from "expo-router";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { REPORT_CATEGORIES, reportError, reportPageUrl, type BugCategory, type Site } from "@tracetray/shared";
-import { useApi } from "../../lib/api";
-import { useSite } from "../../lib/site";
-import { useTheme } from "../../lib/theme";
-import { Failure } from "../../components/Status";
+import { useApi } from "../../../lib/api";
+import { useSite } from "../../../lib/site";
+import { useTheme } from "../../../lib/theme";
+import { Failure } from "../../../components/Status";
 
 function ReportForm({ site, page }: { site: Site; page: string }) {
   const api = useApi();

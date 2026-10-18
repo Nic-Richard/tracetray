@@ -25,7 +25,8 @@
       "@clerk/expo",
       "expo-font",
       "expo-web-browser",
-      "expo-status-bar"
+      "expo-status-bar",
+      "./plugins/retain-intent.cjs"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,6 +1,8 @@
 import { Stack } from "expo-router";
-import { SiteProvider } from "../../lib/site";
-import { useTheme } from "../../lib/theme";
+import { SiteProvider } from "../../../lib/site";
+import { useTheme } from "../../../lib/theme";
+
+export const unstable_settings = { anchor: "index" };
 
 export default function DashboardLayout() {
   const { colors } = useTheme();

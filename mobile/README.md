@@ -36,6 +36,14 @@ opens Clerk's hosted page for other methods, including Google, and returns throu
 registered by the Clerk Expo plugin. Register `com.tracetray.app` in Clerk's native
 application settings before testing production authentication.
 
+## Startup links
+
+The root layout mounts its navigator immediately; configuration, fonts and Clerk load
+inside `(app)`. The group adds no URL segment. Dashboard links keep Home behind the
+requested screen for Back navigation. An Expo config plugin retains Android's newest
+intent before forwarding it, so the initial URL is available even when a link arrives
+before JavaScript starts. This native change requires a fresh local APK.
+
 ## Fixture checks without model charges or support alerts
 
 Start Docker, then run `npm run fixtures -w mobile` in a separate terminal. This local
@@ -60,6 +68,10 @@ goal changes/lists. Goal fixtures reuse server validation; nothing queues real b
 This is a single-account local QA
 server; restart it between test accounts. Stop the fixture API and clear
 the environment override after QA. The fixture server is never imported into the app.
+
+Set `FIXTURE_CONFIG_DELAY_MS=8000` on the fixture server to hold configuration for eight
+seconds when checking links during startup. The delay is off by default and capped at
+30 seconds; it never changes the app's production configuration.
 
 Starter questions and page-context links prefill text and wait for an explicit submission. Conversation
 history stays in memory, resets for a different website, and sends at most the last three

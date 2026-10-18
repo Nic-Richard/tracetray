@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Failure } from "../../components/Status";
-import { installationSnippet } from "../../lib/installation";
-import { useSite } from "../../lib/site";
-import { useTheme } from "../../lib/theme";
+import { Failure } from "../../../components/Status";
+import { installationSnippet } from "../../../lib/installation";
+import { useSite } from "../../../lib/site";
+import { useTheme } from "../../../lib/theme";
 
 export default function InstallationScreen() {
   const params = useLocalSearchParams<{ site?: string | string[] }>();

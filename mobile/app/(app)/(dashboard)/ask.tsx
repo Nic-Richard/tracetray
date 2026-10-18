@@ -3,11 +3,11 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiError, ASK_LOOKUPS, ASK_STARTERS, askHistory, type AskEntry, type Site } from "@tracetray/shared";
-import { useApi } from "../../lib/api";
-import { useSite } from "../../lib/site";
-import { useTheme } from "../../lib/theme";
-import { Failure } from "../../components/Status";
-import Answer from "../../components/Answer";
+import { useApi } from "../../../lib/api";
+import { useSite } from "../../../lib/site";
+import { useTheme } from "../../../lib/theme";
+import { Failure } from "../../../components/Status";
+import Answer from "../../../components/Answer";
 
 function Conversation({ site, question }: { site: Site; question: string }) {
   const api = useApi();

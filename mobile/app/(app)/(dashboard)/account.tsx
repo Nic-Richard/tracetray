@@ -3,10 +3,10 @@ import { router } from "expo-router";
 import { ActivityIndicator, Alert, Linking, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PLAN_NAMES, usageMeter, type Usage, type UsageResponse } from "@tracetray/shared";
-import { useApi } from "../../lib/api";
-import { useSite } from "../../lib/site";
-import { useLoad } from "../../lib/useLoad";
-import { useTheme } from "../../lib/theme";
+import { useApi } from "../../../lib/api";
+import { useSite } from "../../../lib/site";
+import { useLoad } from "../../../lib/useLoad";
+import { useTheme } from "../../../lib/theme";
 
 const MEASURES: { key: keyof Omit<Usage, "month">; label: string; color: number }[] = [
   { key: "visits", label: "Visits", color: 0 }, { key: "pages", label: "Pages tracked", color: 1 },

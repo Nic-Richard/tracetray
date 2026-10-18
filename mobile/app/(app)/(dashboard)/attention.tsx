@@ -2,14 +2,14 @@ import { useLocalSearchParams } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { pageLabel } from "@tracetray/shared";
-import { useApi } from "../../lib/api";
-import { useSite } from "../../lib/site";
-import { useLoad } from "../../lib/useLoad";
-import { useTheme } from "../../lib/theme";
-import { pictureDataUrl } from "../../lib/pageShot";
-import { Failure, Loading } from "../../components/Status";
-import SharedSurface from "../../components/SharedSurface";
-import source from "../../generated/attention.json";
+import { useApi } from "../../../lib/api";
+import { useSite } from "../../../lib/site";
+import { useLoad } from "../../../lib/useLoad";
+import { useTheme } from "../../../lib/theme";
+import { pictureDataUrl } from "../../../lib/pageShot";
+import { Failure, Loading } from "../../../components/Status";
+import SharedSurface from "../../../components/SharedSurface";
+import source from "../../../generated/attention.json";
 
 export default function AttentionScreen() {
   const params = useLocalSearchParams<{ page?: string | string[]; site?: string | string[] }>();

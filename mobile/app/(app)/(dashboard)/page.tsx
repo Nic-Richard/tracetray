@@ -2,14 +2,14 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { compactNumber, isPageGroup, pageLabel, pagePath, percent, timeAgo, visitCount } from "@tracetray/shared";
-import { useApi } from "../../lib/api";
-import { useSite } from "../../lib/site";
-import { useLoad } from "../../lib/useLoad";
-import { useRefreshOnFocus } from "../../lib/useRefreshOnFocus";
-import { useTheme } from "../../lib/theme";
-import { Failure, Loading } from "../../components/Status";
-import VisitorGroups, { Suggestions } from "../../components/VisitorGroups";
-import GroupPages from "../../components/GroupPages";
+import { useApi } from "../../../lib/api";
+import { useSite } from "../../../lib/site";
+import { useLoad } from "../../../lib/useLoad";
+import { useRefreshOnFocus } from "../../../lib/useRefreshOnFocus";
+import { useTheme } from "../../../lib/theme";
+import { Failure, Loading } from "../../../components/Status";
+import VisitorGroups, { Suggestions } from "../../../components/VisitorGroups";
+import GroupPages from "../../../components/GroupPages";
 
 export default function PageScreen() {
   const params = useLocalSearchParams<{ page?: string | string[]; site?: string | string[] }>();

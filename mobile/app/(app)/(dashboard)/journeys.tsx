@@ -2,11 +2,11 @@ import { useLocalSearchParams } from "expo-router";
 import { RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { journeyLabel, pageLabel, percent } from "@tracetray/shared";
-import { useApi } from "../../lib/api";
-import { useSite } from "../../lib/site";
-import { useLoad } from "../../lib/useLoad";
-import { useTheme } from "../../lib/theme";
-import { Failure, Loading } from "../../components/Status";
+import { useApi } from "../../../lib/api";
+import { useSite } from "../../../lib/site";
+import { useLoad } from "../../../lib/useLoad";
+import { useTheme } from "../../../lib/theme";
+import { Failure, Loading } from "../../../components/Status";
 
 function Ranked({ title, note, rows, color }: { title: string; note: string; rows: { label: string; count: number }[]; color: string }) {
   const { styles, colors } = useTheme();

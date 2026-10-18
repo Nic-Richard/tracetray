@@ -2,6 +2,21 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createFixtureApi } from "../scripts/fixture-api.mjs";
 
+test("fixture startup delay holds configuration while other reads stay available", async () => {
+  const calls = [];
+  const server = createFixtureApi(async url => { calls.push(url); return Response.json({ ready: true }); }, { configDelayMs: 250 });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  try {
+    let resolved = false;
+    const config = fetch(`${origin}/api/config`).then(response => { resolved = true; return response.json(); });
+    assert.equal((await fetch(`${origin}/api/sites`)).status, 200);
+    assert.equal(resolved, false);
+    assert.deepEqual(await config, { ready: true });
+    assert.ok(calls.every(url => url.startsWith("http://127.0.0.1:5000/api/")));
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
 test("fixture Ask, reports and forbidden writes never reach the real API", async () => {
   const forwarded = [];
   const server = createFixtureApi(async url => { forwarded.push(url); return new Response('{"publishableKey":"fixture"}', { headers: { "Content-Type": "application/json" } }); });
