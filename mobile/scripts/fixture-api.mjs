@@ -18,7 +18,7 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, emailMode = "normal", deletionMode = "normal" } = {}) {
+export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, emailMode = "normal", deletionMode = "normal", comparisonMode = "normal" } = {}) {
   let deletion = { state: "none" };
   let deletionAttempts = 0;
   const questions = [];
@@ -27,6 +27,8 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
   const websiteChanges = [];
   const goalChanges = [];
   const goalLists = new Map();
+  const changeLists = new Map();
+  const changeWrites = [];
   const emailChanges = [];
   let emailReads = 0;
   const emailPrefs = { weekly_summary: false, shift_alerts: false, available: { weekly_summary: true, shift_alerts: emailMode !== "limited" } };
@@ -38,6 +40,54 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
     try {
       const url = new URL(request.url, "http://localhost");
       const path = url.pathname;
+      if (path.startsWith("/api/") && !["/api/config", "/api/account-deletion"].includes(path) && deletion.state !== "none") return reply(410, { error: "Account deletion has been requested.", account_deleting: true });
+      const changeId = /^\/api\/page-changes\/([^/]+)$/.exec(path)?.[1];
+      if (path === "/api/page-changes" || changeId || path === "/api/compare") {
+        const key = url.searchParams.get("site_key");
+        if (!websites?.some(site => site.key === key)) return reply(403, { error: "website not available" });
+        if (comparisonMode === "limited") return reply(403, { error: "before-and-after comparisons need a plan", limit_reached: "plan" });
+        if (changeId && request.method === "DELETE") {
+          const entry = [...changeLists].find(([entryKey, values]) => entryKey.startsWith(`${key}|`) && values.some(value => value.id === decodeURIComponent(changeId)));
+          if (!entry) return reply(404, { error: "that change isn't there" });
+          changeLists.set(entry[0], entry[1].filter(value => value.id !== decodeURIComponent(changeId)));
+          changeWrites.push({ method: "DELETE", site: key, id: decodeURIComponent(changeId) });
+          return reply(200, { deleted: true });
+        }
+        const body = request.method === "POST" ? await readBody(request) : {};
+        const page = body.page || url.searchParams.get("page");
+        if (!page) return reply(400, { error: "pick a page first" });
+        const listKey = `${key}|${page}`;
+        const dayAgo = days => new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+        if (!changeLists.has(listKey)) changeLists.set(listKey, comparisonMode === "empty" ? [] : [{ id: `fixture-change-${changeLists.size + 1}-latest`, day: dayAgo(3), note: "New product photos" }, { id: `fixture-change-${changeLists.size + 1}-older`, day: dayAgo(10), note: "Clearer checkout" }]);
+        const list = changeLists.get(listKey);
+        if (path === "/api/page-changes" && request.method === "GET") return reply(200, [...list].sort((a, b) => b.day.localeCompare(a.day)));
+        if (path === "/api/page-changes" && request.method === "POST") {
+          const day = body.day;
+          if (typeof day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(Date.parse(`${day}T00:00:00Z`)) || new Date(`${day}T00:00:00Z`).toISOString().slice(0, 10) !== day || day > dayAgo(0)) return reply(400, { error: "pick a valid past date" });
+          changeWrites.push({ method: "POST", site: key, page, day, note: body.note });
+          if (String(body.note).startsWith("Fixture retry") && !attempts.has(`change:${body.note}`)) { attempts.set(`change:${body.note}`, 1); return reply(503, { error: "fixture change save unavailable" }); }
+          const change = { id: `fixture-change-${changeWrites.length}`, day, note: String(body.note || "").trim().slice(0, 120) };
+          list.push(change);
+          setTimeout(() => reply(201, change), 500);
+          return;
+        }
+        if (path === "/api/compare" && request.method === "GET") {
+          const day = url.searchParams.get("day");
+          const attemptKey = `compare:${key}:${page}:${day}`;
+          if (comparisonMode === "retry" && !attempts.has(attemptKey)) { attempts.set(attemptKey, 1); return reply(503, { error: "fixture comparison unavailable" }); }
+          const days = Math.min(14, Math.floor((Date.now() - Date.parse(`${day}T00:00:00Z`)) / 86400000));
+          if (!Number.isFinite(days)) return reply(400, { error: "pick a day" });
+          if (days < 1) return reply(200, { ready: false, days: 0 });
+          const sparse = comparisonMode === "sparse";
+          return reply(200, { ready: true, days,
+            before: { visits: sparse ? 2 : 300, visitsPerDay: sparse ? 0.5 : 100, engaged: sparse ? null : 0.4, timeOnPage: sparse ? null : 45000, actionsPerVisit: sparse ? null : 1.2, scrollDepth: sparse ? null : 0.5, phoneShare: sparse ? null : 0.25 },
+            after: { visits: sparse ? 0 : 450, visitsPerDay: sparse ? 0 : 150, engaged: sparse ? null : 0.65, timeOnPage: sparse ? null : 50000, actionsPerVisit: sparse ? null : 1.5, scrollDepth: sparse ? null : 0.6, phoneShare: sparse ? null : 0.55 },
+            goal: { id: "fixture-goal", name: "Added to cart", before: sparse ? 0 : 0.1, after: sparse ? null : 0.25, reached: sparse ? 0 : 143, verdict: sparse ? "unclear" : "better" },
+            groups: sparse ? null : { before: [{ group: "Explorers", share: 0.6 }], after: [{ group: "Explorers", share: 0.4 }, { group: "Deciders", share: 0.6 }] }
+          });
+        }
+        return reply(503, { error: "fixture method disabled" });
+      }
       if (path === "/api/account-deletion") {
         if (request.method === "GET") return reply(200, deletion);
         if (request.method !== "POST") return reply(503, { error: "fixture method disabled" });
@@ -48,8 +98,7 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
         deletion = { state: deletionMode === "retrying" ? "retrying" : "pending", requested_at: new Date().toISOString() };
         return reply(202, deletion);
       }
-      if (path.startsWith("/api/") && path !== "/api/config" && deletion.state !== "none") return reply(410, { error: "Account deletion has been requested.", account_deleting: true });
-      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists), emailChanges, emailPrefs, emailReads });
+      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists), changeWrites, changeLists: Object.fromEntries(changeLists), emailChanges, emailPrefs, emailReads });
       if (path === "/api/email-prefs") {
         if (request.method === "GET") {
           emailReads++;
@@ -206,5 +255,5 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const configDelayMs = Math.min(30_000, Math.max(0, Number(process.env.FIXTURE_CONFIG_DELAY_MS) || 0));
-  createFixtureApi(fetch, { configDelayMs, emailMode: process.env.FIXTURE_EMAIL_MODE, deletionMode: process.env.FIXTURE_DELETION_MODE }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports/websites/goals/email preferences/account deletion are mocked and other writes are blocked."));
+  createFixtureApi(fetch, { configDelayMs, emailMode: process.env.FIXTURE_EMAIL_MODE, deletionMode: process.env.FIXTURE_DELETION_MODE, comparisonMode: process.env.FIXTURE_COMPARISON_MODE }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports/websites/goals/changes/email preferences/account deletion are mocked and other writes are blocked."));
 }

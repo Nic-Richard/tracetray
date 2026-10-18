@@ -1,40 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { percent, type ChangeMeasures } from "@tracetray/shared";
+import { percent, COMPARISON_ROWS as ROWS, COMPARISON_MIN_VISITS as MIN_VISITS, comparisonRate as rate, comparisonVerdict as verdict } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
 
-interface Row {
-  key: keyof ChangeMeasures;
-  label: string;
-  format: (value: number) => string;
-  /** Which way is an improvement; null when a change says nothing about the page itself. */
-  better: "up" | "down" | null;
-}
-
-const ROWS: Row[] = [
-  { key: "visitsPerDay", label: "Visits a day", format: v => v.toFixed(v >= 10 ? 0 : 1), better: null },
-  { key: "engaged", label: "Engaged visits", format: v => percent(v), better: "up" },
-  { key: "actionsPerVisit", label: "Clicks or taps per visit", format: v => v.toFixed(2), better: null },
-  { key: "scrollDepth", label: "Scroll depth", format: v => percent(v), better: null },
-  { key: "timeOnPage", label: "Time on page", format: v => `${Math.round(v / 1000)} s`, better: null },
-  { key: "phoneShare", label: "On phones", format: v => percent(v), better: null }
-];
-
-// Below this many visits on either side a difference is mostly chance, so no verdict is given.
-const MIN_VISITS = 30;
-
-const rate = (value: number | null) => value === null ? "–" : percent(value, value < 0.1 ? 1 : 0);
-
 const today = () => new Date().toISOString().slice(0, 10);
 const dayLabel = (day: string) => new Date(`${day}T00:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
-
-function verdict(row: Row, before: number, after: number) {
-  if (!row.better || !before) return null;
-  const change = (after - before) / before;
-  if (Math.abs(change) < 0.03) return "same";
-  return (change > 0) === (row.better === "up") ? "better" : "worse";
-}
 
 function Comparison({ page, day }: { page: string; day: string }) {
   const api = useApi();

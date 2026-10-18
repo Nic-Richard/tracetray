@@ -96,9 +96,9 @@ alongside the first mobile bundle to catch effects on the deployed dashboard.
 - Account lifecycle: the full deletion flow is implemented locally, including in-app
   and web entry points. Verify it with a disposable production account and subscription
   before release; register `/delete-account` as the Play deletion URL after deployment.
-  Provider-held support alert copies also need an erasure path; existing Discord
-  messages are not removed by the current account worker. Terms/privacy updates do
-  not establish compliance until provider cleanup and retention are verified.
+  Provider-held support alerts now have an erasure path implemented locally. Deploy
+  the updated relay/nginx first, verify bot history permissions, then deploy TraceTray.
+  Confirm provider cleanup and operational-log retention before declaring compliance.
 - Subscription access: start as a dashboard for existing customers. Verify current Play
   policy before including checkout, upgrade links or billing-portal links. The web's
   Stripe flow must not be copied into Android without that review.
@@ -195,12 +195,25 @@ screenshots, account-linked reports and the Clerk identity. Failures retry; a re
 remains for 30 days. Tracking caches and active collection, screenshots and analyses
 drain before cleanup. Late checkout webhooks cannot activate a deleted account.
 Native fixture checks cover confirmation, save failure/retry and cold reopening.
+Provider cleanup now persists Discord scan progress and blocks final deletion until
+matching bot alerts are erased. Requests already in flight drain before cleanup.
+Accounts with historical alerts must keep the relay configured during deletion;
+unconfigured installations skip it. Tests mock provider responses and verify a local
+client/relay round trip, permissions, app isolation, failures and resumable progress.
 Provider calls and destructive database cleanup are tested with mocks only. A real
 disposable-account deletion with production billing/auth remains a release check.
+
+Before/after comparisons and page change notes now have a native flow. Page overview
+opens it; users can mark a UTC date with an optional note, select a change and remove
+notes without removing visit history. Shared web/app rules preserve metric formats,
+neutral click/scroll changes and engagement verdict thresholds. Native cards show
+main-goal verdicts, visitor groups, low-sample warnings and phone-share changes.
+Fixture writes stay in memory. Emulator and build validation are recorded in the
+local changelog; real change mutations and physical-phone checks remain unverified.
 
 Next: empty/error page/form pickers
 and production plan UI still need native QA.
 Expected paths also need their mobile flow.
-Before/after comparisons and change notes still need a mobile flow. Pagination and plan
+Pagination and plan
 limits exist for group members but were not exercised on Android: the QA group has 24
 members. Physical-phone and production-auth checks remain outstanding.

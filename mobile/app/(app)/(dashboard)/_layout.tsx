@@ -27,6 +27,7 @@ export default function DashboardLayout() {
       <Stack.Screen name="goal" options={{ title: "Goal details" }} />
       <Stack.Screen name="emails" options={{ title: "Email preferences" }} />
       <Stack.Screen name="delete-account" options={{ title: "Delete account" }} />
+      <Stack.Screen name="changes" options={{ title: "Before and after" }} />
     </Stack>
   </SiteProvider>;
 }

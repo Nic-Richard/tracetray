@@ -37,6 +37,7 @@ export default function PageScreen() {
       <View style={{ gap: 6 }}><Text style={styles.muted}>{selectedSite?.name}</Text><Text style={styles.title}>{pageLabel(page)}</Text><Text style={styles.muted}>{pagePath(page)}</Text></View>
       <Pressable style={styles.button} onPress={() => router.push({ pathname: "/trends", params: { page, site: siteKey } })}><Text style={styles.buttonText}>View trends</Text></Pressable>
       <Pressable style={styles.button} onPress={() => router.push({ pathname: "/attention", params: { page, site: siteKey } })}><Text style={styles.buttonText}>View attention</Text></Pressable>
+      <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/changes", params: { page, site: siteKey } })}><Text style={styles.buttonText}>Before and after a change</Text></Pressable>
       <Pressable style={styles.button} onPress={() => router.push({ pathname: "/ask", params: { site: siteKey, q: `What could help visitors reach the goal on ${pageLabel(page)} (${pagePath(page)})?`.slice(0, 500) } })}><Text style={styles.buttonText}>Ask about this page</Text></Pressable>
       <Pressable onPress={() => router.push({ pathname: "/report", params: { site: siteKey, page } })} style={{ paddingVertical: 12 }} accessibilityRole="button"><Text style={styles.link}>Report a problem on this page</Text></Pressable>
       {isPageGroup(page) ? <GroupPages key={`${siteKey}:${page}`} page={page} site={siteKey} /> : null}

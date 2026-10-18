@@ -2,6 +2,36 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createFixtureApi } from "../scripts/fixture-api.mjs";
 
+test("change-note fixtures enforce ownership, recover failed writes and never forward mutations", async () => {
+  const calls = [];
+  const server = createFixtureApi(async (url, init) => {
+    calls.push([url, init.method]);
+    if (!url.endsWith("/api/account")) throw new Error("Only account reads may reach upstream");
+    return Response.json({ sites: [{ key: "owned" }], site_key: "owned" });
+  }, { comparisonMode: "retry" });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const path = "/api/page-changes?site_key=owned&page=https%3A%2F%2Fexample.com%2F";
+  const post = body => fetch(origin + path, { method: "POST", body: JSON.stringify(body) });
+  try {
+    await fetch(origin + "/api/account", { method: "POST" });
+    assert.equal((await fetch(origin + "/api/page-changes?site_key=other&page=/")).status, 403);
+    const list = await (await fetch(origin + path)).json(); assert.equal(list.length, 2);
+    assert.equal((await post({ page: "/", day: "2026-02-30" })).status, 400);
+    const day = new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10);
+    const body = { page: "https://example.com/", day, note: "Fixture retry note" };
+    assert.equal((await post(body)).status, 503);
+    const saved = await (await post(body)).json(); assert.equal(saved.note, body.note);
+    const compare = origin + `/api/compare?site_key=owned&page=/&day=${day}`;
+    assert.equal((await fetch(compare)).status, 503);
+    assert.equal((await (await fetch(compare)).json()).goal.verdict, "better");
+    assert.equal((await fetch(origin + `/api/page-changes/${saved.id}?site_key=other`, { method: "DELETE" })).status, 403);
+    assert.equal((await fetch(origin + `/api/page-changes/${saved.id}?site_key=owned`, { method: "DELETE" })).status, 200);
+    assert.equal((await (await fetch(origin + path)).json()).length, 2);
+    assert.equal(calls.length, 1);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
 test("account deletion stays in memory, retries failed requests and blocks account reopening", async () => {
   const server = createFixtureApi(() => { throw new Error("Deletion must never reach upstream"); }, { deletionMode: "retry" });
   await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
