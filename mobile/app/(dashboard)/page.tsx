@@ -5,6 +5,7 @@ import { compactNumber, isPageGroup, pageLabel, pagePath, percent, timeAgo, visi
 import { useApi } from "../../lib/api";
 import { useSite } from "../../lib/site";
 import { useLoad } from "../../lib/useLoad";
+import { useRefreshOnFocus } from "../../lib/useRefreshOnFocus";
 import { useTheme } from "../../lib/theme";
 import { Failure, Loading } from "../../components/Status";
 import VisitorGroups, { Suggestions } from "../../components/VisitorGroups";
@@ -23,6 +24,7 @@ export default function PageScreen() {
     const [stats, visits, goals] = await Promise.all([api.stats(selectedSite.key, page), api.timeseries(selectedSite.key, page, 30), api.goalRates(selectedSite.key, page)]);
     return { stats, visits, goals };
   }, [api, selectedSite?.key, page]);
+  useRefreshOnFocus(result.reload);
   if (result.error) return <Failure message={result.error} retry={result.reload} />;
   if (!result.data) return <Loading />;
   const { stats, visits, goals } = result.data;
@@ -48,9 +50,10 @@ export default function PageScreen() {
       <View style={styles.panel}>
         <Text style={styles.heading}>Goals</Text>
         {goals.goals.length ? goals.goals.map(goal => <View key={goal.id} style={styles.row}>
-          <View style={{ flex: 1, gap: 4 }}><Text style={styles.text}>{goal.name}</Text><Text style={styles.muted}>{goal.reached.toLocaleString()} of {goal.visits.toLocaleString()} visits</Text></View>
+          <View style={{ flex: 1, gap: 4 }}><Text style={styles.text}>{goal.name}{goal.main ? " · Main goal" : ""}</Text><Text style={styles.muted}>{goal.reached.toLocaleString()} of {goal.visits.toLocaleString()} visits</Text></View>
           <Text style={styles.number}>{percent(goal.rate)}</Text>
         </View>) : <Text style={styles.muted}>No goal is set for this page yet.</Text>}
+        <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: "/goals", params: { site: siteKey, page } })} style={{ paddingVertical: 12 }}><Text style={styles.link}>Manage goals for this page</Text></Pressable>
       </View>
       <View style={styles.panel}>
         <Text style={styles.heading}>Analysis</Text>

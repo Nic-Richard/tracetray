@@ -29,6 +29,7 @@ export default function Pages() {
         </View>
         <SitePicker />
         {site ? <View style={styles.wrap}>
+          <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/goals", params: { site: site.key } })}><Text style={styles.buttonText}>Goals</Text></Pressable>
           <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/journeys", params: { site: site.key } })}><Text style={styles.buttonText}>Journeys</Text></Pressable>
           <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/sessions", params: { site: site.key } })}><Text style={styles.buttonText}>Recent visits</Text></Pressable>
           <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/ask", params: { site: site.key } })}><Text style={styles.buttonText}>Ask</Text></Pressable>

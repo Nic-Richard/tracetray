@@ -1,8 +1,11 @@
 import { createServer } from "node:http";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
-const READS = new Set(["/api/config", "/api/pages", "/api/sites", "/api/stats", "/api/sessions/timeseries", "/api/goal-rates", "/api/pages/members", "/api/usage"]);
+const { parseGoal } = createRequire(import.meta.url)("../../server/src/lib/goals.js");
+
+const READS = new Set(["/api/config", "/api/pages", "/api/sites", "/api/stats", "/api/sessions/timeseries", "/api/goal-rates", "/api/goals", "/api/pages/members", "/api/usage"]);
 
 async function readBody(request) {
   const chunks = [];
@@ -20,6 +23,8 @@ export function createFixtureApi(upstreamFetch = fetch) {
   const reports = [];
   const attempts = new Map();
   const websiteChanges = [];
+  const goalChanges = [];
+  const goalLists = new Map();
   let websites;
   let siteLimit;
   let nextSite = 0;
@@ -28,7 +33,59 @@ export function createFixtureApi(upstreamFetch = fetch) {
     try {
       const url = new URL(request.url, "http://localhost");
       const path = url.pathname;
-      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites });
+      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists) });
+      const goalId = /^\/api\/goals\/([^/]+)$/.exec(path)?.[1];
+      const siteKey = url.searchParams.get("site_key");
+      if (path === "/api/goals" || goalId || path === "/api/main-goal" || path === "/api/forms") {
+        if (!websites) return reply(409, { error: "load the fixture account first" });
+        if (!websites.some(site => site.key === siteKey)) return reply(403, { error: "website not available" });
+        const list = goalLists.get(siteKey);
+        if (request.method === "GET" && path === "/api/forms") return reply(200, [{ id: "fixture-newsletter", name: "newsletter", action: "/subscribe", sent: 12, page: "https://example.com/" }]);
+        if (request.method === "GET" && path === "/api/goals" && list) return reply(200, list);
+        if (request.method !== "GET") {
+          if (!list) return reply(409, { error: "load the fixture goals first" });
+          if (!((path === "/api/goals" && request.method === "POST") || (goalId && ["PATCH", "DELETE"].includes(request.method)) || (path === "/api/main-goal" && request.method === "PUT"))) return reply(503, { error: "fixture method disabled" });
+          const body = request.method === "DELETE" ? {} : await readBody(request);
+          goalChanges.push({ method: request.method, path, site: siteKey, ...body });
+          if (path === "/api/main-goal") {
+            if (!body.page) return reply(400, { error: "pick a page first" });
+            if (body.goal && !list.goals.some(goal => goal.id === body.goal)) return reply(404, { error: "that goal isn't there" });
+            list.main_goals = list.main_goals.filter(value => value.page !== body.page);
+            if (body.goal) list.main_goals.push({ page: body.page, goal: body.goal });
+            return reply(200, { page: body.page, goal: body.goal || null });
+          }
+          const existing = goalId && list.goals.find(goal => goal.id === decodeURIComponent(goalId));
+          if (goalId && !existing) return reply(404, { error: "that goal isn't there" });
+          if (request.method === "DELETE") {
+            list.goals = list.goals.filter(goal => goal.id !== existing.id);
+            list.main_goals = list.main_goals.filter(value => value.goal !== existing.id);
+            return reply(200, { deleted: true });
+          }
+          if (!existing && list.goals.length >= list.cap) return reply(400, { error: "goal limit reached", limit_reached: "goals" });
+          const parsed = parseGoal(body, existing || null);
+          if (parsed.error) return reply(400, { error: parsed.error });
+          if (!existing && parsed.goal.type === "form" && !list.form_goals) return reply(403, { error: "form goals are part of Ultra", limit_reached: "plan" });
+          const attemptKey = `goal:${siteKey}:${goalId}:${parsed.goal.name}`;
+          const attempt = (attempts.get(attemptKey) || 0) + 1;
+          attempts.set(attemptKey, attempt);
+          if (parsed.goal.name.startsWith("Fixture retry") && attempt === 1) return reply(503, { error: "fixture goal unavailable" });
+          const goal = { ...existing, ...parsed.goal, backfill: existing?.backfill || "queued" };
+          list.goals = existing ? list.goals.map(value => value.id === goal.id ? goal : value) : [...list.goals, goal];
+          if (!existing) setTimeout(() => { const current = list.goals.find(value => value.id === goal.id); if (current) current.backfill = current.name === "Fixture backfill failed" ? "failed" : "done"; }, 1500);
+          setTimeout(() => reply(existing ? 200 : 201, goal), 500);
+          return;
+        }
+      }
+      if (request.method === "GET" && path === "/api/goal-rates" && goalLists.has(siteKey)) {
+        const list = goalLists.get(siteKey), page = url.searchParams.get("page");
+        const main = list.main_goals.find(value => value.page === page)?.goal;
+        const goals = list.goals.filter(goal => (!goal.pages?.length || goal.pages.includes(page)) && !(goal.type === "page" && goal.match.page === page))
+          .map(goal => {
+            const reached = goal.reached_last_7_days || 0, visits = Math.max(100, reached);
+            return { ...goal, main: goal.id === main, visits, reached, rate: reached / visits };
+          });
+        return reply(200, { page, days: 30, goals: goals.sort((a, b) => Number(b.main) - Number(a.main)) });
+      }
       const websiteKey = /^\/api\/sites\/([^/]+)$/.exec(path)?.[1];
       if ((path === "/api/sites" && request.method === "POST") || (websiteKey && ["PATCH", "DELETE"].includes(request.method))) {
         if (!websites) return reply(409, { error: "load the fixture account first" });
@@ -94,6 +151,12 @@ export function createFixtureApi(upstreamFetch = fetch) {
         method: request.method, headers,
         ...(request.method === "POST" ? { body: "{}" } : {})
       });
+      if (request.method === "GET" && path === "/api/goals" && upstream.ok) {
+        const list = await upstream.json();
+        list.cap = list.goals.length + 2;
+        goalLists.set(siteKey, list);
+        return reply(200, list);
+      }
       if (request.method === "POST" && path === "/api/account" && upstream.ok) {
         const account = await upstream.json();
         websites ??= account.sites;
@@ -107,5 +170,5 @@ export function createFixtureApi(upstreamFetch = fetch) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  createFixtureApi().listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports/websites are mocked and other writes are blocked."));
+  createFixtureApi().listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports/websites/goals are mocked and other writes are blocked."));
 }

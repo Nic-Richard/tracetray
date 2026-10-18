@@ -1,13 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useLocation } from "react-router";
-import { pageLabel, percent, type FormSeen, type Goal, type GoalType } from "@tracetray/shared";
+import { describeGoal, formLabel, pageLabel, percent, type Goal, type GoalType } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
-import { describeGoal } from "./GoalLine";
-
-const formLabel = (form?: FormSeen) => !form ? "Form" : form.id ? `Form #${form.id}` : form.name ? `Form “${form.name}”` : `Form to ${form.action}`;
-
 const asPercent = (value: number) => percent(value, value < 0.1 ? 1 : 0);
 
 function GoalRow({ goal, onChanged }: { goal: Goal; onChanged: () => void }) {

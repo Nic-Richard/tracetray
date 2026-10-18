@@ -10,6 +10,9 @@ answer formatting. Account includes usage, legal links and sign-out; problem rep
 can attach the selected website and a cleaned page URL. Websites can be added, renamed
 or removed, with installation code available to select/copy or share. Removing the last
 website creates an empty replacement with a new key, matching the web dashboard.
+Goals support click text, tracked destination pages and recently sent forms when the
+plan allows them. Names/targets can be edited; removal confirms before deleting matches.
+Page overviews open scoped goal management, including the page's main-goal selection.
 
 ## Development
 
@@ -49,7 +52,12 @@ waits five seconds. Problem reports succeed after one second; descriptions begin
 submissions, site scope and cleaned page context can be checked. Website fixtures start
 with a copy of the account's sites and one spare slot. Adds, renames and removals only
 change that in-memory copy; names beginning `Fixture retry` fail once. Website changes
-and current sites are also exposed at `/__fixtures`. This is a single-account local QA
+and current sites are also exposed at `/__fixtures`. Goal fixtures copy each owned site's
+goals on first read, with two spare slots, a sample newsletter form and in-memory writes.
+Names beginning `Fixture retry` fail once; new goals finish their past-visit check after
+1.5 seconds (`Fixture backfill failed` produces a failed check). `/__fixtures` also shows
+goal changes/lists. Goal fixtures reuse server validation; nothing queues real backfills.
+This is a single-account local QA
 server; restart it between test accounts. Stop the fixture API and clear
 the environment override after QA. The fixture server is never imported into the app.
 

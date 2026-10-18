@@ -21,6 +21,8 @@ export default function DashboardLayout() {
       <Stack.Screen name="report" options={{ title: "Report a problem" }} />
       <Stack.Screen name="websites" options={{ title: "Websites" }} />
       <Stack.Screen name="installation" options={{ title: "Installation" }} />
+      <Stack.Screen name="goals" options={{ title: "Goals" }} />
+      <Stack.Screen name="goal" options={{ title: "Goal details" }} />
     </Stack>
   </SiteProvider>;
 }

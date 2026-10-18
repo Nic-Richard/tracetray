@@ -162,7 +162,18 @@ cancellation/confirmation, last-site replacement, persisted selection, installat
 ownership and the Android share sheet. Website mutations never reach Docker during QA.
 Live website mutations and physical-phone copying/sharing remain unverified.
 
-Next: goal management, email preferences and account lifecycle/deletion.
+Native goal management is complete locally: click/page/form creation, page scope,
+name/target edits, removal confirmation and main-goal selection/clearing. Descriptions
+and target validation live in shared code; web also uses the shared descriptions.
+Page/list screens refresh on return; pending past-visit checks poll while the list is
+focused. Android 15 fixtures cover all three creation types, search, invalid targets,
+failure/retry, duplicate taps, limits, main selection, edits, removal and site guards.
+Real goal mutations/backfills and physical-phone checks remain unverified.
+
+Next: email preferences and account lifecycle/deletion. A link delivered during initial
+app loading produced an Expo Router '__root' navigation warning and initially stayed
+on Home; warm links and in-app navigation work. Reproduce/fix that startup race before
+release. Empty/error page/form pickers and production plan UI still need native QA.
 Expected paths also need their mobile flow.
 Before/after comparisons and change notes still need a mobile flow. Pagination and plan
 limits exist for group members but were not exercised on Android: the QA group has 24

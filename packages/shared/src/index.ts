@@ -5,3 +5,4 @@ export * from "./analysis";
 export * from "./palette";
 export * from "./ask";
 export * from "./account";
+export * from "./goals";

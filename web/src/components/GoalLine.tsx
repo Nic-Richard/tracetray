@@ -1,17 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router";
-import { percent, type GoalRate } from "@tracetray/shared";
+import { describeGoal, percent } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
-
-export function describeGoal(goal: Pick<GoalRate, "type" | "match">): string {
-  if (goal.type === "page") return `Goes on to ${goal.match.page ? new URL(goal.match.page).pathname : "a page"}`;
-  if (goal.type === "form") return `Sends the form ${goal.match.id ? `#${goal.match.id}` : goal.match.name ? `“${goal.match.name}”` : `to ${goal.match.action}`}`;
-  if (goal.match.href) return `Clicks a link to ${goal.match.href}`;
-  if (goal.match.text) return `Clicks “${goal.match.text}”`;
-  return `Clicks #${goal.match.id}`;
-}
 
 /** The page's goal rate under the page title, or a way to set one. */
 export default function GoalLine({ page }: { page: string }) {

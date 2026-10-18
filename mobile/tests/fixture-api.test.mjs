@@ -32,6 +32,44 @@ test("fixture Ask, reports and forbidden writes never reach the real API", async
   } finally { await new Promise(resolve => server.close(resolve)); }
 });
 
+test("goal fixtures preserve match/scope, enforce plans and remove main selections without upstream writes", async () => {
+  const forwarded = [];
+  const server = createFixtureApi(async (url, options) => {
+    forwarded.push({ url, method: options.method });
+    return Response.json(url.includes("/api/account") ? { sites: [{ key: "owned", name: "Original" }] } : { goals: [], main_goals: [], cap: 20, form_goals: false });
+  });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const call = (path, method = "GET", body) => fetch(`${origin}${path}${path.includes("?") ? "&" : "?"}site_key=owned`, { method, ...(body ? { body: JSON.stringify(body) } : {}) });
+  try {
+    await fetch(`${origin}/api/account`, { method: "POST" });
+    assert.equal((await fetch(`${origin}/api/goals?site_key=unowned`)).status, 403);
+    assert.equal((await call("/api/goals")).status, 200);
+    assert.equal((await call("/api/goals", "POST", { name: "Form", type: "form", match: { name: "newsletter" } })).status, 403);
+    assert.equal((await call("/api/goals", "POST", { name: "Invalid", type: "click", match: { text: "Buy" }, target: 0 })).status, 400);
+    const input = { name: "Fixture retry goal", type: "click", match: { text: "Buy" }, pages: ["https://example.com/"], target: 0.05 };
+    assert.equal((await call("/api/goals", "POST", input)).status, 503);
+    const added = await (await call("/api/goals", "POST", input)).json();
+    assert.equal(added.backfill, "queued");
+    const edited = await (await call(`/api/goals/${added.id}`, "PATCH", { name: "Renamed", target: null })).json();
+    assert.equal(edited.target, null);
+    assert.deepEqual(edited.match, added.match);
+    assert.deepEqual(edited.pages, input.pages);
+    assert.equal((await call("/api/main-goal", "PUT", { page: input.pages[0], goal: "missing" })).status, 404);
+    await call("/api/main-goal", "PUT", { page: input.pages[0], goal: added.id });
+    const pageGoal = { name: "Checkout", type: "page", match: { page: "https://example.com/thanks" } };
+    assert.equal((await call("/api/goals", "POST", pageGoal)).status, 201);
+    assert.equal((await call("/api/goals", "POST", pageGoal)).status, 400);
+    await call(`/api/goals/${added.id}`, "DELETE");
+    const list = await (await call("/api/goals")).json();
+    assert.equal(list.goals.length, 1);
+    assert.deepEqual(list.main_goals, []);
+    assert.deepEqual(forwarded.map(value => value.method), ["POST", "GET"]);
+    assert.ok(forwarded[0].url.endsWith("/api/account"));
+    assert.ok(forwarded[1].url.includes("/api/goals?site_key=owned"));
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
 test("website fixtures support retry, limits, ownership and last-site replacement without real writes", async () => {
   const forwarded = [];
   const initial = [{ key: "owned", name: "Original", url: null, domain: null }];
