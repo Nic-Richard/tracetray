@@ -1,3 +1,4 @@
+import { useRef, type ComponentRef } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,6 +19,8 @@ export default function PageScreen() {
   const { account } = useSite();
   const { styles, colors } = useTheme();
   const api = useApi();
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const groupTop = useRef(0);
   const selectedSite = account.sites.find(value => value.key === siteKey);
   const result = useLoad(async () => {
     if (!selectedSite || !page) throw new Error("Choose a page from one of your websites.");
@@ -33,14 +36,14 @@ export default function PageScreen() {
   const analyzed = visitCount(analysis, "desktop") + visitCount(analysis, "mobile");
   const inactiveShare = analysis?.inactive_count != null && analyzed ? inactive / analyzed : null;
   return <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
-    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={result.loading} onRefresh={result.reload} tintColor={colors.accent} />}>
+    <ScrollView ref={scroll} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={result.loading} onRefresh={result.reload} tintColor={colors.accent} />}>
       <View style={{ gap: 6 }}><Text style={styles.muted}>{selectedSite?.name}</Text><Text style={styles.title}>{pageLabel(page)}</Text><Text style={styles.muted}>{pagePath(page)}</Text></View>
       <Pressable style={styles.button} onPress={() => router.push({ pathname: "/trends", params: { page, site: siteKey } })}><Text style={styles.buttonText}>View trends</Text></Pressable>
       <Pressable style={styles.button} onPress={() => router.push({ pathname: "/attention", params: { page, site: siteKey } })}><Text style={styles.buttonText}>View attention</Text></Pressable>
       <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/changes", params: { page, site: siteKey } })}><Text style={styles.buttonText}>Before and after a change</Text></Pressable>
       <Pressable style={styles.button} onPress={() => router.push({ pathname: "/ask", params: { site: siteKey, q: `What could help visitors reach the goal on ${pageLabel(page)} (${pagePath(page)})?`.slice(0, 500) } })}><Text style={styles.buttonText}>Ask about this page</Text></Pressable>
       <Pressable onPress={() => router.push({ pathname: "/report", params: { site: siteKey, page } })} style={{ paddingVertical: 12 }} accessibilityRole="button"><Text style={styles.link}>Report a problem on this page</Text></Pressable>
-      {isPageGroup(page) ? <GroupPages key={`${siteKey}:${page}`} page={page} site={siteKey} /> : null}
+      {isPageGroup(page) ? <View onLayout={event => { groupTop.current = event.nativeEvent.layout.y; }}><GroupPages key={`${siteKey}:${page}`} page={page} site={siteKey} onPageChange={() => scroll.current?.scrollTo({ y: groupTop.current, animated: false })} /></View> : null}
       <View style={styles.panel}>
         <Text style={styles.heading}>Last 30 days</Text>
         <View style={styles.wrap}>

@@ -217,7 +217,12 @@ native cards show journey counts, drop-offs and device splits. Web/app share rat
 calculations. Empty/error/plan/limit fixture coverage and validation are tracked in
 the local changelog; real path writes and physical-phone checks remain unverified.
 
-Next: empty/error page/form pickers and production plan UI still need native QA.
-Pagination and plan
-limits exist for group members but were not exercised on Android: the QA group has 24
-members. Physical-phone and production-auth checks remain outstanding.
+Goal form selection now follows form identity when refreshed lists reorder. Page/form
+load failures stay beside their picker with a retry control; empty lists explain how to
+start collecting data. Restricted form goals remain disabled.
+Group pagination returns to the group heading and recovers when page counts shrink.
+Android fixture checks cover 58 members, search, sorting, periods, retry, empty groups
+and restricted-plan previews. These checks simulate plan responses; production plans,
+physical-phone and production-auth checks remain outstanding.
+
+Next: release assets/configuration, production authentication and physical-phone QA.

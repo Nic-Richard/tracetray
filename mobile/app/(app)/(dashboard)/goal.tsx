@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { describeGoal, formLabel, pageLabel, pagePath, parseGoalTarget, type Goal, type GoalList, type GoalType } from "@tracetray/shared";
+import { describeGoal, formLabel, pageLabel, pagePath, parseGoalTarget, type FormSeen, type Goal, type GoalList, type GoalType } from "@tracetray/shared";
 import ChoicePicker from "../../../components/ChoicePicker";
-import { Failure, Loading } from "../../../components/Status";
+import { Failure, InlineFailure, Loading } from "../../../components/Status";
 import { useApi } from "../../../lib/api";
 import { useSite } from "../../../lib/site";
 import { useLoad } from "../../../lib/useLoad";
 import { useTheme } from "../../../lib/theme";
+
+const formKey = (form: FormSeen) => JSON.stringify([form.id, form.name, form.action, form.page]);
 
 function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string; goal?: Goal; list: GoalList }) {
   const api = useApi();
@@ -33,7 +35,7 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
     if (pending.current) return;
     const aim = goal && target === initialTarget ? { target: goal.target ?? null } : parseGoalTarget(target);
     if (aim.error) { setError(aim.error); return; }
-    const chosen = forms.data?.find((_, index) => String(index) === form);
+    const chosen = forms.data?.find(value => formKey(value) === form);
     if (goal && !name.trim()) { setError("Give the goal a name."); return; }
     if (!goal && (type === "click" ? !text.trim() : type === "page" ? !pages.data?.some(value => value.page === destination) : !list.form_goals || !chosen)) { setError("Choose what counts as reaching this goal."); return; }
     pending.current = true; setBusy(true); setError(""); Keyboard.dismiss();
@@ -56,10 +58,10 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
         {([{ type: "click", label: "Click a button or link" }, { type: "page", label: "Go on to a page" }, { type: "form", label: `Send a form${list.form_goals ? "" : " (Ultra)"}` }] as const).map(choice => <Pressable key={choice.type} accessibilityRole="radio" accessibilityState={{ checked: type === choice.type, disabled: busy || (choice.type === "form" && !list.form_goals) }} disabled={busy || (choice.type === "form" && !list.form_goals)} style={[styles.panel, { paddingVertical: 12, borderColor: choice.type === type ? colors.accent : colors.line, opacity: choice.type === "form" && !list.form_goals ? 0.5 : 1 }]} onPress={() => setType(choice.type)}><Text style={type === choice.type ? styles.link : styles.text}>{choice.label}</Text></Pressable>)}
         {type === "click" ? <><Text style={styles.text}>Button or link text</Text><TextInput accessibilityLabel="Button or link text" value={text} onChangeText={setText} editable={!busy} maxLength={80} style={styles.input} placeholder="Start free trial" placeholderTextColor={colors.muted} /><Text style={styles.muted}>Matches this text exactly, ignoring case and extra spaces.</Text></> : type === "page" ? <>
           <Text style={styles.text}>Destination page</Text>
-          {pages.error ? <Failure message={pages.error} retry={pages.reload} /> : pages.loading ? <Text style={styles.muted}>Loading pages…</Text> : pages.data?.length ? <ChoicePicker label="Destination page" value={destination} disabled={busy} choices={pages.data.map(value => ({ key: value.page, label: pageLabel(value.page), detail: value.page }))} onChange={setDestination} /> : <Text style={styles.muted}>No pages tracked yet. Install the tracking code and visit your website first.</Text>}
+          {pages.error ? <InlineFailure message={pages.error} retry={pages.reload} /> : pages.loading ? <Text style={styles.muted}>Loading pages…</Text> : pages.data?.length ? <ChoicePicker label="Destination page" value={destination} disabled={busy} choices={pages.data.map(value => ({ key: value.page, label: pageLabel(value.page), detail: value.page }))} onChange={setDestination} /> : <Text style={styles.muted}>No pages tracked yet. Install the tracking code and visit your website first.</Text>}
         </> : <>
           <Text style={styles.text}>Form sent in the last 30 days</Text>
-          {forms.error ? <Failure message={forms.error} retry={forms.reload} /> : forms.loading ? <Text style={styles.muted}>Loading forms…</Text> : forms.data?.length ? <ChoicePicker label="Form" value={form} disabled={busy} choices={forms.data.map((value, index) => ({ key: String(index), label: formLabel(value), detail: `Sent ${value.sent.toLocaleString()} times · ${pagePath(value.page)}` }))} onChange={setForm} /> : <Text style={styles.muted}>No forms sent in the last 30 days. Send the form on your website first.</Text>}
+          {forms.error ? <InlineFailure message={forms.error} retry={forms.reload} /> : forms.loading ? <Text style={styles.muted}>Loading forms…</Text> : forms.data?.length ? <ChoicePicker label="Form" value={form} disabled={busy} choices={forms.data.map(value => ({ key: formKey(value), label: formLabel(value), detail: `Sent ${value.sent.toLocaleString()} times · ${pagePath(value.page)}` }))} onChange={setForm} /> : <Text style={styles.muted}>No forms sent in the last 30 days. Send the form on your website first.</Text>}
         </>}
         {page ? <View style={styles.panel}><Text style={styles.text}>Where should it count?</Text>{[true, false].map(value => <Pressable key={String(value)} accessibilityRole="radio" accessibilityState={{ checked: scoped === value }} disabled={busy} onPress={() => setScoped(value)} style={{ paddingVertical: 12 }}><Text style={scoped === value ? styles.link : styles.text}>{value ? `Only ${pagePath(page)}` : "All pages"}{scoped === value ? " · Selected" : ""}</Text></Pressable>)}</View> : <Text style={styles.muted}>This goal counts across all pages. Add it from a page's overview to count only on that page.</Text>}
       </>}

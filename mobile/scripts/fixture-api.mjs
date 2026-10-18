@@ -18,7 +18,7 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, emailMode = "normal", deletionMode = "normal", comparisonMode = "normal", pathMode = "normal" } = {}) {
+export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, emailMode = "normal", deletionMode = "normal", comparisonMode = "normal", pathMode = "normal", pickerMode = "normal", memberMode = "normal" } = {}) {
   let deletion = { state: "none" };
   let deletionAttempts = 0;
   const questions = [];
@@ -33,6 +33,10 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
   const pathWrites = [];
   const pathReads = [];
   const pageLists = new Map();
+  const memberReads = [];
+  let memberShrunk = false;
+  let formReads = 0;
+  let pickerPageReads = 0;
   const emailChanges = [];
   let emailReads = 0;
   const emailPrefs = { weekly_summary: false, shift_alerts: false, available: { weekly_summary: true, shift_alerts: emailMode !== "limited" } };
@@ -44,6 +48,28 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
     try {
       const url = new URL(request.url, "http://localhost");
       const path = url.pathname;
+      if (request.method === "GET" && path === "/api/pages/members" && memberMode !== "normal") {
+        const key = url.searchParams.get("site_key");
+        if (!websites?.some(site => site.key === key)) return reply(403, { error: "website not available" });
+        memberReads.push(Object.fromEntries(url.searchParams));
+        if (memberMode === "retry" && memberReads.length === 1) return reply(503, { error: "fixture group unavailable" });
+        const limited = memberMode === "limited";
+        const query = limited ? "" : (url.searchParams.get("q") || "").toLowerCase();
+        const offset = limited ? 0 : Math.max(0, Number(url.searchParams.get("offset")) || 0);
+        const limit = limited ? 10 : Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 25));
+        if (memberMode === "shrink" && offset >= 50) memberShrunk = true;
+        const count = memberMode === "empty" ? 0 : memberShrunk ? 26 : 58;
+        const days = Number(url.searchParams.get("days")) || 90;
+        const rows = Array.from({ length: count }, (_, index) => ({ path: `/products/pack-${String(index + 1).padStart(2, "0")}`, sessions: (100 - index) * days, desktop: (60 - index) * days, mobile: 40 * days, clicks: (index + 1) * days, last_day: "2026-10-18" })).filter(row => row.path.includes(query));
+        rows.sort((a, b) => url.searchParams.get("sort") === "clicks" ? b.clicks - a.clicks : b.sessions - a.sessions);
+        return reply(200, { total: rows.length, rows: rows.slice(offset, offset + limit), limited });
+      }
+      if (request.method === "GET" && path === "/api/pages" && ["empty-pages", "pages-error"].includes(pickerMode)) {
+        if (!websites?.some(site => site.key === url.searchParams.get("site_key"))) return reply(403, { error: "website not available" });
+        if (pickerMode === "empty-pages") return reply(200, []);
+        // Home reads the inventory before the goal picker opens.
+        if (++pickerPageReads === 2) return reply(503, { error: "fixture picker pages unavailable" });
+      }
       if (path.startsWith("/api/") && !["/api/config", "/api/account-deletion"].includes(path) && deletion.state !== "none") return reply(410, { error: "Account deletion has been requested.", account_deleting: true });
       const pathId = /^\/api\/paths\/([^/]+)$/.exec(path)?.[1];
       if (path === "/api/paths" || pathId) {
@@ -146,7 +172,7 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
         deletion = { state: deletionMode === "retrying" ? "retrying" : "pending", requested_at: new Date().toISOString() };
         return reply(202, deletion);
       }
-      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists), changeWrites, changeLists: Object.fromEntries(changeLists), pathWrites, pathReads, pathLists: Object.fromEntries(pathLists), pageLists: Object.fromEntries(pageLists), emailChanges, emailPrefs, emailReads });
+      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists), changeWrites, changeLists: Object.fromEntries(changeLists), pathWrites, pathReads, pathLists: Object.fromEntries(pathLists), pageLists: Object.fromEntries(pageLists), memberReads, formReads, emailChanges, emailPrefs, emailReads });
       if (path === "/api/email-prefs") {
         if (request.method === "GET") {
           emailReads++;
@@ -171,7 +197,13 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
         if (!websites) return reply(409, { error: "load the fixture account first" });
         if (!websites.some(site => site.key === siteKey)) return reply(403, { error: "website not available" });
         const list = goalLists.get(siteKey);
-        if (request.method === "GET" && path === "/api/forms") return reply(200, [{ id: "fixture-newsletter", name: "newsletter", action: "/subscribe", sent: 12, page: "https://example.com/" }]);
+        if (request.method === "GET" && path === "/api/forms") {
+          formReads++;
+          if (pickerMode === "empty-forms") return reply(200, []);
+          if (pickerMode === "forms-error" && formReads === 1) return reply(503, { error: "fixture forms unavailable" });
+          const forms = [{ id: "fixture-newsletter", name: "newsletter", action: "/subscribe", sent: 12, page: "https://example.com/" }, { id: "fixture-contact", name: "contact", action: "/contact", sent: 5, page: "https://example.com/contact" }];
+          return reply(200, pickerMode === "reordered-forms" && formReads > 1 ? forms.reverse() : forms);
+        }
         if (request.method === "GET" && path === "/api/goals" && list) return reply(200, list);
         if (request.method !== "GET") {
           if (!list) return reply(409, { error: "load the fixture goals first" });
@@ -291,6 +323,7 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
       if (request.method === "GET" && path === "/api/goals" && upstream.ok) {
         const list = await upstream.json();
         list.cap = list.goals.length + 2;
+        if (pickerMode === "limited") list.form_goals = false;
         goalLists.set(siteKey, list);
         return reply(200, list);
       }
@@ -308,5 +341,5 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const configDelayMs = Math.min(30_000, Math.max(0, Number(process.env.FIXTURE_CONFIG_DELAY_MS) || 0));
-  createFixtureApi(fetch, { configDelayMs, emailMode: process.env.FIXTURE_EMAIL_MODE, deletionMode: process.env.FIXTURE_DELETION_MODE, comparisonMode: process.env.FIXTURE_COMPARISON_MODE, pathMode: process.env.FIXTURE_PATH_MODE }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; dashboard writes are mocked and other writes are blocked."));
+  createFixtureApi(fetch, { configDelayMs, emailMode: process.env.FIXTURE_EMAIL_MODE, deletionMode: process.env.FIXTURE_DELETION_MODE, comparisonMode: process.env.FIXTURE_COMPARISON_MODE, pathMode: process.env.FIXTURE_PATH_MODE, pickerMode: process.env.FIXTURE_PICKER_MODE, memberMode: process.env.FIXTURE_MEMBER_MODE }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; dashboard writes are mocked and other writes are blocked."));
 }

@@ -256,3 +256,68 @@ test("website fixtures support retry, limits, ownership and last-site replacemen
     assert.ok(forwarded.every(value => value.url.endsWith("/api/account")));
   } finally { await new Promise(resolve => server.close(resolve)); }
 });
+
+test("group fixtures cover pagination, search, sorting, periods, shrinking totals and restricted previews", async () => {
+  for (const memberMode of ["paged", "retry", "shrink", "limited", "empty"]) {
+    const server = createFixtureApi(async () => Response.json({ sites: [{ key: "owned" }] }), { memberMode });
+    await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+    const origin = `http://127.0.0.1:${server.address().port}`;
+    const read = query => fetch(`${origin}/api/pages/members?site_key=owned&page=/products/:product&${query}`);
+    try {
+      await fetch(origin + "/api/account", { method: "POST" });
+      assert.equal((await fetch(origin + "/api/pages/members?site_key=other")).status, 403);
+      let response = await read("limit=25&days=7");
+      if (memberMode === "retry") { assert.equal(response.status, 503); response = await read("limit=25&days=7"); }
+      const first = await response.json();
+      if (memberMode === "empty") { assert.equal(first.total, 0); assert.deepEqual(first.rows, []); continue; }
+      if (memberMode === "limited") {
+        assert.equal(first.limited, true); assert.equal(first.rows.length, 10);
+        assert.deepEqual((await (await read("q=missing&offset=50&days=7")).json()).rows, first.rows); continue;
+      }
+      assert.equal(first.rows.length, 25); assert.equal(first.rows[0].path, "/products/pack-01");
+      const second = await (await read("offset=25&limit=25&days=7")).json();
+      assert.equal(second.rows[0].path, "/products/pack-26");
+      const last = await (await read("offset=50&limit=25")).json();
+      if (memberMode === "shrink") {
+        assert.equal(last.total, 26); assert.equal(last.rows.length, 0);
+        assert.equal((await (await read("offset=25")).json()).rows.length, 1); continue;
+      }
+      assert.equal(last.rows.length, 8);
+      const filtered = await (await read("q=pack-58&sort=clicks&days=30")).json();
+      assert.equal(filtered.total, 1); assert.equal(filtered.rows[0].clicks, 58 * 30);
+      assert.equal((await (await read("sort=clicks")).json()).rows[0].path, "/products/pack-58");
+      assert.deepEqual((await (await read("q=missing")).json()).rows, []);
+    } finally { await new Promise(resolve => server.close(resolve)); }
+  }
+});
+
+test("goal picker fixtures recover reads, cover empty and restricted lists, and reorder forms without writes", async () => {
+  for (const pickerMode of ["empty-pages", "pages-error", "empty-forms", "forms-error", "reordered-forms", "limited"]) {
+    const calls = [];
+    const server = createFixtureApi(async (url, init) => {
+      calls.push([url, init.method]);
+      if (url.endsWith("/api/account")) return Response.json({ sites: [{ key: "owned" }] });
+      if (url.includes("/api/goals")) return Response.json({ goals: [], main_goals: [], form_goals: true });
+      if (url.includes("/api/pages")) return Response.json([{ page: "https://example.com/" }]);
+      throw new Error("Unexpected upstream read");
+    }, { pickerMode });
+    await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+    const origin = `http://127.0.0.1:${server.address().port}`;
+    const read = path => fetch(`${origin}/api/${path}?site_key=owned`);
+    try {
+      await fetch(origin + "/api/account", { method: "POST" });
+      const goals = await (await read("goals")).json();
+      assert.equal(goals.form_goals, pickerMode !== "limited");
+      const path = pickerMode.includes("pages") ? "pages" : "forms";
+      if (pickerMode === "pages-error") assert.equal((await read(path)).status, 200);
+      let response = await read(path);
+      if (pickerMode.endsWith("error")) { assert.equal(response.status, 503); response = await read(path); }
+      const rows = await response.json();
+      if (pickerMode.startsWith("empty")) assert.deepEqual(rows, []);
+      else assert.ok(rows.length > 0);
+      if (pickerMode === "reordered-forms") assert.deepEqual((await (await read("forms")).json()).map(row => row.id), [...rows].reverse().map(row => row.id));
+      assert.equal((await fetch(origin + "/api/forms?site_key=other")).status, 403);
+      assert.ok(calls.every(([url, method]) => method === "GET" || url.endsWith("/api/account")));
+    } finally { await new Promise(resolve => server.close(resolve)); }
+  }
+});
