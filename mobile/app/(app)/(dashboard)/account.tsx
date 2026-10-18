@@ -7,6 +7,9 @@ import { useApi } from "../../../lib/api";
 import { useSite } from "../../../lib/site";
 import { useLoad } from "../../../lib/useLoad";
 import { useTheme } from "../../../lib/theme";
+import ActionRow from "../../../components/ActionRow";
+import Icon from "../../../components/Icon";
+import AppearancePicker from "../../../components/AppearancePicker";
 
 const MEASURES: { key: keyof Omit<Usage, "month">; label: string; color: number }[] = [
   { key: "visits", label: "Visits", color: 0 }, { key: "pages", label: "Pages tracked", color: 1 },
@@ -56,30 +59,36 @@ export default function AccountScreen() {
     ]);
   }
   function open(url: string) { Linking.openURL(url).catch(() => Alert.alert("Couldn't open the page", "Try again.")); }
-  return <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
+  return <SafeAreaView style={styles.screen} edges={["left", "right"]}>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={result.loading} onRefresh={result.reload} tintColor={colors.accent} />}>
-      <View style={{ gap: 8 }}><Text style={styles.title}>Your account</Text>{user?.primaryEmailAddress ? <Text selectable style={styles.muted}>{user.primaryEmailAddress.emailAddress}</Text> : null}</View>
+      <View style={[styles.row, { justifyContent: "flex-start" }]}><View style={[styles.iconTile, { width: 54, height: 54, borderRadius: 18 }]}><Icon name="account" color={colors.accent} size={26} /></View><View style={{ flex: 1, gap: 4 }}><Text style={styles.heading}>{user?.fullName || "Your account"}</Text>{user?.primaryEmailAddress ? <Text selectable style={styles.muted}>{user.primaryEmailAddress.emailAddress}</Text> : null}</View></View>
       {result.data ? <UsageCard data={result.data} /> : <View style={styles.panel}>
         <Text style={styles.heading}>Plan and usage</Text>
         {result.error ? <><Text style={styles.error}>{result.error}</Text><Pressable accessibilityRole="button" onPress={result.reload} style={{ paddingVertical: 12 }}><Text style={styles.link}>Try again</Text></Pressable></> : <ActivityIndicator color={colors.accent} />}
       </View>}
-      <View style={styles.panel}>
-        <Text style={styles.heading}>Your websites</Text>
-        <Text style={styles.muted}>Add or rename a website, get its installation code, or remove its data.</Text>
-        <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push("/websites")}><Text style={styles.buttonText}>Manage websites</Text></Pressable>
+      <View style={{ gap: 10 }}>
+        <Text style={styles.eyebrow}>Preferences</Text>
+        <AppearancePicker />
+        <View style={[styles.panel, { paddingVertical: 4, gap: 0 }]}>
+          <ActionRow icon="goals" title="Plan and billing" detail="Subscription, plan allowances and usage" onPress={() => router.push("/billing")} />
+          <View style={styles.divider} />
+          <ActionRow icon="pages" title="Your websites" detail="Manage websites and installation" onPress={() => router.push("/websites")} />
+          <View style={styles.divider} />
+          {site ? <><ActionRow icon="setup" title="Installation snippet" detail={site.name} onPress={() => router.push({ pathname: "/installation", params: { site: site.key } })} /><View style={styles.divider} /></> : null}
+          <ActionRow icon="sessions" title="Email preferences" detail="Weekly summaries and behaviour alerts" onPress={() => router.push("/emails")} />
+        </View>
       </View>
-      <View style={styles.panel}>
-        <Text style={styles.heading}>Emails</Text>
-        <Text style={styles.muted}>Choose your weekly summaries and behaviour-shift alerts.</Text>
-        <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push("/emails")}><Text style={styles.buttonText}>Email preferences</Text></Pressable>
+      <View style={{ gap: 10 }}>
+        <Text style={styles.eyebrow}>Help and information</Text>
+        <View style={[styles.panel, { paddingVertical: 4, gap: 0 }]}>
+          {site ? <><ActionRow icon="bug" title="Report a problem" onPress={() => router.push({ pathname: "/report", params: { site: site.key } })} /><View style={styles.divider} /></> : null}
+          <ActionRow icon="lock" title="Privacy policy" onPress={() => open("https://tracetray.com/privacy")} />
+          <View style={styles.divider} />
+          <ActionRow icon="sessions" title="Terms of service" onPress={() => open("https://tracetray.com/terms")} />
+        </View>
       </View>
-      <View style={styles.panel}>
-        <Text style={styles.heading}>Help and information</Text>
-        {site ? <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/report", params: { site: site.key } })}><Text style={styles.buttonText}>Report a problem</Text></Pressable> : <Text style={styles.muted}>Choose a website to attach a problem report.</Text>}
-        <View style={styles.wrap}><Pressable accessibilityRole="link" onPress={() => open("https://tracetray.com/privacy")} style={{ paddingVertical: 12 }}><Text style={styles.link}>Privacy</Text></Pressable><Pressable accessibilityRole="link" onPress={() => open("https://tracetray.com/terms")} style={{ paddingVertical: 12 }}><Text style={styles.link}>Terms</Text></Pressable></View>
-      </View>
-      <Pressable accessibilityRole="button" onPress={confirmSignOut} style={styles.button}><Text style={styles.buttonText}>Sign out</Text></Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push("/delete-account")} style={[styles.button, { backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line }]}><Text style={[styles.buttonText, { color: colors.danger }]}>Delete account</Text></Pressable>
+      <Pressable accessibilityRole="button" onPress={confirmSignOut} style={styles.secondaryButton}><Text style={styles.link}>Sign out</Text></Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push("/delete-account")} style={{ minHeight: 48, alignItems: "center", justifyContent: "center" }}><Text style={[styles.link, { color: colors.danger }]}>Delete account</Text></Pressable>
     </ScrollView>
   </SafeAreaView>;
 }

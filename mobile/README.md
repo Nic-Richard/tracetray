@@ -1,5 +1,24 @@
 # TraceTray mobile
 
+The native UI uses the desktop dashboard's Instrument Sans, palette, buttons and panel styling.
+Pages, Journeys, Ask and Account have persistent bottom navigation, hidden while typing
+and on detail screens. The website picker opens a sheet; page details lead with their
+30-day measurements, followed by exploration links, goals and analysis. Account settings
+use grouped rows. Account offers remembered System/Light/Dark appearance and system text sizing.
+`npm run brand -w mobile` also regenerates native icons from the web icon artwork.
+
+Page controls support Refresh analysis, Refresh all eligible pages and confirmed history
+clearing through the existing scoped permits/quotas and reset API. Pull-to-refresh reloads
+displayed data; it does not run analysis. Freshness labels distinguish saved analysis from
+traffic and goals. Advanced analysis bundles the desktop DetailsTab, including horizontal
+tables and statistical notes. Journeys and Ask also offer website switching. Installation
+code is directly available from Pages and Account, with selection/copy and sharing.
+
+Plan and billing displays usage, subscription dates/status and server-provided plan allowances.
+Purchases and billing changes stay on the web; the app has no checkout or payment links.
+The extra optional `/api/usage` fields require the matching server deployment. Existing
+servers still provide the current plan and usage; unavailable subscription details remain explicit.
+
 Expo 58 / React Native 0.88 with Expo Router, Clerk native email sign-in and secure token
 storage. The app uses `@tracetray/shared` and the existing server. Its current screens
 cover website selection, page search and page overviews with visits, goal rates,
@@ -54,6 +73,11 @@ Start Docker, then run `npm run fixtures -w mobile` in a separate terminal. This
 API listens on `127.0.0.1:5001`; it forwards selected dashboard reads/account lookup to
 Docker and mocks every Ask, problem-report and website-management request. Other writes, including
 analysis and checkout, are blocked. The tests verify that paid routes never reach the upstream API.
+Read-only trends, attention pictures and recent visits are available through the guard.
+Set `FIXTURE_ANALYSIS_MODE=normal` to mock analysis permits/runs and history clearing entirely
+in memory. `retry` fails the first write and `limit` refuses permits. The default keeps these
+writes blocked. `/__fixtures` includes `analysisWrites`; no mock action invokes the real
+analysis runner or deletes database data. Restart fixtures to discard simulated changes.
 
 For the Android emulator, start Metro with `EXPO_PUBLIC_API_URL=http://10.0.2.2:5001`.
 Use the normal development Clerk login. Ordinary questions get a deterministic answer;
@@ -95,6 +119,7 @@ fetches owned-site data through Clerk and passes only display data and the theme
 WebView. The surface has no API bridge, session tokens, remote assets or network access;
 its messages only report readiness, height and display failures. Navigation is blocked.
 
+Advanced analysis bundles the desktop `DetailsTab` through the same restricted bridge.
 Attention also bundles the existing `AttentionContent` and `PagePicture` components.
 Native code fetches authenticated pictures and converts the image blobs to in-memory
 data URLs; the WebView never receives the Clerk token. Image types/size are checked,

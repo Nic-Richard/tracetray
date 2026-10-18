@@ -9,7 +9,7 @@ for (const [weight, name] of [[400, "Regular"], [600, "SemiBold"], [700, "Bold"]
   const bytes = await readFile(resolve(mobile, `../node_modules/@expo-google-fonts/instrument-sans/${weight}${name}/InstrumentSans_${weight}${name}.ttf`));
   fonts += `@font-face{font-family:'Instrument Sans';font-weight:${weight};src:url(data:font/ttf;base64,${bytes.toString("base64")})}`;
 }
-for (const name of ["trends", "attention"]) {
+for (const name of ["trends", "attention", "advanced"]) {
   const result = await build({
     entryPoints: [resolve(mobile, `surfaces/${name}.tsx`)],
     bundle: true, write: false, outdir: "out", minify: true,

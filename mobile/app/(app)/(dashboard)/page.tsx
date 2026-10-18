@@ -11,6 +11,8 @@ import { useTheme } from "../../../lib/theme";
 import { Failure, Loading } from "../../../components/Status";
 import VisitorGroups, { Suggestions } from "../../../components/VisitorGroups";
 import GroupPages from "../../../components/GroupPages";
+import ActionRow from "../../../components/ActionRow";
+import { useAnalysisActions } from "../../../lib/useAnalysisActions";
 
 export default function PageScreen() {
   const params = useLocalSearchParams<{ page?: string | string[]; site?: string | string[] }>();
@@ -27,6 +29,7 @@ export default function PageScreen() {
     const [stats, visits, goals] = await Promise.all([api.stats(selectedSite.key, page), api.timeseries(selectedSite.key, page, 30), api.goalRates(selectedSite.key, page)]);
     return { stats, visits, goals };
   }, [api, selectedSite?.key, page]);
+  const actions = useAnalysisActions(siteKey, page, result.reload);
   useRefreshOnFocus(result.reload);
   if (result.error) return <Failure message={result.error} retry={result.reload} />;
   if (!result.data) return <Loading />;
@@ -38,18 +41,29 @@ export default function PageScreen() {
   return <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
     <ScrollView ref={scroll} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={result.loading} onRefresh={result.reload} tintColor={colors.accent} />}>
       <View style={{ gap: 6 }}><Text style={styles.muted}>{selectedSite?.name}</Text><Text style={styles.title}>{pageLabel(page)}</Text><Text style={styles.muted}>{pagePath(page)}</Text></View>
-      <Pressable style={styles.button} onPress={() => router.push({ pathname: "/trends", params: { page, site: siteKey } })}><Text style={styles.buttonText}>View trends</Text></Pressable>
-      <Pressable style={styles.button} onPress={() => router.push({ pathname: "/attention", params: { page, site: siteKey } })}><Text style={styles.buttonText}>View attention</Text></Pressable>
-      <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/changes", params: { page, site: siteKey } })}><Text style={styles.buttonText}>Before and after a change</Text></Pressable>
-      <Pressable style={styles.button} onPress={() => router.push({ pathname: "/ask", params: { site: siteKey, q: `What could help visitors reach the goal on ${pageLabel(page)} (${pagePath(page)})?`.slice(0, 500) } })}><Text style={styles.buttonText}>Ask about this page</Text></Pressable>
-      <Pressable onPress={() => router.push({ pathname: "/report", params: { site: siteKey, page } })} style={{ paddingVertical: 12 }} accessibilityRole="button"><Text style={styles.link}>Report a problem on this page</Text></Pressable>
-      {isPageGroup(page) ? <View onLayout={event => { groupTop.current = event.nativeEvent.layout.y; }}><GroupPages key={`${siteKey}:${page}`} page={page} site={siteKey} onPageChange={() => scroll.current?.scrollTo({ y: groupTop.current, animated: false })} /></View> : null}
+      <View style={{ gap: 12 }}>
+        <Text style={styles.muted}>{analysis ? `Analysis updated ${timeAgo(analysis.ran_at)}. Traffic and goal figures update separately.` : "No analysis yet. Refresh to find visitor groups and suggestions."}</Text>
+        <View style={styles.row}>
+          <Pressable accessibilityRole="button" disabled={actions.busy} onPress={actions.refresh} style={[styles.button, { flex: 1, opacity: actions.busy ? 0.5 : 1 }]}><Text style={styles.buttonText}>{actions.busy ? "Working…" : "Refresh analysis"}</Text></Pressable>
+          <Pressable accessibilityRole="button" disabled={actions.busy} onPress={actions.more} style={styles.secondaryButton}><Text style={styles.link}>More</Text></Pressable>
+        </View>
+        {actions.status ? <Text accessibilityLiveRegion="polite" style={actions.status.error ? styles.error : styles.muted}>{actions.status.text}</Text> : null}
+      </View>
       <View style={styles.panel}>
-        <Text style={styles.heading}>Last 30 days</Text>
+        <Text style={styles.eyebrow}>Last 30 days</Text>
         <View style={styles.wrap}>
           <View style={styles.stat}><Text style={styles.number}>{compactNumber(visits.total_sessions)}</Text><Text style={styles.muted}>Visits</Text></View>
           <View style={styles.stat}><Text style={styles.number}>{visits.total_sessions ? percent(visits.engagement_rate) : "–"}</Text><Text style={styles.muted}>Engaged</Text></View>
         </View>
+      </View>
+      <View style={[styles.panel, { paddingVertical: 4, gap: 0 }]}>
+        <ActionRow icon="trends" title="Trends" detail="Traffic, goals and behaviour over time" onPress={() => router.push({ pathname: "/trends", params: { page, site: siteKey } })} />
+        <View style={styles.divider} />
+        <ActionRow icon="attention" title="Attention" detail="See where visitors look and interact" onPress={() => router.push({ pathname: "/attention", params: { page, site: siteKey } })} />
+        <View style={styles.divider} />
+        <ActionRow icon="journeys" title="Before and after" detail="Compare behaviour around a change" onPress={() => router.push({ pathname: "/changes", params: { page, site: siteKey } })} />
+        <View style={styles.divider} />
+        <ActionRow icon="pages" title="Advanced analysis" detail="Feature means, effect sizes and group quality" onPress={() => router.push({ pathname: "/advanced", params: { page, site: siteKey } })} />
       </View>
       <View style={styles.panel}>
         <Text style={styles.heading}>Goals</Text>
@@ -68,6 +82,9 @@ export default function PageScreen() {
       </View>
       {analysis ? <Suggestions result={analysis} /> : null}
       {analysis ? <VisitorGroups result={analysis} /> : null}
+      {isPageGroup(page) ? <View onLayout={event => { groupTop.current = event.nativeEvent.layout.y; }}><GroupPages key={`${siteKey}:${page}`} page={page} site={siteKey} onPageChange={() => scroll.current?.scrollTo({ y: groupTop.current, animated: false })} /></View> : null}
+      <View style={[styles.panel, { paddingVertical: 4 }]}><ActionRow icon="ask" title="Ask about this page" detail="Explore what could help visitors reach a goal" onPress={() => router.push({ pathname: "/ask", params: { site: siteKey, q: `What could help visitors reach the goal on ${pageLabel(page)} (${pagePath(page)})?`.slice(0, 500) } })} /></View>
+      <Pressable onPress={() => router.push({ pathname: "/report", params: { site: siteKey, page } })} style={{ paddingVertical: 12 }} accessibilityRole="button"><Text style={styles.link}>Report a problem on this page</Text></Pressable>
     </ScrollView>
   </SafeAreaView>;
 }

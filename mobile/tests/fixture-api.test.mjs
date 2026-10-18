@@ -2,6 +2,64 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createFixtureApi } from "../scripts/fixture-api.mjs";
 
+test("analysis and history fixtures enforce ownership and permits without forwarding writes", async () => {
+  const calls = [];
+  const server = createFixtureApi(async (url, init) => {
+    calls.push([url, init.method]);
+    if (url.endsWith("/api/account")) return Response.json({ sites: [{ key: "owned" }, { key: "second" }] });
+    if (url.includes("/api/stats")) return Response.json({ total_sessions: 100, last_analysis: { site_key: "owned", page: "/a", ran_at: "2026-01-01", clusters: [] } });
+    if (url.includes("/api/pages")) return Response.json([{ page: "/a" }, { page: "/b" }]);
+    throw Error("Unexpected upstream request");
+  }, { analysisMode: "normal" });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const post = (path, body) => fetch(origin + path, { method: "POST", body: JSON.stringify(body) });
+  try {
+    await post("/api/account", {});
+    assert.equal((await post("/api/analysis-permit?site_key=other", { scope: "page", page_count: 1 })).status, 403);
+    await fetch(origin + "/api/stats?site_key=owned&page=/a");
+    const permit = await (await post("/api/analysis-permit?site_key=owned", { scope: "page", page_count: 1 })).json();
+    assert.equal((await post("/api/run-analysis", { site_key: "second", page: "/a", permit_token: permit.permit_token })).status, 403);
+    const run = await (await post("/api/run-analysis", { site_key: "owned", page: "/a", permit_token: permit.permit_token })).json();
+    assert.notEqual(run.result.ran_at, "2026-01-01");
+    assert.equal((await post("/api/run-analysis", { site_key: "owned", page: "/a", permit_token: permit.permit_token })).status, 403);
+    assert.equal((await post("/api/pages/reset?site_key=other", { page: "/a" })).status, 403);
+    assert.equal((await (await post("/api/pages/reset?site_key=owned", { page: "/a" })).json()).deleted_sessions, 100);
+    const stats = await (await fetch(origin + "/api/stats?site_key=owned&page=/a")).json();
+    assert.equal(stats.total_sessions, 0); assert.equal(stats.last_analysis, null);
+    assert.equal((await (await fetch(origin + "/api/sessions/timeseries?site_key=owned&page=/a")).json()).total_sessions, 0);
+    assert.deepEqual(await (await fetch(origin + "/api/pages?site_key=owned")).json(), [{ page: "/b" }]);
+    assert.deepEqual(calls.map(([, method]) => method), ["POST", "GET", "GET"]);
+    await post("/api/account-deletion", { confirmation: "DELETE" });
+    assert.equal((await fetch(origin + "/api/stats?site_key=owned&page=/a")).status, 410);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test("analytics previews forward reads and image bytes while keeping mutations blocked", async () => {
+  const calls = [];
+  const paths = ["/api/ux-trends", "/api/goal-trend", "/api/attention-profile", "/api/page-shot", "/api/sessions/recent"];
+  const server = createFixtureApi(async (url, init) => {
+    calls.push([url, init.method]);
+    return url.includes("/api/page-shot") ? new Response(new Uint8Array([137, 80, 78, 71]), { headers: { "Content-Type": "image/png" } }) : Response.json({ ok: true });
+  });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  try {
+    for (const path of paths) {
+      const response = await fetch(`${origin}${path}?site_key=owned`);
+      assert.equal(response.status, 200);
+      if (path === "/api/page-shot") {
+        assert.equal(response.headers.get("Content-Type"), "image/png");
+        assert.deepEqual([...new Uint8Array(await response.arrayBuffer())], [137, 80, 78, 71]);
+      }
+      assert.equal((await fetch(origin + path, { method: "POST" })).status, 503);
+    }
+    assert.equal((await fetch(origin + "/api/run-analysis", { method: "POST" })).status, 503);
+    assert.equal(calls.length, paths.length);
+    assert(calls.every(([, method]) => method === "GET"));
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
 test("path fixtures preserve ordered steps, period counts, retries and site ownership without real writes", async () => {
   const calls = [];
   const server = createFixtureApi(async (url, init) => {

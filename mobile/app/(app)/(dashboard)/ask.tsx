@@ -8,6 +8,8 @@ import { useSite } from "../../../lib/site";
 import { useTheme } from "../../../lib/theme";
 import { Failure } from "../../../components/Status";
 import Answer from "../../../components/Answer";
+import Icon from "../../../components/Icon";
+import SitePicker from "../../../components/SitePicker";
 
 function Conversation({ site, question }: { site: Site; question: string }) {
   const api = useApi();
@@ -50,12 +52,13 @@ function Conversation({ site, question }: { site: Site; question: string }) {
       onContentSizeChange={() => { if (entries.length) list.current?.scrollToEnd({ animated: false }); }}
       onLayout={() => { if (entries.length) list.current?.scrollToEnd({ animated: false }); }}>
       <View style={{ gap: 16 }}>
-        <View style={styles.row}><Text style={[styles.heading, { flex: 1 }]}>{site.name}</Text>{entries.length ? <Pressable accessibilityRole="button" disabled={busy} onPress={() => { setEntries([]); setInput(""); list.current?.scrollTo({ y: 0, animated: false }); field.current?.focus(); }} style={{ paddingVertical: 12, opacity: busy ? 0.4 : 1 }}><Text style={styles.link}>Start over</Text></Pressable> : null}</View>
+        <SitePicker siteKey={site.key} onSelect={key => router.setParams({ site: key, q: "" })} />
+        <View style={styles.row}><Text style={[styles.heading, { flex: 1 }]}>Ask about your visitors</Text>{entries.length ? <Pressable accessibilityRole="button" disabled={busy} onPress={() => { setEntries([]); setInput(""); list.current?.scrollTo({ y: 0, animated: false }); field.current?.focus(); }} style={{ paddingVertical: 12, opacity: busy ? 0.4 : 1 }}><Text style={styles.link}>Start over</Text></Pressable> : null}</View>
         <Text style={styles.muted}>Ask about your visitors in plain English. TraceTray looks up pages, traffic, clicks, journeys, goals and past analyses. It doesn't know revenue or who visitors are.</Text>
-        {!entries.length && !question ? ASK_STARTERS.map(starter => <Pressable key={starter} accessibilityRole="button" style={styles.panel} onPress={() => { setInput(starter); field.current?.focus(); }}><Text style={styles.link}>{starter}</Text></Pressable>) : null}
+        {!entries.length && !question ? ASK_STARTERS.map(starter => <Pressable key={starter} accessibilityRole="button" style={({ pressed }) => [styles.panel, styles.row, pressed && styles.pressed]} onPress={() => { setInput(starter); field.current?.focus(); }}><Text style={[styles.text, { flex: 1 }]}>{starter}</Text><Icon name="arrow" size={17} /></Pressable>) : null}
       </View>
       {entries.map((item, index) => <View key={index} style={{ gap: 12 }}>
-        <View style={[styles.panel, { backgroundColor: colors.canvas, marginLeft: 24 }]}><Text style={styles.text}>{item.question}</Text></View>
+        <View style={[styles.panel, { backgroundColor: colors.accentSoft, borderColor: colors.accentSoft, marginLeft: 24 }]}><Text style={styles.text}>{item.question}</Text></View>
         <View style={styles.panel} accessibilityLiveRegion="polite">
           {item.error ? <><Text style={styles.error}>{item.error}</Text>{item.retryable !== false ? <Pressable accessibilityRole="button" disabled={busy} onPress={() => ask(item.question)} style={{ paddingVertical: 12 }}><Text style={styles.link}>Try again</Text></Pressable> : null}</>
             : item.answer ? <><Answer text={item.answer} />{item.lookups?.length ? <Text style={styles.muted}>Looked at {[...new Set(item.lookups)].map(name => ASK_LOOKUPS[name] || name).join(", ")}</Text> : null}</>
@@ -81,5 +84,5 @@ export default function AskScreen() {
   const { styles } = useTheme();
   const site = account.sites.find(value => value.key === siteKey);
   if (!site) return <Failure message="Choose one of your websites." retry={() => router.replace("/")} />;
-  return <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}><Conversation key={site.key} site={site} question={question} /></SafeAreaView>;
+  return <SafeAreaView style={styles.screen} edges={["left", "right"]}><Conversation key={site.key} site={site} question={question} /></SafeAreaView>;
 }

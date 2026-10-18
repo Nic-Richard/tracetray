@@ -35,11 +35,11 @@ export default function VisitorGroups({ result }: { result: AnalysisResult }) {
   const averages = deviceAverages(result, device);
   return <View style={{ gap: 14 }}>
     <Text style={styles.heading}>Who visits</Text>
-    <View style={[styles.row, { justifyContent: "flex-start" }]} accessibilityRole="tablist">
+    <View style={{ flexDirection: "row", padding: 4, gap: 4, backgroundColor: colors.line, borderRadius: 14 }} accessibilityRole="tablist">
       {(["desktop", "mobile"] as const).map(value => <Pressable key={value} accessibilityRole="tab"
         accessibilityState={{ selected: device === value, disabled: visitCount(result, value) === 0 }}
         disabled={visitCount(result, value) === 0} onPress={() => setDevice(value)}
-        style={[styles.panel, { minHeight: 48, paddingVertical: 12, borderColor: device === value ? colors.accent : colors.line, opacity: visitCount(result, value) ? 1 : 0.5 }]}>
+        style={{ flex: 1, alignItems: "center", justifyContent: "center", minHeight: 46, paddingVertical: 10, borderRadius: 11, backgroundColor: device === value ? colors.panel : "transparent", opacity: visitCount(result, value) ? 1 : 0.5 }}>
         <Text style={device === value ? styles.link : styles.muted}>{value === "mobile" ? "Mobile" : "Desktop"}</Text>
       </Pressable>)}
     </View>

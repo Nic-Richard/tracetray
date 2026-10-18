@@ -4,6 +4,9 @@ body { font-family: "Instrument Sans", sans-serif; }
 main { display: grid; gap: 20px; }
 .trend-grid { grid-template-columns: 1fr; }
 .panel { margin: 0; }
+.advanced-surface > .content { padding: 0 20px 20px; display: grid; gap: 20px; }
+.advanced-surface .table-scroll { overflow-x: auto; }
+.advanced-surface .details-table { min-width: 680px; }
 .panel-head { flex-wrap: wrap; gap: 8px; }
 .tab-intro { margin: 0; }
 .attention-surface > .content { padding: 0 20px 20px; display: grid; gap: 20px; }

@@ -4,6 +4,8 @@ import { useHostedAuth } from "@clerk/expo/hosted-auth";
 import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../lib/theme";
+import Brand from "../../components/Brand";
+import Icon from "../../components/Icon";
 
 export default function SignIn() {
   const { startHostedAuth } = useHostedAuth();
@@ -61,19 +63,21 @@ export default function SignIn() {
   }
   return <SafeAreaView style={styles.screen}>
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { justifyContent: "center", gap: 20 }]}>
-      <Text style={styles.title}>TraceTray</Text>
-      <Text style={styles.heading}>{verification ? "Verify it's you" : "Sign in to your dashboard"}</Text>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { justifyContent: "center", gap: 24, maxWidth: 480 }]}>
+      <Brand />
+      <View style={{ gap: 10, marginTop: 20 }}><Text style={styles.title}>{verification ? "Verify it's you" : "A closer look at\nyour visitors."}</Text><Text style={styles.muted}>{verification ? "One more step to open your dashboard." : "Sign in to explore your websites, goals and visitor behaviour."}</Text></View>
+      <View style={[styles.panel, { padding: 20, gap: 16 }]}>
       {verification ? <>
         <Text style={styles.text}>{verification === "email" ? "Enter the code sent to your email address." : "Enter the code from your authenticator app."}</Text>
         <TextInput accessibilityLabel="Verification code" style={styles.input} value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={6} placeholder="Verification code" placeholderTextColor={colors.muted} onSubmitEditing={submit} />
       </> : <>
-        <Text style={styles.muted}>Check your websites, goals and visitor groups.</Text>
+        <Text style={styles.heading}>Welcome back</Text>
+        <Text style={styles.muted}>Use your email and password, or choose more sign-in options for Google.</Text>
         <TextInput accessibilityLabel="Email address" style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" placeholder="Email address" placeholderTextColor={colors.muted} />
         <TextInput accessibilityLabel="Password" style={styles.input} value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" autoCorrect={false} autoComplete="current-password" textContentType="password" placeholder="Password" placeholderTextColor={colors.muted} onSubmitEditing={submit} />
       </>}
       {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
-      <Pressable accessibilityRole="button" disabled={busy || (verification ? code.length !== 6 : !email.trim() || !password)} style={[styles.button, { opacity: busy ? 0.6 : 1 }]} onPress={submit}>
+      <Pressable accessibilityRole="button" disabled={busy || (verification ? code.length !== 6 : !email.trim() || !password)} style={[styles.button, { opacity: busy || (verification ? code.length !== 6 : !email.trim() || !password) ? 0.45 : 1 }]} onPress={submit}>
         <Text style={styles.buttonText}>{busy ? "Signing in…" : verification ? "Verify" : "Sign in"}</Text>
       </Pressable>
       {verification ? <View style={styles.row}>
@@ -91,8 +95,9 @@ export default function SignIn() {
           finally { setBusy(false); }
         }} style={{ paddingVertical: 12 }}><Text style={styles.link}>Start over</Text></Pressable>
       </View> : null}
-      <Pressable accessibilityRole="button" disabled={busy} onPress={hosted} style={{ paddingVertical: 12 }}><Text style={styles.link}>More sign-in options</Text></Pressable>
-      <View style={styles.row}>
+      <Pressable accessibilityRole="button" disabled={busy} onPress={hosted} style={styles.secondaryButton}><View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}><Icon name="account" color={colors.accent} size={19} /><Text style={styles.link}>More sign-in options</Text></View></Pressable>
+      </View>
+      <View style={[styles.row, { justifyContent: "center", gap: 28 }]}>
         <Pressable accessibilityRole="link" onPress={() => Linking.openURL("https://tracetray.com/privacy")}><Text style={styles.link}>Privacy</Text></Pressable>
         <Pressable accessibilityRole="link" onPress={() => Linking.openURL("https://tracetray.com/terms")}><Text style={styles.link}>Terms</Text></Pressable>
       </View>

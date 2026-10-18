@@ -2,6 +2,15 @@
 
 ## Ready locally
 
+The mobile UI follows the desktop palette, typography, buttons and panels. It includes
+remembered System/Light/Dark appearance, compact page navigation, analysis freshness,
+single/bulk refresh, confirmed history clearing, the shared desktop advanced tables,
+website switching in Journeys/Ask and direct installation-snippet entry points.
+Plan and billing is informational: subscription changes happen on the web, with no
+checkout/portal links in the app. See [Google's consumption-only guidance](https://support.google.com/googleplay/android-developer/answer/10281818?hl=en).
+Deploy the matching `/api/usage` update before checking subscription status/dates and
+plan comparisons in production. It reads stored account fields without calling Stripe.
+
 The app feature set is complete for the first release. `app.json` keeps
 `com.tracetray.app`, adds the existing TraceTray mark, adaptive/themed icons and a
 light/dark native splash. `eas.json` prepares a production AAB with the production
@@ -83,10 +92,15 @@ Uninstall a differently signed copy first if Android rejects an update.
 Phone check (about ten minutes):
 
 - Install/open; check icon, splash and light/dark mode.
+- In Account, select Light/Dark/System; restart and check the saved choice and chart theme.
+- Check Plan and billing, its web-only message and the installation snippet.
 - Sign in with email/password and any required verification. Force close and reopen.
 - Sign out, use More sign-in options, complete Google sign-in and return to the app.
   Cancel once and check that sign-in can be retried. Test hosted password recovery.
 - Open a populated website, a page, Trends and Attention; scroll, change periods and Back.
+- Check Advanced analysis and horizontal table scrolling. Check website switching in
+  Journeys/Ask. Analysis runs spend credit; test refresh and clearing through local fixtures
+  unless a live run is explicitly approved. Never clear real data merely for QA.
 - Check Journeys, goals and account screens. Rotate once and try the keyboard in a form.
 - Turn off network briefly: verify a readable failure, then reconnect and retry.
 - Use a disposable account for deletion only after the deployment/live-cleanup check is approved.

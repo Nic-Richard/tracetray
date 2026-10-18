@@ -7,6 +7,7 @@ import { useSite } from "../../../lib/site";
 import { useLoad } from "../../../lib/useLoad";
 import { useTheme } from "../../../lib/theme";
 import { Failure, Loading } from "../../../components/Status";
+import SitePicker from "../../../components/SitePicker";
 
 function Ranked({ title, note, rows, color }: { title: string; note: string; rows: { label: string; count: number }[]; color: string }) {
   const { styles, colors } = useTheme();
@@ -34,10 +35,10 @@ export default function JourneysScreen() {
   if (result.error) return <Failure message={result.error} retry={result.reload} />;
   if (!result.data) return <Loading />;
   const data = result.data;
-  return <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
+  return <SafeAreaView style={styles.screen} edges={["left", "right"]}>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={result.loading} onRefresh={result.reload} tintColor={colors.accent} />}>
-      <Text style={styles.title}>{site?.name}</Text>
-      <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/paths", params: { site: siteKey } })}><Text style={styles.buttonText}>Expected paths</Text></Pressable>
+      <SitePicker siteKey={siteKey} onSelect={key => router.setParams({ site: key })} />
+      <Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={() => router.push({ pathname: "/paths", params: { site: siteKey } })}><Text style={styles.link}>Explore expected paths</Text></Pressable>
       <Text style={styles.muted}>How visitors move through the whole site in the last 30 days: where they arrive, where they go next, and where they leave.</Text>
       {!data.total_visitors ? <View style={styles.panel}><Text style={styles.heading}>No journeys yet</Text><Text style={styles.muted}>Journeys appear as visitors arrive and move between pages.</Text></View> : <>
         <View style={styles.panel}>

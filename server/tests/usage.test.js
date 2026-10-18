@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const { monthOf, monthRange } = require("../src/lib/usage");
-const { planLimits } = require("../src/lib/plans");
+const { planLimits, subscriptionSummary } = require("../src/lib/plans");
 const { lockUnits } = require("../src/lib/limits");
 
 test("months run from the first of the month to the first of the next, across the year end", () => {
@@ -15,6 +15,13 @@ test("each plan has limits and no plan has none", () => {
     assert.equal(planLimits("pro").visits, 100000);
     assert.equal(planLimits("enterprise").pages, null);
     assert.equal(planLimits("none"), null);
+});
+
+test("subscription summaries expose status and dates without payment identifiers", () => {
+    assert.equal(subscriptionSummary(null), null);
+    assert.deepEqual(subscriptionSummary({ id: "sub_private", customer: "cus_private", status: "trialing", interval: "month", trial_end: "2026-11-01", current_period_end: "2026-11-01", cancel_at_period_end: true, payment_method: "pm_private" }), {
+        status: "trialing", interval: "month", trial_end: "2026-11-01", current_period_end: "2026-11-01", cancel_at_period_end: true
+    });
 });
 
 test("pages are allowed in order by address count, and a group that doesn't fit is locked while smaller pages still fit", () => {

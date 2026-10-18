@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 
 const { parseGoal } = createRequire(import.meta.url)("../../server/src/lib/goals.js");
 
-const READS = new Set(["/api/config", "/api/pages", "/api/sites", "/api/stats", "/api/sessions/timeseries", "/api/goal-rates", "/api/goals", "/api/pages/members", "/api/usage", "/api/journey"]);
+const READS = new Set(["/api/config", "/api/pages", "/api/sites", "/api/stats", "/api/sessions/timeseries", "/api/goal-rates", "/api/goals", "/api/pages/members", "/api/usage", "/api/journey", "/api/ux-trends", "/api/goal-trend", "/api/attention-profile", "/api/page-shot", "/api/sessions/recent"]);
 
 async function readBody(request) {
   const chunks = [];
@@ -18,7 +18,7 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, emailMode = "normal", deletionMode = "normal", comparisonMode = "normal", pathMode = "normal", pickerMode = "normal", memberMode = "normal" } = {}) {
+export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, emailMode = "normal", deletionMode = "normal", comparisonMode = "normal", pathMode = "normal", pickerMode = "normal", memberMode = "normal", analysisMode = "disabled" } = {}) {
   let deletion = { state: "none" };
   let deletionAttempts = 0;
   const questions = [];
@@ -43,11 +43,58 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
   let websites;
   let siteLimit;
   let nextSite = 0;
+  const analysisWrites = [];
+  const permits = new Map();
+  const statsCache = new Map();
+  const cleared = new Set();
   return createServer(async (request, response) => {
     const reply = (status, value) => { response.writeHead(status, { "Content-Type": "application/json" }); response.end(JSON.stringify(value)); };
     try {
       const url = new URL(request.url, "http://localhost");
       const path = url.pathname;
+      if (analysisMode !== "disabled" && ["/api/analysis-permit", "/api/run-analysis", "/api/pages/reset"].includes(path)) {
+        if (request.method !== "POST") return reply(503, { error: "fixture method disabled" });
+        const body = await readBody(request);
+        const site = path === "/api/run-analysis" ? body.site_key : url.searchParams.get("site_key");
+        if (!websites?.some(value => value.key === site)) return reply(403, { error: "website not available" });
+        if (deletion.state !== "none") return reply(410, { error: "Account deletion has been requested." });
+        analysisWrites.push({ path, site, ...body });
+        if (analysisMode === "retry" && analysisWrites.length === 1) return reply(503, { error: "fixture analysis unavailable" });
+        if (path === "/api/analysis-permit") {
+          if (analysisMode === "limit") return reply(429, { error: "No refreshes left for this site today." });
+          if (!["page", "all"].includes(body.scope) || !Number.isInteger(body.page_count) || body.page_count < 1 || body.page_count > 1000) return reply(400, { error: "invalid refresh request" });
+          const token = `fixture-${analysisWrites.length}`;
+          permits.set(token, { site, remaining: body.page_count });
+          return reply(200, { permit_token: token, scope: body.scope, remaining_free_today: 2 });
+        }
+        if (typeof body.page !== "string" || !body.page.trim()) return reply(400, { error: "page required" });
+        const key = `${site}:${body.page}`;
+        if (path === "/api/pages/reset") {
+          const previous = statsCache.get(key);
+          cleared.add(key);
+          statsCache.set(key, { ...previous, total_sessions: 0, analysable_sessions: 0, site_analysable_sessions: 0, desktop_sessions: 0, mobile_sessions: 0, last_analysis: null, click_summary: [], site_key: site, plan: "pro" });
+          return reply(200, { deleted_sessions: previous?.total_sessions || 0 });
+        }
+        const permit = permits.get(body.permit_token);
+        if (!permit || permit.site !== site || permit.remaining < 1) return reply(403, { error: "invalid analysis permit" });
+        permit.remaining--;
+        const previous = statsCache.get(key);
+        const result = previous?.last_analysis ? { ...previous.last_analysis, ran_at: new Date().toISOString() } : { site_key: site, page: body.page, ran_at: new Date().toISOString(), session_count: 0, k: 0, clusters: [], failure: { have: 0, needed: 16, message: "Not enough fixture visits to form groups yet." } };
+        if (previous) statsCache.set(key, { ...previous, last_analysis: result });
+        return reply(200, { ok: true, result });
+      }
+      if (analysisMode !== "disabled" && request.method === "GET" && path === "/api/stats") {
+        if (!websites?.some(value => value.key === url.searchParams.get("site_key"))) return reply(403, { error: "website not available" });
+        if (deletion.state !== "none") return reply(410, { error: "Account deletion has been requested." });
+        const cached = statsCache.get(`${url.searchParams.get("site_key")}:${url.searchParams.get("page")}`);
+        if (cached) return reply(200, cached);
+      }
+      if (request.method === "GET" && cleared.has(`${url.searchParams.get("site_key")}:${url.searchParams.get("page")}`)) {
+        if (deletion.state !== "none") return reply(410, { error: "Account deletion has been requested." });
+        if (!websites?.some(value => value.key === url.searchParams.get("site_key"))) return reply(403, { error: "website not available" });
+        if (path === "/api/sessions/timeseries") return reply(200, { series: [], total_sessions: 0, engaged_sessions: 0, engagement_rate: 0 });
+        if (path === "/api/goal-rates") return reply(200, { goals: [] });
+      }
       if (request.method === "GET" && path === "/api/pages/members" && memberMode !== "normal") {
         const key = url.searchParams.get("site_key");
         if (!websites?.some(site => site.key === key)) return reply(403, { error: "website not available" });
@@ -172,7 +219,7 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
         deletion = { state: deletionMode === "retrying" ? "retrying" : "pending", requested_at: new Date().toISOString() };
         return reply(202, deletion);
       }
-      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists), changeWrites, changeLists: Object.fromEntries(changeLists), pathWrites, pathReads, pathLists: Object.fromEntries(pathLists), pageLists: Object.fromEntries(pageLists), memberReads, formReads, emailChanges, emailPrefs, emailReads });
+      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists), changeWrites, changeLists: Object.fromEntries(changeLists), pathWrites, pathReads, pathLists: Object.fromEntries(pathLists), pageLists: Object.fromEntries(pageLists), memberReads, formReads, emailChanges, emailPrefs, emailReads, analysisWrites });
       if (path === "/api/email-prefs") {
         if (request.method === "GET") {
           emailReads++;
@@ -314,9 +361,14 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
         method: request.method, headers,
         ...(request.method === "POST" ? { body: "{}" } : {})
       });
+      if (analysisMode !== "disabled" && request.method === "GET" && path === "/api/stats" && upstream.ok) {
+        const stats = await upstream.json();
+        statsCache.set(`${siteKey}:${url.searchParams.get("page")}`, stats);
+        return reply(200, stats);
+      }
       if (path === "/api/config" && configDelayMs) await new Promise(resolve => setTimeout(resolve, configDelayMs));
       if (request.method === "GET" && path === "/api/pages" && upstream.ok) {
-        const pages = await upstream.json();
+        const pages = (await upstream.json()).filter(value => !cleared.has(`${siteKey}:${value.page}`));
         pageLists.set(siteKey, pages);
         return reply(200, pages);
       }
@@ -341,5 +393,5 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const configDelayMs = Math.min(30_000, Math.max(0, Number(process.env.FIXTURE_CONFIG_DELAY_MS) || 0));
-  createFixtureApi(fetch, { configDelayMs, emailMode: process.env.FIXTURE_EMAIL_MODE, deletionMode: process.env.FIXTURE_DELETION_MODE, comparisonMode: process.env.FIXTURE_COMPARISON_MODE, pathMode: process.env.FIXTURE_PATH_MODE, pickerMode: process.env.FIXTURE_PICKER_MODE, memberMode: process.env.FIXTURE_MEMBER_MODE }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; dashboard writes are mocked and other writes are blocked."));
+  createFixtureApi(fetch, { configDelayMs, emailMode: process.env.FIXTURE_EMAIL_MODE, deletionMode: process.env.FIXTURE_DELETION_MODE, comparisonMode: process.env.FIXTURE_COMPARISON_MODE, pathMode: process.env.FIXTURE_PATH_MODE, pickerMode: process.env.FIXTURE_PICKER_MODE, memberMode: process.env.FIXTURE_MEMBER_MODE, analysisMode: process.env.FIXTURE_ANALYSIS_MODE }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; dashboard writes are mocked and other writes are blocked."));
 }

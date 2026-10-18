@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type React from "react";
 import { Link, NavLink, useLocation, useParams } from "react-router";
-import { compactNumber, isPageGroup, pageLabel, pagePath, percent, timeAgo, type AnalysisResult, type Stats, type Timeseries } from "@tracetray/shared";
+import { MIN_ANALYSIS_VISITS as MIN_SESSIONS, compactNumber, isPageGroup, pageLabel, pagePath, percent, timeAgo, type AnalysisResult, type Stats, type Timeseries } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
@@ -19,8 +19,6 @@ import ClicksTab from "../tabs/ClicksTab";
 import TrendsTab from "../tabs/TrendsTab";
 import DetailsTab from "../tabs/DetailsTab";
 import GoalLine from "../components/GoalLine";
-
-const MIN_SESSIONS = 16;
 
 const TABS = [
   { key: "", label: "Overview" },

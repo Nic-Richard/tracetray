@@ -140,3 +140,4 @@ export function traitRows(traits: Trait[]) {
       };
     });
 }
+export const MIN_ANALYSIS_VISITS = 16;

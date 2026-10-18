@@ -28,4 +28,15 @@ function planForPrice(price) {
     return price?.id === process.env.STRIPE_PRO_PRICE_ID ? "pro" : "starter";
 }
 
-module.exports = { PLANS, PRICE_KEYS, planLimits, planForPrice };
+function subscriptionSummary(subscription) {
+    if (!subscription) return null;
+    return {
+        status: subscription.status,
+        interval: subscription.interval || null,
+        trial_end: subscription.trial_end || null,
+        current_period_end: subscription.current_period_end || null,
+        cancel_at_period_end: !!subscription.cancel_at_period_end
+    };
+}
+
+module.exports = { PLANS, PRICE_KEYS, planLimits, planForPrice, subscriptionSummary };
