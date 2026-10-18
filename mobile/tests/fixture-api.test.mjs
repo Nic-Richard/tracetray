@@ -2,6 +2,25 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createFixtureApi } from "../scripts/fixture-api.mjs";
 
+test("account deletion stays in memory, retries failed requests and blocks account reopening", async () => {
+  const server = createFixtureApi(() => { throw new Error("Deletion must never reach upstream"); }, { deletionMode: "retry" });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const remove = confirmation => fetch(`${origin}/api/account-deletion`, { method: "POST", body: JSON.stringify({ confirmation, user_id: "other-user" }) });
+  try {
+    assert.equal((await (await fetch(`${origin}/api/account-deletion`)).json()).state, "none");
+    assert.equal((await remove("delete")).status, 400);
+    assert.equal((await remove("DELETE")).status, 503);
+    assert.equal((await (await fetch(`${origin}/api/account-deletion`)).json()).state, "none");
+    assert.equal((await remove("DELETE")).status, 202);
+    assert.equal((await (await fetch(`${origin}/api/account-deletion`)).json()).state, "pending");
+    const blocked = await fetch(`${origin}/api/account`, { method: "POST" });
+    assert.equal(blocked.status, 410);
+    assert.equal((await blocked.json()).account_deleting, true);
+    assert.equal((await remove("DELETE")).status, 202);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
 test("email preference fixtures retain failed saves and keep changes out of the real account", async () => {
   const server = createFixtureApi(() => { throw new Error("Email preferences must not reach upstream"); }, { emailMode: "retry" });
   await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));

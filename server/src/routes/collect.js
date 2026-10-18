@@ -11,6 +11,7 @@ const { detailRate, inSample } = require("../lib/sampling");
 const { markBatch } = require("../lib/goalHits");
 const { TRACETRAY_MODE } = require("../config");
 const { visitorIdFor } = require("../lib/visitorId");
+const { startCollection } = require("../lib/collectionState");
 
 const RATE_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT = 240;
@@ -44,7 +45,7 @@ const accountCache = new Map();
 async function accountFor(siteKey) {
     const hit = accountCache.get(siteKey);
     if (hit && Date.now() - hit.at < ACCOUNT_CACHE_MS) return hit.account;
-    const account = await Account.findOne({ $or: [{ site_key: siteKey }, { "sites.key": siteKey }] });
+    const account = await Account.findOne({ deletion_requested_at: null, $or: [{ site_key: siteKey }, { "sites.key": siteKey }] });
     if (account) await ensureAccountSites(account);
     if (accountCache.size > 10000) accountCache.clear();
     accountCache.set(siteKey, { at: Date.now(), account });
@@ -52,6 +53,7 @@ async function accountFor(siteKey) {
 }
 
 router.post("/collect", async (req, res) => {
+    let finishCollection;
     try {
         if (overRateLimit(req.ip)) return res.sendStatus(429);
         if (isBot(req.get("user-agent"))) return res.sendStatus(204);
@@ -68,6 +70,7 @@ router.post("/collect", async (req, res) => {
         if (!siteKey || !sessionId || !trackingDomain) return res.sendStatus(204);
         if (originDomain && pageDomain && originDomain !== pageDomain) return res.sendStatus(204);
 
+        finishCollection = startCollection(siteKey);
         let account = await accountFor(siteKey);
         if (!account) return res.sendStatus(204);
 
@@ -170,6 +173,8 @@ router.post("/collect", async (req, res) => {
     } catch (err) {
         logger.error("collect error:", err);
         res.sendStatus(500);
+    } finally {
+        finishCollection?.();
     }
 });
 

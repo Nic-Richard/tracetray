@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router";
-import type { Account, Mode } from "@tracetray/shared";
+import { ApiError, type Account, type Mode } from "@tracetray/shared";
+import DeleteAccount from "./sections/DeleteAccount";
 import { useApi } from "./api";
 import { SiteProvider } from "./state/site";
 import Rail from "./components/Rail";
@@ -65,11 +66,18 @@ export default function App({ mode }: { mode: Mode }) {
   const api = useApi();
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState("");
+  const [closing, setClosing] = useState(false);
+  const { pathname } = useLocation();
 
   useEffect(() => {
-    api.account().then(setAccount).catch(err => setError(err.message));
+    if (pathname === "/delete-account") return;
+    api.account().then(setAccount).catch(err => {
+      if (err instanceof ApiError && err.body.account_deleting) setClosing(true);
+      else setError(err.message);
+    });
   }, [api]);
 
+  if (pathname === "/delete-account" || closing) return <DeleteAccount />;
   if (error) return <p className="loading">TraceTray couldn't load your account: {error}. Refresh the page to try again.</p>;
   if (!account) return <p className="loading">Loading…</p>;
   return (

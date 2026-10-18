@@ -63,6 +63,7 @@
     }
 
     async function initClerk() {
+      const destination = new URLSearchParams(location.search).get("returnTo") === "/app/delete-account" ? "/app/delete-account" : "/app/";
       const response = await fetch("/api/config");
 
       if (!response.ok) {
@@ -89,14 +90,14 @@
       });
 
       if (window.Clerk.isSignedIn) {
-        window.location.replace("/app/");
+        window.location.replace(destination);
         return;
       }
 
       window.Clerk.mountSignIn(document.getElementById("clerk-mount"), {
         routing: "hash",
-        fallbackRedirectUrl: "/app/",
-        signUpFallbackRedirectUrl: "/app/"
+        forceRedirectUrl: destination,
+        signUpForceRedirectUrl: destination
       });
     }
 

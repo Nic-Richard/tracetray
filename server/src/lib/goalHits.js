@@ -130,7 +130,7 @@ function queueBackfill(siteKey, goal) {
 
 // Backfills that were queued or running when the server stopped.
 async function resumeBackfills() {
-    const accounts = await Account.find({ "sites.goals.backfill": { $in: ["queued", "running"] } }, { sites: 1 }).lean();
+    const accounts = await Account.find({ deletion_requested_at: null, "sites.goals.backfill": { $in: ["queued", "running"] } }, { sites: 1 }).lean();
     for (const account of accounts) {
         for (const site of account.sites || []) {
             for (const goal of site.goals || []) if (["queued", "running"].includes(goal.backfill)) queueBackfill(site.key, goal);

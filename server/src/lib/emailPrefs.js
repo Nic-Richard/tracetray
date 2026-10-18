@@ -15,6 +15,7 @@ function emailAvailable(account, list, mode = TRACETRAY_MODE) {
 }
 
 function wantsEmail(account, list, mode = TRACETRAY_MODE) {
+    if (account.deletion_requested_at) return false;
     const pref = account.email_prefs?.[list];
     if (mode !== "production") return pref === true;
     return emailAvailable(account, list, mode) && pref !== false;

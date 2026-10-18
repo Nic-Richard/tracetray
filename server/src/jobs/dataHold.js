@@ -16,7 +16,7 @@ const ENDED = ["canceled", "unpaid", "incomplete_expired"];
 // "notice", "delete" or null. Deleting needs a notice sent at least NOTICE_DAYS earlier, so a late
 // or failed notice pushes the deletion back instead of cutting the warning short.
 function holdAction(account, now = Date.now()) {
-    if (account.plan !== "none" || !account.delete_after || !ENDED.includes(account.subscription?.status)) return null;
+    if (account.deletion_requested_at || account.plan !== "none" || !account.delete_after || !ENDED.includes(account.subscription?.status)) return null;
     const deleteAt = new Date(account.delete_after).getTime();
     const noticedAt = account.deletion_notice_sent_at ? new Date(account.deletion_notice_sent_at).getTime() : null;
     if (noticedAt === null) return now >= deleteAt - NOTICE_DAYS * DAY_MS ? "notice" : null;
@@ -51,7 +51,7 @@ async function deleteAccountData(account, now) {
 }
 
 async function runDataHold(now = Date.now()) {
-    const accounts = await Account.find({ plan: "none", delete_after: { $lte: new Date(now + NOTICE_DAYS * DAY_MS) } }).lean();
+    const accounts = await Account.find({ deletion_requested_at: null, plan: "none", delete_after: { $lte: new Date(now + NOTICE_DAYS * DAY_MS) } }).lean();
     for (const account of accounts) {
         const action = holdAction(account, now);
         try {

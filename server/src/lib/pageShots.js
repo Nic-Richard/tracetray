@@ -3,7 +3,7 @@ const dns = require("dns").promises;
 const fs = require("fs");
 const net = require("net");
 const path = require("path");
-const { Session, PageShot } = require("../db/models");
+const { Account, Session, PageShot } = require("../db/models");
 const logger = require("./logger");
 
 const SHOT_DIR = process.env.PAGESHOT_DIR || path.join(__dirname, "..", "..", "..", "shots");
@@ -121,6 +121,7 @@ const fileFor = (siteKey, page, device) => {
 };
 
 async function takeShots(siteKey, page) {
+    if (!await Account.exists({ deletion_requested_at: null, $or: [{ site_key: siteKey }, { "sites.key": siteKey }] })) return;
     let address = await addressFor(siteKey, page);
     if (address && process.env.PAGESHOT_LOCALHOST) address = address.replace(/^(https?:\/\/)localhost\b/, `$1${process.env.PAGESHOT_LOCALHOST}`);
     for (const device of Object.keys(DEVICES)) {
@@ -177,9 +178,13 @@ async function removeShots(filter) {
     const rows = await PageShot.find(filter, { file: 1 }).lean();
     for (const row of rows) if (row.file) fs.rmSync(row.file, { force: true });
     await PageShot.deleteMany({ _id: { $in: rows.map(r => r._id) } });
+    if (Object.keys(filter).length === 1 && typeof filter.site_key === "string" && /^tt_[\w-]+$/.test(filter.site_key)) {
+        fs.rmSync(path.join(SHOT_DIR, filter.site_key), { recursive: true, force: true });
+    }
     return rows.length;
 }
 
 const removeUnviewedShots = (now = Date.now()) => removeShots({ viewed_at: { $lt: new Date(now - UNVIEWED_DAYS * DAY_MS) } });
 
-module.exports = { refreshShots, shotInfo, shotFile, removeShots, removeUnviewedShots, publicUrl, privateAddress };
+const shotsPending = siteKey => [...pending].some(key => key.startsWith(`${siteKey}|`));
+module.exports = { refreshShots, shotInfo, shotFile, removeShots, removeUnviewedShots, publicUrl, privateAddress, shotsPending };

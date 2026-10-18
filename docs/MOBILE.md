@@ -93,10 +93,12 @@ alongside the first mobile bundle to catch effects on the deployed dashboard.
 
 ## Release questions to resolve early
 
-- Account lifecycle: the server deletes individual websites and expires former
-  subscribers' site data, but no complete account-deletion flow was found. Define and
-  test identity deletion, all site data, page pictures and subscription handling; verify
-  current Play requirements for in-app and web deletion requests.
+- Account lifecycle: the full deletion flow is implemented locally, including in-app
+  and web entry points. Verify it with a disposable production account and subscription
+  before release; register `/delete-account` as the Play deletion URL after deployment.
+  Provider-held support alert copies also need an erasure path; existing Discord
+  messages are not removed by the current account worker. Terms/privacy updates do
+  not establish compliance until provider cleanup and retention are verified.
 - Subscription access: start as a dashboard for existing customers. Verify current Play
   policy before including checkout, upgrade links or billing-portal links. The web's
   Stripe flow must not be copied into Android without that review.
@@ -186,7 +188,17 @@ cover enabling/disabling, failed saves/retry, duplicate taps, reopening saved se
 limited-plan controls and initial read failure/retry. No real subscription changes or
 email sends run during these checks. Physical-phone and production-plan checks remain.
 
-Next: account lifecycle/deletion. Empty/error page/form pickers
+Account deletion now has native and web confirmation screens, plus the public
+`/delete-account` resource for the Play listing. A durable server job closes access,
+cancels Stripe subscriptions, expires open checkouts and removes website data,
+screenshots, account-linked reports and the Clerk identity. Failures retry; a receipt
+remains for 30 days. Tracking caches and active collection, screenshots and analyses
+drain before cleanup. Late checkout webhooks cannot activate a deleted account.
+Native fixture checks cover confirmation, save failure/retry and cold reopening.
+Provider calls and destructive database cleanup are tested with mocks only. A real
+disposable-account deletion with production billing/auth remains a release check.
+
+Next: empty/error page/form pickers
 and production plan UI still need native QA.
 Expected paths also need their mobile flow.
 Before/after comparisons and change notes still need a mobile flow. Pagination and plan

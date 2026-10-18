@@ -61,7 +61,7 @@ for (const stage of ["connect", "query", "write"]) {
     test(`extraction reports ${stage} failures with a failed exit`, () => extractFailure(stage));
 }
 
-function analysisHandler({ failProcess = false, failSave = false, busy = false, mobileFails = false } = {}) {
+function analysisHandler({ failProcess = false, failSave = false, busy = false, mobileFails = false, closing = false } = {}) {
     const state = { running: { tt_test: busy }, processes: 0, permits: 0, saves: 0, ai: 0, interpreted: 0 };
     let handler;
     const code = fs.readFileSync(path.resolve(__dirname, "../src/routes/analysis.js"), "utf8");
@@ -89,7 +89,7 @@ function analysisHandler({ failProcess = false, failSave = false, busy = false, 
                 return { stdout: `TRACETRAY_RESULT: ${JSON.stringify(cluster)}` };
             } };
             if (name === "../db/models") return {
-                Account: { findOne: () => ({ lean: async () => ({ plan: "pro" }) }) },
+                Account: { findOne: () => ({ lean: async () => ({ plan: "pro" }) }), exists: async () => !closing },
                 Session: { findOne: () => ({ sort: () => ({ lean: async () => null }) }) },
                 AnalysisResult: {
                     findOne: () => ({ sort: () => ({ lean: async () => null }) }),
@@ -159,5 +159,15 @@ test("desktop results are saved when optional mobile analysis fails", async () =
     assert.equal(state.saves, 1);
     assert.equal(state.interpreted, 1);
     assert.equal(state.ai, 0);
+    assert.equal(state.running.tt_test, false);
+});
+
+test("a closing account cannot start an analysis or recreate its results", async () => {
+    const { handler, state } = analysisHandler({ closing: true });
+    const res = response();
+    await handler({ body: { permit_token: "test" } }, res);
+    assert.equal(res.statusCode, 500);
+    assert.equal(state.processes, 0);
+    assert.equal(state.saves, 0);
     assert.equal(state.running.tt_test, false);
 });

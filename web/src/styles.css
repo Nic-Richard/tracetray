@@ -553,3 +553,8 @@ td.strong { font-weight: 700; }
   .section-title { font-size: 28px; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+.account-deletion { max-width: 700px; margin: 0 auto; }
+.account-deletion a { color: var(--link); }
+.account-deletion form, .account-deletion label { display: grid; gap: 12px; }
+.account-deletion input { width: 100%; padding: 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--panel); color: var(--ink); font: inherit; }
+.account-deletion .deletion-submit { color: var(--danger); border-color: var(--danger); }

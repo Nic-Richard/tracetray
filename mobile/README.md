@@ -145,7 +145,7 @@ TypeScript 6, while the web workspace retains its own TypeScript version.
 
 Release builds will use EAS with approval and separate TraceTray signing credentials.
 The production API defaults to `https://tracetray.com`; release configuration rejects
-HTTP origins. Account deletion, subscription policy, store assets and real-phone QA
+HTTP origins. Live deletion verification, subscription policy, store assets and real-phone QA
 remain release work. The full build plan is in [MOBILE.md](../docs/MOBILE.md).
 
 ## First emulator check (Oct 16)

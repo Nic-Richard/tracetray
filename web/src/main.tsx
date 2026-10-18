@@ -14,7 +14,7 @@ function SignedInOnly({ children }: { children: ReactNode }) {
     if (!isLoaded) return;
     // The public pages only load Clerk (and its cookies) for browsers marked here.
     writeStorage("tt-signed-in", isSignedIn ? "1" : null);
-    if (!isSignedIn) window.location.replace("/sign-in");
+    if (!isSignedIn) window.location.replace(window.location.pathname === "/app/delete-account" ? "/sign-in?returnTo=/app/delete-account" : "/sign-in");
   }, [isLoaded, isSignedIn]);
   return isLoaded && isSignedIn ? <>{children}</> : null;
 }

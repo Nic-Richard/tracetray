@@ -14,7 +14,7 @@ const wantsWeeklySummary = (account, mode = TRACETRAY_MODE) => wantsEmail(accoun
 
 async function runWeeklySummaries(now = Date.now()) {
     const week = new Date(lastWeekStart(now)).toISOString().slice(0, 10);
-    const accounts = await Account.find({ weekly_summary_week: { $ne: week } }).lean();
+    const accounts = await Account.find({ deletion_requested_at: null, weekly_summary_week: { $ne: week } }).lean();
     for (const account of accounts.filter(a => wantsWeeklySummary(a))) {
         try {
             const unsubscribe = unsubscribeUrl(account._id, "weekly_summary");
@@ -24,6 +24,7 @@ async function runWeeklySummaries(now = Date.now()) {
                 await Account.updateOne({ _id: account._id }, { $set: { weekly_summary_week: week } });
                 continue;
             }
+            if (!await Account.exists({ _id: account._id, deletion_requested_at: null })) continue;
             const { sent } = await sendEmail({ to: account.email, ...weeklySummary({ ...summary, unsubscribe }), unsubscribe });
             if (sent) await Account.updateOne({ _id: account._id }, { $set: { weekly_summary_week: week } });
         } catch (err) {

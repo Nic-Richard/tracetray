@@ -1,5 +1,5 @@
 import type {
-  Account, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, ChangeComparison, Config, EmailList, EmailPrefs,
+  Account, AccountDeletionStatus, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, ChangeComparison, Config, EmailList, EmailPrefs,
   FormSeen, Goal, GoalInput, GoalList, PathFunnel, GoalRates, GoalTrend, GroupMembers, Journey, MemberSort, PageChange, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
   SitesResponse, Stats, Timeseries, UsageResponse, UxTrends, Win
 } from "./types";
@@ -51,6 +51,8 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
   return {
     config: () => request<Config>("GET", "/api/config"),
     account: () => request<Account>("POST", "/api/account"),
+    accountDeletion: () => request<AccountDeletionStatus>("GET", "/api/account-deletion"),
+    deleteAccount: (confirmation: string) => request<AccountDeletionStatus>("POST", "/api/account-deletion", { body: { confirmation } }),
     usage: () => request<UsageResponse>("GET", "/api/usage"),
     emailPrefs: () => request<EmailPrefs>("GET", "/api/email-prefs"),
     setEmailPrefs: (prefs: Partial<Record<EmailList, boolean>>) => request<{ updated: number }>("PATCH", "/api/email-prefs", { body: prefs }),

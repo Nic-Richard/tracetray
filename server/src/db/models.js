@@ -123,4 +123,16 @@ const PageShot = mongoose.model("PageShot", new mongoose.Schema({
     last_error:   String
 }).index({ site_key: 1, page: 1, device: 1 }, { unique: true }), "page_shots");
 
-module.exports = { Account, Session, AnalysisResult, BugReport, PageDay, PageShot };
+const AccountDeletion = mongoose.model("AccountDeletion", new mongoose.Schema({
+    clerk_user_id: { type: String, required: true, unique: true },
+    account_id: mongoose.Schema.Types.ObjectId,
+    references: { type: [String], index: true },
+    requested_at: { type: Date, required: true },
+    state: { type: String, enum: ["pending", "retrying", "complete"], default: "pending" },
+    next_attempt_at: Date,
+    lease_until: Date,
+    completed_at: Date,
+    expires_at: { type: Date, expires: 0 }
+}), "account_deletions");
+
+module.exports = { Account, Session, AnalysisResult, BugReport, PageDay, PageShot, AccountDeletion };

@@ -2,7 +2,7 @@
 // describe the groups and save the result. Used by the Refresh button and the weekly runs.
 const path = require("path");
 const { runProcess } = require("./runProcess");
-const { Session, AnalysisResult } = require("../db/models");
+const { Account, Session, AnalysisResult } = require("../db/models");
 const { mainGoalFor } = require("./goalHits");
 const { getClickSummary } = require("./clickSummary");
 const { computeAttentionProfile } = require("./attentionProfile");
@@ -32,6 +32,9 @@ async function runAnalysis(siteKey, pageFilter = null) {
     analysisRunning[siteKey] = true;
     logger.debug(`starting analysis  key=${siteKey}`);
     try {
+        if (!await Account.exists({ deletion_requested_at: null, $or: [{ site_key: siteKey }, { "sites.key": siteKey }] })) {
+            throw new Error("website is unavailable for analysis");
+        }
         const env = { ...process.env, TRACETRAY_SITE_KEY: siteKey, TRACETRAY_PAGE_FILTER: pageFilter || "" };
         await runProcess(process.execPath, [path.join(ROOT, "analysis", "extractFeatures.js")], { cwd: ROOT, env });
         logger.debug("extraction done");

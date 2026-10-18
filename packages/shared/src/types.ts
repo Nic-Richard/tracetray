@@ -481,3 +481,8 @@ export interface AnalysisRun {
 }
 
 export type BugCategory = "bug" | "account" | "billing" | "suggestion" | "other";
+export interface AccountDeletionStatus {
+  state: "none" | "pending" | "retrying" | "complete";
+  requested_at?: string;
+  completed_at?: string | null;
+}

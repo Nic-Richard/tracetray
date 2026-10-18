@@ -40,3 +40,14 @@ export function usageMeter(used: number, limit: number | null): { share: number 
     over: limit !== null && used > limit
   };
 }
+export const DELETION_DETAILS = [
+  "Permanently delete your TraceTray sign-in, account, all websites, visits, analyses, screenshots and saved settings. This cannot be undone.",
+  "Any active TraceTray subscription is cancelled during deletion. No automatic refund is issued; refund rights required by law are unaffected. Remove the tracker from your websites too.",
+  "Deletion normally starts within a few minutes. Failed steps retry automatically. A deletion receipt is kept for 30 days to prevent accidental reactivation; encrypted backups expire within 30 days. Payment providers may retain transaction records required by law. For help, contact support@tracetray.com."
+];
+
+export function deletionMessage(state: string): string {
+  if (state === "complete") return "Your TraceTray account has been deleted.";
+  if (state === "retrying") return "Deletion is still in progress. A step needs another attempt; TraceTray retries automatically. Contact support@tracetray.com if it stays here.";
+  return "Your deletion request is saved. Your account is closed while TraceTray cancels subscriptions and removes your data. You can sign out now.";
+}

@@ -66,12 +66,12 @@ async function analyzeAccount(account) {
 
 async function runAutoAnalysis(now = Date.now()) {
     const thisMonday = new Date(lastWeekStart(now) + 7 * DAY_MS).toISOString().slice(0, 10);
-    const accounts = await Account.find({ auto_analysis_week: { $ne: thisMonday } }).lean();
+    const accounts = await Account.find({ deletion_requested_at: null, auto_analysis_week: { $ne: thisMonday } }).lean();
     for (const account of accounts.filter(a => weeklyPageCap(a) > 0)) {
         try {
             const shifts = await analyzeAccount(account);
             await Account.updateOne({ _id: account._id }, { $set: { auto_analysis_week: thisMonday } });
-            if (shifts.length && wantsEmail(account, "shift_alerts")) {
+            if (shifts.length && wantsEmail(account, "shift_alerts") && await Account.exists({ _id: account._id, deletion_requested_at: null })) {
                 const unsubscribe = unsubscribeUrl(account._id, "shift_alerts");
                 if (unsubscribe) await sendEmail({ to: account.email, ...shiftAlert({ shifts, unsubscribe }), unsubscribe });
             }

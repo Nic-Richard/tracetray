@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { getAuth, clerkClient } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
-const { Account } = require("../db/models");
+const { Account, AccountDeletion } = require("../db/models");
 const { generateSiteKey, getSiteLimit, ensureAccountSites, deleteSiteData } = require("../lib/siteAccount");
 const { TRACETRAY_MODE } = require("../config");
 const { planLimits } = require("../lib/plans");
@@ -14,6 +14,10 @@ router.post("/api/account", requireAuth(), async (req, res) => {
         const clerkUserId = getAuth(req).userId;
         const clerkUser   = await clerkClient.users.getUser(clerkUserId);
         const email       = clerkUser.emailAddresses[0]?.emailAddress || "";
+
+        if (await AccountDeletion.exists({ clerk_user_id: clerkUserId })) {
+            return res.status(410).json({ error: "Account deletion has been requested.", account_deleting: true });
+        }
 
         let account = await Account.findOne({ clerk_user_id: clerkUserId });
 
@@ -37,6 +41,15 @@ router.post("/api/account", requireAuth(), async (req, res) => {
             logger.info(`new account  email=${email}  key=${site_key}`);
         }
 
+        if (await AccountDeletion.exists({ clerk_user_id: clerkUserId })) {
+            // A slow first-time account creation may finish after the deletion worker.
+            await Account.updateOne({ _id: account._id }, { $set: { deletion_requested_at: new Date() } });
+            await AccountDeletion.updateOne({ clerk_user_id: clerkUserId }, {
+                $set: { state: "pending", next_attempt_at: new Date() },
+                $unset: { completed_at: "", expires_at: "" }
+            });
+            return res.status(410).json({ error: "Account deletion has been requested.", account_deleting: true });
+        }
         const sites = await ensureAccountSites(account);
         const host = `${req.protocol}://${req.get("host")}`;
         res.json({

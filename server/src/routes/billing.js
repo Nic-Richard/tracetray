@@ -3,7 +3,7 @@ const router = express.Router();
 const { getAuth } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
 const stripe = require("../lib/stripe");
-const { Account } = require("../db/models");
+const { Account, AccountDeletion } = require("../db/models");
 const { TRACETRAY_MODE } = require("../config");
 const logger = require("../lib/logger");
 const { sendAlert } = require("../lib/alerts");
@@ -30,7 +30,7 @@ async function syncSubscription(filter, sub, extra = {}) {
     const update = ended
         ? [{ $set: { ...extra, plan, subscription, delete_after: { $ifNull: ["$delete_after", new Date(Date.now() + DATA_HOLD_DAYS * 86400000)] } } }]
         : [{ $set: { ...extra, plan, subscription } }, { $unset: ["delete_after", "deletion_notice_sent_at"] }];
-    const result = await Account.updateOne(filter, update, { updatePipeline: true });
+    const result = await Account.updateOne({ ...filter, deletion_requested_at: null }, update, { updatePipeline: true });
     return { plan, matched: result.matchedCount };
 }
 
@@ -76,6 +76,10 @@ router.post("/api/create-checkout-session", requireAuth(), async (req, res) => {
             cancel_url:         `${host}/pricing`
         });
 
+        if (await AccountDeletion.exists({ clerk_user_id: clerkUserId })) {
+            await stripe.checkout.sessions.expire(session.id);
+            return res.status(410).json({ error: "Account deletion has been requested.", account_deleting: true });
+        }
         res.json({ url: session.url });
     } catch (err) {
         logger.error("checkout error:", err);
@@ -107,6 +111,13 @@ router.post("/webhook/stripe", async (req, res) => {
                 const ref      = session.client_reference_id;
                 const cusId    = session.customer;
                 const sub      = await stripe.subscriptions.retrieve(session.subscription);
+
+                if (ref && await AccountDeletion.exists({ references: ref })) {
+                    if (!["canceled", "incomplete_expired"].includes(sub.status)) {
+                        await stripe.subscriptions.cancel(sub.id, { invoice_now: false, prorate: false });
+                    }
+                    break;
+                }
 
                 // Older checkouts used the account's site key, which changes when its last site is deleted.
                 const { plan, matched } = await syncSubscription(

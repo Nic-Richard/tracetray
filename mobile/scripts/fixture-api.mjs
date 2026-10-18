@@ -18,7 +18,9 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, emailMode = "normal" } = {}) {
+export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, emailMode = "normal", deletionMode = "normal" } = {}) {
+  let deletion = { state: "none" };
+  let deletionAttempts = 0;
   const questions = [];
   const reports = [];
   const attempts = new Map();
@@ -36,6 +38,17 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
     try {
       const url = new URL(request.url, "http://localhost");
       const path = url.pathname;
+      if (path === "/api/account-deletion") {
+        if (request.method === "GET") return reply(200, deletion);
+        if (request.method !== "POST") return reply(503, { error: "fixture method disabled" });
+        const body = await readBody(request);
+        if (body.confirmation !== "DELETE") return reply(400, { error: "Type DELETE to confirm permanent account deletion." });
+        deletionAttempts++;
+        if (deletionMode === "retry" && deletionAttempts === 1) return reply(503, { error: "fixture deletion unavailable" });
+        deletion = { state: deletionMode === "retrying" ? "retrying" : "pending", requested_at: new Date().toISOString() };
+        return reply(202, deletion);
+      }
+      if (path.startsWith("/api/") && path !== "/api/config" && deletion.state !== "none") return reply(410, { error: "Account deletion has been requested.", account_deleting: true });
       if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists), emailChanges, emailPrefs, emailReads });
       if (path === "/api/email-prefs") {
         if (request.method === "GET") {
@@ -193,5 +206,5 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const configDelayMs = Math.min(30_000, Math.max(0, Number(process.env.FIXTURE_CONFIG_DELAY_MS) || 0));
-  createFixtureApi(fetch, { configDelayMs, emailMode: process.env.FIXTURE_EMAIL_MODE }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports/websites/goals/email preferences are mocked and other writes are blocked."));
+  createFixtureApi(fetch, { configDelayMs, emailMode: process.env.FIXTURE_EMAIL_MODE, deletionMode: process.env.FIXTURE_DELETION_MODE }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports/websites/goals/email preferences/account deletion are mocked and other writes are blocked."));
 }

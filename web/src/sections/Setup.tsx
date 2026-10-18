@@ -428,6 +428,7 @@ export default function Setup() {
         <a href="/pricing">Pricing</a>
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
+        <a href="/app/delete-account">Delete account</a>
       </nav>
     </div>
   );

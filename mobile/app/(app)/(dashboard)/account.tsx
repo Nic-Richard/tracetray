@@ -79,6 +79,7 @@ export default function AccountScreen() {
         <View style={styles.wrap}><Pressable accessibilityRole="link" onPress={() => open("https://tracetray.com/privacy")} style={{ paddingVertical: 12 }}><Text style={styles.link}>Privacy</Text></Pressable><Pressable accessibilityRole="link" onPress={() => open("https://tracetray.com/terms")} style={{ paddingVertical: 12 }}><Text style={styles.link}>Terms</Text></Pressable></View>
       </View>
       <Pressable accessibilityRole="button" onPress={confirmSignOut} style={styles.button}><Text style={styles.buttonText}>Sign out</Text></Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push("/delete-account")} style={[styles.button, { backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.line }]}><Text style={[styles.buttonText, { color: colors.danger }]}>Delete account</Text></Pressable>
     </ScrollView>
   </SafeAreaView>;
 }

@@ -38,6 +38,7 @@ app.use("/collect", express.json({ limit: "5mb", type: "text/plain" }));
 app.use(express.json({ limit: "5mb" }));
 // Express 5 leaves req.body undefined when a request has no body; routes expect an object.
 app.use((req, res, next) => { if (req.body === undefined) req.body = {}; next(); });
+app.use(require("./src/middleware/accountClosing").createAccountClosing());
 // Same addresses as nginx: pages without .html, and the old .html ones redirect.
 app.get(/^\/(pricing|privacy|terms|collects|sign-in|billing|tracetray)\.html$/, (req, res) => {
     const query = req.originalUrl.indexOf("?");
@@ -56,6 +57,7 @@ app.use("/client", express.static(path.join(__dirname, "..", "client")));
 mongoose.connection.on("error", err => logger.error("MongoDB error:", err.message));
 
 app.use(require("./src/routes/account"));
+app.use(require("./src/routes/accountDeletion"));
 app.use(require("./src/routes/bugReports"));
 app.use(require("./src/routes/billing"));
 app.use(require("./src/routes/health"));
@@ -94,3 +96,4 @@ require("./src/lib/goalHits").resumeBackfills().catch(err => logger.error("goal 
 startDataHoldJob();
 startWeeklySummaryJob();
 startAutoAnalysisJob();
+require("./src/jobs/accountDeletion").startAccountDeletionJob();
