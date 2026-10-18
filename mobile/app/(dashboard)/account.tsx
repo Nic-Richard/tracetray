@@ -64,6 +64,11 @@ export default function AccountScreen() {
         {result.error ? <><Text style={styles.error}>{result.error}</Text><Pressable accessibilityRole="button" onPress={result.reload} style={{ paddingVertical: 12 }}><Text style={styles.link}>Try again</Text></Pressable></> : <ActivityIndicator color={colors.accent} />}
       </View>}
       <View style={styles.panel}>
+        <Text style={styles.heading}>Your websites</Text>
+        <Text style={styles.muted}>Add or rename a website, get its installation code, or remove its data.</Text>
+        <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push("/websites")}><Text style={styles.buttonText}>Manage websites</Text></Pressable>
+      </View>
+      <View style={styles.panel}>
         <Text style={styles.heading}>Help and information</Text>
         {site ? <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/report", params: { site: site.key } })}><Text style={styles.buttonText}>Report a problem</Text></Pressable> : <Text style={styles.muted}>Choose a website to attach a problem report.</Text>}
         <View style={styles.wrap}><Pressable accessibilityRole="link" onPress={() => open("https://tracetray.com/privacy")} style={{ paddingVertical: 12 }}><Text style={styles.link}>Privacy</Text></Pressable><Pressable accessibilityRole="link" onPress={() => open("https://tracetray.com/terms")} style={{ paddingVertical: 12 }}><Text style={styles.link}>Terms</Text></Pressable></View>

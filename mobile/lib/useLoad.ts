@@ -15,5 +15,5 @@ export function useLoad<T>(load: () => Promise<T>, deps: DependencyList) {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [...deps, revision]);
-  return { data, error, loading, reload: () => setRevision(value => value + 1) };
+  return { data, setData, error, loading, reload: () => setRevision(value => value + 1) };
 }

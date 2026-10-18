@@ -43,6 +43,7 @@ export default function Pages() {
         </> : <>
           <Text style={styles.heading}>{query ? "No matching pages" : "No pages yet"}</Text>
           <Text style={styles.muted}>{query ? "Try another name or path." : "Add the tracking snippet to your website. Pages appear as visitors arrive."}</Text>
+          {!query ? <Pressable accessibilityRole="button" style={styles.button} onPress={() => site ? router.push({ pathname: "/installation", params: { site: site.key } }) : router.push("/websites")}><Text style={styles.buttonText}>{site ? "Get installation code" : "Add a website"}</Text></Pressable> : null}
         </>}
       </View>}
       renderItem={({ item }) => <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!item.locked }} disabled={item.locked}

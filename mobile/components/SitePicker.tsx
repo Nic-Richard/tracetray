@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { router } from "expo-router";
 import { FlatList, Modal, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSite } from "../lib/site";
@@ -24,7 +25,7 @@ export default function SitePicker() {
             <Pressable accessibilityRole="button" accessibilityLabel="Close website picker" onPress={() => setOpen(false)} style={{ paddingVertical: 12 }}><Text style={styles.link}>Done</Text></Pressable>
           </View>
         </View>
-        <FlatList data={account.sites} keyExtractor={item => item.key} contentContainerStyle={{ padding: 20, gap: 10 }} renderItem={({ item }) =>
+        <FlatList data={account.sites} keyExtractor={item => item.key} contentContainerStyle={{ padding: 20, gap: 10 }} ListFooterComponent={<Pressable accessibilityRole="button" style={styles.button} onPress={() => { setOpen(false); router.push("/websites"); }}><Text style={styles.buttonText}>Manage websites</Text></Pressable>} renderItem={({ item }) =>
           <Pressable accessibilityRole="button" accessibilityState={{ selected: item.key === site?.key }} onPress={() => { selectSite(item.key); setOpen(false); }}
             style={[styles.panel, { borderColor: item.key === site?.key ? colors.accent : colors.line }]}>
             <Text style={styles.heading}>{item.name}</Text>

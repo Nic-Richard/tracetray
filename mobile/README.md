@@ -7,7 +7,9 @@ desktop/mobile visitor groups, trait comparisons, evidence-based suggestions, se
 page-group members, visits/goal/behaviour trends, Attention pictures/overlays, journeys
 and recent visits. Ask supports native questions/follow-ups and page context, with shared
 answer formatting. Account includes usage, legal links and sign-out; problem reports
-can attach the selected website and a cleaned page URL.
+can attach the selected website and a cleaned page URL. Websites can be added, renamed
+or removed, with installation code available to select/copy or share. Removing the last
+website creates an empty replacement with a new key, matching the web dashboard.
 
 ## Development
 
@@ -35,7 +37,7 @@ application settings before testing production authentication.
 
 Start Docker, then run `npm run fixtures -w mobile` in a separate terminal. This local
 API listens on `127.0.0.1:5001`; it forwards selected dashboard reads/account lookup to
-Docker and mocks every Ask and problem-report request. Other writes, including
+Docker and mocks every Ask, problem-report and website-management request. Other writes, including
 analysis and checkout, are blocked. The tests verify that paid routes never reach the upstream API.
 
 For the Android emulator, start Metro with `EXPO_PUBLIC_API_URL=http://10.0.2.2:5001`.
@@ -44,7 +46,11 @@ Use the normal development Clerk login. Ordinary questions get a deterministic a
 waits five seconds. Problem reports succeed after one second; descriptions beginning
 `Fixture retry` fail once before succeeding. Reports never reach the real support route.
 `GET /__fixtures` exposes fixture questions/history and report payloads in memory so
-submissions, site scope and cleaned page context can be checked. Stop the fixture API and clear
+submissions, site scope and cleaned page context can be checked. Website fixtures start
+with a copy of the account's sites and one spare slot. Adds, renames and removals only
+change that in-memory copy; names beginning `Fixture retry` fail once. Website changes
+and current sites are also exposed at `/__fixtures`. This is a single-account local QA
+server; restart it between test accounts. Stop the fixture API and clear
 the environment override after QA. The fixture server is never imported into the app.
 
 Starter questions and page-context links prefill text and wait for an explicit submission. Conversation

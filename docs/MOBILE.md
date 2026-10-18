@@ -154,7 +154,15 @@ through fixtures. No support alerts are sent. Unit tests cover production allowa
 math (including zero/unlimited) and report size/privacy rules; production account
 states and opening legal links in a real browser remain unverified.
 
-Next: website/goal management, email preferences and account lifecycle/deletion.
+Website management is complete locally: add/rename/remove, plan limits and installation
+code selection/sharing. Account and the website picker both open management; empty
+websites link directly to installation. Changes update selection without unmounting
+navigation. Android 15 fixture checks cover add failure/retry, rename, removal
+cancellation/confirmation, last-site replacement, persisted selection, installation
+ownership and the Android share sheet. Website mutations never reach Docker during QA.
+Live website mutations and physical-phone copying/sharing remain unverified.
+
+Next: goal management, email preferences and account lifecycle/deletion.
 Expected paths also need their mobile flow.
 Before/after comparisons and change notes still need a mobile flow. Pagination and plan
 limits exist for group members but were not exercised on Android: the QA group has 24
