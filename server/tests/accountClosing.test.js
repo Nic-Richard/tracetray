@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const { EventEmitter } = require("node:events");
 
 function load(file, dependencies) {
     const module = { exports: {} };
@@ -15,8 +16,21 @@ function load(file, dependencies) {
     return module.exports;
 }
 function response() {
-    return { code: 200, status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } };
+    return Object.assign(new EventEmitter(), { code: 200, status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } });
 }
+
+test("in-flight account requests drain once on finish or close before cleanup", async () => {
+    const { createAccountClosing, accountRequestsPending } = load("middleware/accountClosing.js", { "@clerk/express": {}, "../db/models": {} });
+    const middleware = createAccountClosing({ userId: req => req.user, requested: async () => false });
+    const first = response(), second = response();
+    await middleware({ path: "/api/account", user: "in-flight" }, first, () => {});
+    await middleware({ path: "/api/bug-reports", user: "in-flight" }, second, () => {});
+    assert.equal(accountRequestsPending("in-flight"), true);
+    first.emit("finish"); first.emit("close");
+    assert.equal(accountRequestsPending("in-flight"), true);
+    second.emit("close");
+    assert.equal(accountRequestsPending("in-flight"), false);
+});
 
 test("closing guard blocks authenticated dashboard access but preserves configuration and deletion status", async () => {
     const { createAccountClosing } = load("middleware/accountClosing.js", {

@@ -16,7 +16,11 @@ function fixture(options = {}) {
         },
         AccountDeletion: {
             findOneAndUpdate: async (filter, update) => { calls.push(["request", filter, update]); return job; },
-            updateOne: async (filter, update) => { calls.push(["complete", filter, update]); Object.assign(job, update.$set); }
+            updateOne: async (filter, update) => {
+                calls.push([update.$set?.state === "complete" ? "complete" : "progress", filter, update]);
+                Object.assign(job, update.$set);
+                if (update.$addToSet) job.references = [...new Set([...job.references, ...update.$addToSet.references.$each])];
+            }
         },
         BugReport: { deleteMany: async filter => calls.push(["reports", filter]) },
         clerk: { users: { deleteUser: async id => { calls.push(["clerk", id]); if (options.clerkError) throw options.clerkError; } } },
@@ -25,7 +29,13 @@ function fixture(options = {}) {
         deleteSiteData: async key => { calls.push(["site", key]); if (options.siteError) throw new Error("disk unavailable"); },
         analysisRunning: running,
         shotsPending: () => !!options.shotsPending,
-        collectionPending: () => !!options.collectionPending
+        collectionPending: () => !!options.collectionPending,
+        accountRequestsPending: () => !!options.accountRequestsPending,
+        eraseAlerts: async (references, cursor) => {
+            calls.push(["alerts", references, cursor]);
+            if (options.alertError) throw new Error("relay unavailable");
+            return { complete: options.alertComplete !== false, cursor: { 123: options.alertComplete === false ? "1003" : "done" } };
+        }
     };
     return { service: createAccountDeletion(deps), calls, now, job, account, running };
 }
@@ -43,7 +53,7 @@ test("requests use the authenticated identity and persist a retryable receipt", 
     assert.equal(response.body.state, "pending");
     const request = f.calls.find(call => call[0] === "request");
     assert.deepEqual(request[1], { clerk_user_id: "user-1" });
-    assert.deepEqual(request[2].$setOnInsert.references, ["user-1", "site-1"]);
+    assert.deepEqual(request[2].$setOnInsert.references, ["user-1", "account-1", "site-1", "site-2"]);
     assert.deepEqual(f.calls.find(call => call[0] === "mark")[1], { _id: "account-1", deletion_requested_at: null });
     await f.service.request("user-1", "DELETE", f.now);
     assert.equal(f.job.state, "pending");
@@ -71,11 +81,35 @@ test("cleanup scopes every site and report, then removes identity and account", 
 });
 
 test("provider or file failures preserve the account and leave the job retryable", async () => {
-    for (const options of [{ clerkError: { status: 503 } }, { siteError: true }, { account: { stripe_customer_id: "cus-1" } }]) {
+    for (const options of [{ clerkError: { status: 503 } }, { siteError: true }, { account: { stripe_customer_id: "cus-1" } }, { alertError: true }]) {
         const f = fixture(options);
         await assert.rejects(f.service.process(f.job, f.now));
         assert.ok(!f.calls.some(call => call[0] === "account" || call[0] === "complete"));
     }
+});
+
+test("provider erasure persists progress before removing local account data", async () => {
+    const f = fixture({ alertComplete: false, account: { email: "owner@example.com" } });
+    f.job.alerts_cursor = { 123: "1009" };
+    assert.equal(await f.service.process(f.job, f.now), false);
+    assert.deepEqual(f.calls.find(call => call[0] === "alerts")[2], { 123: "1009" });
+    assert.deepEqual(f.job.alerts_cursor, { 123: "1003" });
+    assert.ok(f.job.references.includes("owner@example.com"));
+    assert.ok(f.job.references.includes("account-1"));
+    assert.ok(!f.calls.some(call => ["site", "clerk", "account", "complete"].includes(call[0])));
+});
+
+test("cleanup waits for dashboard writes already in flight", async () => {
+    const f = fixture({ accountRequestsPending: true });
+    assert.equal(await f.service.process(f.job, f.now), false);
+    assert.deepEqual(f.calls, []);
+});
+
+test("a retry after provider erasure completes does not rescan its history", async () => {
+    const f = fixture();
+    f.job.alerts_erased_at = f.now;
+    assert.equal(await f.service.process(f.job, f.now), true);
+    assert.ok(!f.calls.some(call => call[0] === "alerts"));
 });
 
 test("a previously removed Clerk identity does not block a retry", async () => {

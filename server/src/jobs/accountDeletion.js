@@ -4,12 +4,14 @@ const { getAccountSites, deleteSiteData } = require("../lib/siteAccount");
 const { analysisRunning } = require("../lib/analysisState");
 const { shotsPending } = require("../lib/pageShots");
 const { collectionPending } = require("../lib/collectionState");
+const { eraseAccountAlerts } = require("../lib/alertErasure");
+const { accountRequestsPending } = require("../middleware/accountClosing");
 const { createAccountDeletion } = require("../lib/accountDeletion");
 const logger = require("../lib/logger");
 
 const service = createAccountDeletion({ Account, AccountDeletion, BugReport, clerk: clerkClient,
     stripe: process.env.STRIPE_SECRET_KEY ? require("../lib/stripe") : null,
-    getSites: getAccountSites, deleteSiteData, analysisRunning, shotsPending, collectionPending });
+    getSites: getAccountSites, deleteSiteData, analysisRunning, shotsPending, collectionPending, accountRequestsPending, eraseAlerts: eraseAccountAlerts });
 
 let running = false;
 async function runAccountDeletion() {

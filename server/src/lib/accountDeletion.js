@@ -7,6 +7,11 @@ function deletionStatus(job) {
     return job ? { state: job.state, requested_at: job.requested_at, completed_at: job.completed_at || null } : { state: "none" };
 }
 
+function deletionReferences(userId, account, getSites) {
+    return [...new Set([userId, account?._id, account?.email, account?.stripe_customer_id, account?.site_key,
+        ...(account ? getSites(account).map(site => site.key) : [])].filter(Boolean).map(String))];
+}
+
 async function closeBilling(stripe, references, customerId, subscriptionId) {
     if (!stripe) {
         if (customerId) throw new Error("Stripe is unavailable for an account with billing");
@@ -24,19 +29,20 @@ async function closeBilling(stripe, references, customerId, subscriptionId) {
     }
 }
 
-function createAccountDeletion({ Account, AccountDeletion, BugReport, clerk, stripe, getSites, deleteSiteData, analysisRunning, shotsPending = () => false, collectionPending = () => false }) {
+function createAccountDeletion({ Account, AccountDeletion, BugReport, clerk, stripe, getSites, deleteSiteData, analysisRunning, shotsPending = () => false, collectionPending = () => false, accountRequestsPending = () => false, eraseAlerts = async () => ({ complete: true, cursor: {} }) }) {
     async function request(userId, confirmation, now = new Date()) {
         if (confirmation !== "DELETE") return { status: 400, body: { error: "Type DELETE to confirm permanent account deletion." } };
         const account = await Account.findOne({ clerk_user_id: userId }).lean();
         const job = await AccountDeletion.findOneAndUpdate({ clerk_user_id: userId }, { $setOnInsert: {
             account_id: account?._id, requested_at: now, state: "pending", next_attempt_at: now,
-            references: [...new Set([userId, account?.site_key].filter(Boolean))]
+            references: deletionReferences(userId, account, getSites)
         } }, { upsert: true, new: true });
         if (account && job.state !== "complete") await Account.updateOne({ _id: account._id, deletion_requested_at: null }, { $set: { deletion_requested_at: now } });
         return { status: 202, body: deletionStatus(job) };
     }
 
     async function process(job, now = new Date()) {
+        if (accountRequestsPending(job.clerk_user_id)) return false;
         const account = await Account.findOne({ clerk_user_id: job.clerk_user_id }).lean();
         if (account && !account.deletion_requested_at) {
             await Account.updateOne({ _id: account._id }, { $set: { deletion_requested_at: now } });
@@ -45,6 +51,16 @@ function createAccountDeletion({ Account, AccountDeletion, BugReport, clerk, str
         // Let cached collection requests drain, and never race an analysis process writing its results.
         if (account && (now - new Date(account.deletion_requested_at) < SETTLE_MS || getSites(account).some(site => analysisRunning[site.key] || shotsPending(site.key) || collectionPending(site.key)))) return false;
         await closeBilling(stripe, job.references, account?.stripe_customer_id, account?.subscription?.id);
+        const references = [...new Set([...job.references, ...deletionReferences(job.clerk_user_id, account, getSites)])];
+        if (!job.alerts_erased_at) {
+            await AccountDeletion.updateOne({ _id: job._id }, { $addToSet: { references: { $each: references } } });
+            const result = await eraseAlerts(references, job.alerts_cursor || {});
+            await AccountDeletion.updateOne({ _id: job._id }, { $set: {
+                alerts_cursor: result.cursor,
+                ...(result.complete ? { alerts_erased_at: now } : {})
+            } });
+            if (!result.complete) return false;
+        }
         if (account) {
             for (const site of getSites(account)) await deleteSiteData(site.key);
             await BugReport.deleteMany({ account_id: account._id });
@@ -54,7 +70,7 @@ function createAccountDeletion({ Account, AccountDeletion, BugReport, clerk, str
         if (account) await Account.deleteOne({ _id: account._id, clerk_user_id: job.clerk_user_id });
         await AccountDeletion.updateOne({ _id: job._id }, { $set: {
             state: "complete", completed_at: now, expires_at: new Date(+now + RETENTION_MS)
-        }, $unset: { account_id: "", next_attempt_at: "", lease_until: "" } });
+        }, $unset: { account_id: "", next_attempt_at: "", lease_until: "", alerts_cursor: "" } });
         return true;
     }
     return { request, process };

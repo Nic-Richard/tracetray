@@ -131,6 +131,8 @@ const AccountDeletion = mongoose.model("AccountDeletion", new mongoose.Schema({
     state: { type: String, enum: ["pending", "retrying", "complete"], default: "pending" },
     next_attempt_at: Date,
     lease_until: Date,
+    alerts_cursor: mongoose.Schema.Types.Mixed,
+    alerts_erased_at: Date,
     completed_at: Date,
     expires_at: { type: Date, expires: 0 }
 }), "account_deletions");
