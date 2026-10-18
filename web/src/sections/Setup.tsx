@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { pageLabel, type EmailList, type PageGroups, type Site } from "@tracetray/shared";
+import { PLAN_NAMES, usageMeter, pageLabel, type EmailList, type PageGroups, type Site } from "@tracetray/shared";
 import type React from "react";
 import { useLoad } from "../lib/useLoad";
 import { useApi } from "../api";
@@ -273,12 +273,12 @@ function PageGroupRules() {
 }
 
 function UsageMeter({ label, used, limit, accent }: { label: string; used: number; limit: number | null; accent: string }) {
-  const share = limit ? Math.min(1, used / limit) : null;
+  const { share, over } = usageMeter(used, limit);
   return (
-    <div className="usage-row" style={{ "--fill": limit && used > limit ? "var(--danger)" : accent } as React.CSSProperties}>
+    <div className="usage-row" style={{ "--fill": over ? "var(--danger)" : accent } as React.CSSProperties}>
       <span>{label}</span>
       <div className="meter">{share !== null && <i style={{ width: `${Math.max(share * 100, used ? 1.5 : 0)}%` }} />}</div>
-      <b className="num">{used.toLocaleString()}<small>{limit ? ` of ${limit.toLocaleString()}` : " no limit"}</small></b>
+      <b className="num">{used.toLocaleString()}<small>{limit !== null ? ` of ${limit.toLocaleString()}` : " no limit"}</small></b>
     </div>
   );
 }
@@ -288,7 +288,7 @@ function Plan() {
   const { account, mode: siteMode } = useSite();
   const usage = useLoad(() => api.usage(), [api]);
   const mode = usage.data?.mode ?? siteMode;
-  const name = { starter: "Starter", pro: "Pro", ultra: "Ultra", enterprise: "Enterprise", none: "No plan" }[usage.data?.plan ?? account.plan];
+  const name = PLAN_NAMES[usage.data?.plan ?? account.plan];
   const limits = usage.data?.limits;
   const used = usage.data?.usage;
   const month = used ? new Date(`${used.month}-01T00:00:00Z`).toLocaleDateString(undefined, { month: "long", timeZone: "UTC" }) : "";

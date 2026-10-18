@@ -1,16 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation } from "react-router";
-import type { BugCategory } from "@tracetray/shared";
+import { REPORT_CATEGORIES as CATEGORIES, reportError, type BugCategory } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
-
-const CATEGORIES: { value: BugCategory; label: string }[] = [
-  { value: "bug", label: "Something is broken" },
-  { value: "suggestion", label: "Suggestion" },
-  { value: "account", label: "Account" },
-  { value: "billing", label: "Billing" },
-  { value: "other", label: "Other" }
-];
 
 export default function BugReport({ onClose }: { onClose: () => void }) {
   const api = useApi();
@@ -25,7 +17,8 @@ export default function BugReport({ onClose }: { onClose: () => void }) {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (description.trim().length < 10) { setState({ error: "Add a little more detail so the problem can be found." }); return; }
+    const error = reportError(description);
+    if (error) { setState({ error }); return; }
     setState({ sending: true });
     try {
       await api.reportBug(siteKey, { category, description: description.trim(), dashboard_section: pathname, page_url: window.location.href });

@@ -2,25 +2,32 @@ import { createServer } from "node:http";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const READS = new Set(["/api/config", "/api/pages", "/api/sites", "/api/stats", "/api/sessions/timeseries", "/api/goal-rates", "/api/pages/members"]);
+const READS = new Set(["/api/config", "/api/pages", "/api/sites", "/api/stats", "/api/sessions/timeseries", "/api/goal-rates", "/api/pages/members", "/api/usage"]);
+
+async function readBody(request) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > 32_000) throw new RangeError("fixture request too large");
+    chunks.push(chunk);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
 
 export function createFixtureApi(upstreamFetch = fetch) {
   const questions = [];
+  const reports = [];
   const attempts = new Map();
   return createServer(async (request, response) => {
     const reply = (status, value) => { response.writeHead(status, { "Content-Type": "application/json" }); response.end(JSON.stringify(value)); };
     try {
       const url = new URL(request.url, "http://localhost");
       const path = url.pathname;
-      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions });
-      // Model requests always stop here, before the read-only upstream allowlist.
+      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports });
+      // Model requests and support alerts stop before the upstream allowlist.
       if (request.method === "POST" && path === "/api/ask") {
-        let raw = "";
-        for await (const chunk of request) {
-          raw += chunk;
-          if (raw.length > 32_000) return reply(413, { error: "fixture request too large" });
-        }
-        const body = JSON.parse(raw);
+        const body = await readBody(request);
         const site = url.searchParams.get("site_key") || body.site_key;
         questions.push({ site, question: body.question, history: body.history });
         const key = `${site}:${body.question}`;
@@ -35,6 +42,17 @@ export function createFixtureApi(upstreamFetch = fetch) {
         }), delay);
         return;
       }
+      if (request.method === "POST" && path === "/api/bug-reports") {
+        const body = await readBody(request);
+        const site = url.searchParams.get("site_key") || body.site_key;
+        reports.push({ ...body, site });
+        const key = `report:${site}:${body.description}`;
+        const attempt = (attempts.get(key) || 0) + 1;
+        attempts.set(key, attempt);
+        if (String(body.description).startsWith("Fixture retry") && attempt === 1) return reply(503, { error: "fixture report unavailable" });
+        setTimeout(() => reply(201, { id: "fixture-report", created_at: new Date().toISOString() }), 1000);
+        return;
+      }
       if (!(request.method === "GET" && READS.has(path)) && !(request.method === "POST" && path === "/api/account")) {
         return reply(503, { error: "this request is disabled by the fixture API" });
       }
@@ -46,10 +64,10 @@ export function createFixtureApi(upstreamFetch = fetch) {
       });
       response.writeHead(upstream.status, { "Content-Type": upstream.headers.get("content-type") || "application/json" });
       response.end(Buffer.from(await upstream.arrayBuffer()));
-    } catch { reply(502, { error: "could not load local fixture data" }); }
+    } catch (error) { reply(error instanceof RangeError ? 413 : 502, { error: "could not load local fixture data" }); }
   });
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  createFixtureApi().listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask is mocked and other writes are blocked."));
+  createFixtureApi().listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports are mocked and other writes are blocked."));
 }

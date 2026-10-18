@@ -147,7 +147,15 @@ formatted answers/lookups, follow-ups, duplicate taps, retry/limit states, conve
 reset, unowned websites and leaving pending requests. Keyboard avoidance and scrolling
 were corrected during these checks. No live model call or physical-phone test.
 
-Next: website/goal management, usage, bug reports and account controls. Expected paths also need their mobile flow.
+Account usage, legal links/sign-out and native problem reports are complete locally.
+The emulator shows actual beta usage; report validation, category selection, cleaned
+page context, keyboard handling, failure/retry, duplicate taps and success are checked
+through fixtures. No support alerts are sent. Unit tests cover production allowance
+math (including zero/unlimited) and report size/privacy rules; production account
+states and opening legal links in a real browser remain unverified.
+
+Next: website/goal management, email preferences and account lifecycle/deletion.
+Expected paths also need their mobile flow.
 Before/after comparisons and change notes still need a mobile flow. Pagination and plan
 limits exist for group members but were not exercised on Android: the QA group has 24
 members. Physical-phone and production-auth checks remain outstanding.

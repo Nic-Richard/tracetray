@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { useClerk } from "@clerk/expo";
 import { router } from "expo-router";
-import { ActivityIndicator, Alert, FlatList, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { compactNumber, pageLabel, pagePath } from "@tracetray/shared";
 import { useApi } from "../../lib/api";
@@ -13,19 +12,12 @@ import SitePicker from "../../components/SitePicker";
 export default function Pages() {
   const api = useApi();
   const { site } = useSite();
-  const { signOut } = useClerk();
   const { colors, styles } = useTheme();
   const [query, setQuery] = useState("");
   const pages = useLoad(() => site ? api.pages(site.key) : Promise.resolve([]), [api, site?.key]);
   const filtered = useMemo(() => [...(pages.data || [])]
     .filter(item => `${pageLabel(item.page)} ${pagePath(item.page)}`.toLowerCase().includes(query.trim().toLowerCase()))
     .sort((a, b) => b.sessions - a.sessions || a.page.localeCompare(b.page)), [pages.data, query]);
-  function confirmSignOut() {
-    Alert.alert("Sign out?", "You can sign in again with your TraceTray account.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign out", onPress: () => { signOut().catch(() => Alert.alert("Couldn't sign out", "Try again.")); } }
-    ]);
-  }
   return <SafeAreaView style={styles.screen}>
     <FlatList
       data={filtered} keyExtractor={item => `${site?.key}:${item.page}`} refreshing={pages.loading && !!pages.data} onRefresh={pages.reload}
@@ -33,7 +25,7 @@ export default function Pages() {
       ListHeaderComponent={<View style={{ gap: 20, marginBottom: 10 }}>
         <View style={styles.row}>
           <Text style={styles.title}>TraceTray</Text>
-          <Pressable accessibilityRole="button" onPress={confirmSignOut} style={{ paddingVertical: 12 }}><Text style={styles.link}>Sign out</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => router.push("/account")} style={{ paddingVertical: 12 }}><Text style={styles.link}>Account</Text></Pressable>
         </View>
         <SitePicker />
         {site ? <View style={styles.wrap}>
