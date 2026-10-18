@@ -179,7 +179,14 @@ cold unowned-site guards, sign-out/sign-in and Back to Home. No '__root' navigat
 errors appear. Production authentication, hosted callbacks, real phones and actual
 notification-provider delivery remain unverified.
 
-Next: email preferences and account lifecycle/deletion. Empty/error page/form pickers
+Native email preferences are complete locally. Account opens switches for weekly
+summaries and behaviour-shift alerts, using shared web/app wording. Unavailable options
+stay disabled; a pending save blocks duplicate changes and refresh. Android 15 fixtures
+cover enabling/disabling, failed saves/retry, duplicate taps, reopening saved settings,
+limited-plan controls and initial read failure/retry. No real subscription changes or
+email sends run during these checks. Physical-phone and production-plan checks remain.
+
+Next: account lifecycle/deletion. Empty/error page/form pickers
 and production plan UI still need native QA.
 Expected paths also need their mobile flow.
 Before/after comparisons and change notes still need a mobile flow. Pagination and plan

@@ -2,6 +2,45 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createFixtureApi } from "../scripts/fixture-api.mjs";
 
+test("email preference fixtures retain failed saves and keep changes out of the real account", async () => {
+  const server = createFixtureApi(() => { throw new Error("Email preferences must not reach upstream"); }, { emailMode: "retry" });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const read = async () => (await fetch(`${origin}/api/email-prefs`)).json();
+  const change = body => fetch(`${origin}/api/email-prefs`, { method: "PATCH", body: JSON.stringify(body) });
+  try {
+    assert.equal((await read()).weekly_summary, false);
+    assert.equal((await change({ weekly_summary: "yes" })).status, 400);
+    assert.equal((await change({ weekly_summary: true })).status, 503);
+    assert.equal((await read()).weekly_summary, false);
+    assert.equal((await change({ weekly_summary: true })).status, 200);
+    assert.equal((await read()).weekly_summary, true);
+    assert.equal((await read()).shift_alerts, false);
+    assert.equal((await change({ weekly_summary: false, shift_alerts: true })).status, 200);
+    assert.equal((await read()).weekly_summary, false);
+    assert.equal((await read()).shift_alerts, true);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test("email preference fixtures cover unavailable plans and an initial read failure", async () => {
+  for (const emailMode of ["limited", "read-error"]) {
+    const server = createFixtureApi(() => { throw new Error("Email preferences must not reach upstream"); }, { emailMode });
+    await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+    const origin = `http://127.0.0.1:${server.address().port}`;
+    try {
+      const first = await fetch(`${origin}/api/email-prefs`);
+      if (emailMode === "read-error") {
+        assert.equal(first.status, 503);
+        assert.equal((await fetch(`${origin}/api/email-prefs`)).status, 200);
+      } else {
+        assert.equal((await first.json()).available.shift_alerts, false);
+        assert.equal((await fetch(`${origin}/api/email-prefs`, { method: "PATCH", body: '{"shift_alerts":true}' })).status, 403);
+        assert.deepEqual((await (await fetch(`${origin}/__fixtures`)).json()).emailChanges, []);
+      }
+    } finally { await new Promise(resolve => server.close(resolve)); }
+  }
+});
+
 test("fixture startup delay holds configuration while other reads stay available", async () => {
   const calls = [];
   const server = createFixtureApi(async url => { calls.push(url); return Response.json({ ready: true }); }, { configDelayMs: 250 });

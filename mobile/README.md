@@ -13,6 +13,8 @@ website creates an empty replacement with a new key, matching the web dashboard.
 Goals support click text, tracked destination pages and recently sent forms when the
 plan allows them. Names/targets can be edited; removal confirms before deleting matches.
 Page overviews open scoped goal management, including the page's main-goal selection.
+Account also opens email preferences for weekly summaries and behaviour-shift alerts.
+The switches follow plan availability and display confirmed saves or retryable errors.
 
 ## Development
 
@@ -72,6 +74,11 @@ the environment override after QA. The fixture server is never imported into the
 Set `FIXTURE_CONFIG_DELAY_MS=8000` on the fixture server to hold configuration for eight
 seconds when checking links during startup. The delay is off by default and capped at
 30 seconds; it never changes the app's production configuration.
+
+Email preferences start off in the fixture API and never read or change real account
+subscriptions. `FIXTURE_EMAIL_MODE=retry` fails the first save, `limited` disables shift
+alerts, and `read-error` fails the first read. Successful saves take 800 ms; `/__fixtures`
+exposes `emailPrefs`, `emailChanges` and `emailReads` for checking retries and duplicate taps.
 
 Starter questions and page-context links prefill text and wait for an explicit submission. Conversation
 history stays in memory, resets for a different website, and sends at most the last three

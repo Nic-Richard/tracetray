@@ -1,4 +1,9 @@
-import type { BugCategory, Plan } from "./types";
+import type { BugCategory, EmailList, Plan } from "./types";
+
+export const EMAILS: { list: EmailList; name: string; about: string }[] = [
+  { list: "weekly_summary", name: "Weekly summary", about: "Every Monday: last week's visits, busiest pages, what moved most and any shifts in visitor groups." },
+  { list: "shift_alerts", name: "Behaviour-shift alerts", about: "After the weekly analysis, when a page's visitor groups move 10 points or more." }
+];
 
 export const PLAN_NAMES: Record<Plan, string> = { starter: "Starter", pro: "Pro", ultra: "Ultra", enterprise: "Enterprise", none: "No plan" };
 

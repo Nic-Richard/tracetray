@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { PLAN_NAMES, usageMeter, pageLabel, type EmailList, type PageGroups, type Site } from "@tracetray/shared";
+import { EMAILS, PLAN_NAMES, usageMeter, pageLabel, type EmailList, type PageGroups, type Site } from "@tracetray/shared";
 import type React from "react";
 import { useLoad } from "../lib/useLoad";
 import { useApi } from "../api";
@@ -369,11 +369,6 @@ function Export() {
     </section>
   );
 }
-
-const EMAILS: { list: EmailList; name: string; about: string }[] = [
-  { list: "weekly_summary", name: "Weekly summary", about: "Every Monday: last week's visits, busiest pages, what moved most and any shifts in visitor groups." },
-  { list: "shift_alerts", name: "Behaviour-shift alerts", about: "After the weekly analysis, when a page's visitor groups move 10 points or more." }
-];
 
 function Emails() {
   const api = useApi();

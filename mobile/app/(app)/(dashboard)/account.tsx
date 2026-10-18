@@ -69,6 +69,11 @@ export default function AccountScreen() {
         <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push("/websites")}><Text style={styles.buttonText}>Manage websites</Text></Pressable>
       </View>
       <View style={styles.panel}>
+        <Text style={styles.heading}>Emails</Text>
+        <Text style={styles.muted}>Choose your weekly summaries and behaviour-shift alerts.</Text>
+        <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push("/emails")}><Text style={styles.buttonText}>Email preferences</Text></Pressable>
+      </View>
+      <View style={styles.panel}>
         <Text style={styles.heading}>Help and information</Text>
         {site ? <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/report", params: { site: site.key } })}><Text style={styles.buttonText}>Report a problem</Text></Pressable> : <Text style={styles.muted}>Choose a website to attach a problem report.</Text>}
         <View style={styles.wrap}><Pressable accessibilityRole="link" onPress={() => open("https://tracetray.com/privacy")} style={{ paddingVertical: 12 }}><Text style={styles.link}>Privacy</Text></Pressable><Pressable accessibilityRole="link" onPress={() => open("https://tracetray.com/terms")} style={{ paddingVertical: 12 }}><Text style={styles.link}>Terms</Text></Pressable></View>

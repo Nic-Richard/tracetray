@@ -18,13 +18,16 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0 } = {}) {
+export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, emailMode = "normal" } = {}) {
   const questions = [];
   const reports = [];
   const attempts = new Map();
   const websiteChanges = [];
   const goalChanges = [];
   const goalLists = new Map();
+  const emailChanges = [];
+  let emailReads = 0;
+  const emailPrefs = { weekly_summary: false, shift_alerts: false, available: { weekly_summary: true, shift_alerts: emailMode !== "limited" } };
   let websites;
   let siteLimit;
   let nextSite = 0;
@@ -33,7 +36,25 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0 } = 
     try {
       const url = new URL(request.url, "http://localhost");
       const path = url.pathname;
-      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists) });
+      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists), emailChanges, emailPrefs, emailReads });
+      if (path === "/api/email-prefs") {
+        if (request.method === "GET") {
+          emailReads++;
+          if (emailMode === "read-error" && emailReads === 1) return reply(503, { error: "fixture preferences unavailable" });
+          return reply(200, emailPrefs);
+        }
+        if (request.method === "PATCH") {
+          const body = await readBody(request);
+          const changes = Object.entries(body).filter(([key, value]) => ["weekly_summary", "shift_alerts"].includes(key) && typeof value === "boolean");
+          if (!changes.length) return reply(400, { error: "nothing to change" });
+          if (changes.some(([key]) => !emailPrefs.available[key])) return reply(403, { error: "email not available" });
+          emailChanges.push(Object.fromEntries(changes));
+          if (emailMode === "retry" && emailChanges.length === 1) return reply(503, { error: "fixture preference save unavailable" });
+          setTimeout(() => { Object.assign(emailPrefs, Object.fromEntries(changes)); reply(200, { updated: changes.length }); }, 800);
+          return;
+        }
+        return reply(503, { error: "fixture method disabled" });
+      }
       const goalId = /^\/api\/goals\/([^/]+)$/.exec(path)?.[1];
       const siteKey = url.searchParams.get("site_key");
       if (path === "/api/goals" || goalId || path === "/api/main-goal" || path === "/api/forms") {
@@ -172,5 +193,5 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0 } = 
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const configDelayMs = Math.min(30_000, Math.max(0, Number(process.env.FIXTURE_CONFIG_DELAY_MS) || 0));
-  createFixtureApi(fetch, { configDelayMs }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports/websites/goals are mocked and other writes are blocked."));
+  createFixtureApi(fetch, { configDelayMs, emailMode: process.env.FIXTURE_EMAIL_MODE }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports/websites/goals/email preferences are mocked and other writes are blocked."));
 }
