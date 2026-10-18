@@ -211,9 +211,13 @@ main-goal verdicts, visitor groups, low-sample warnings and phone-share changes.
 Fixture writes stay in memory. Emulator and build validation are recorded in the
 local changelog; real change mutations and physical-phone checks remain unverified.
 
-Next: empty/error page/form pickers
-and production plan UI still need native QA.
-Expected paths also need their mobile flow.
+Expected paths now have a native screen from Journeys: choose 2–6 ordered pages,
+reorder steps, name/save paths and confirm removal. Periods cover 7/30/90 days;
+native cards show journey counts, drop-offs and device splits. Web/app share ratio
+calculations. Empty/error/plan/limit fixture coverage and validation are tracked in
+the local changelog; real path writes and physical-phone checks remain unverified.
+
+Next: empty/error page/form pickers and production plan UI still need native QA.
 Pagination and plan
 limits exist for group members but were not exercised on Android: the QA group has 24
 members. Physical-phone and production-auth checks remain outstanding.

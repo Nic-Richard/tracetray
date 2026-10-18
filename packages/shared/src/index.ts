@@ -7,3 +7,4 @@ export * from "./ask";
 export * from "./account";
 export * from "./goals";
 export * from "./compare";
+export * from "./paths";

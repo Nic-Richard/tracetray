@@ -2,6 +2,57 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createFixtureApi } from "../scripts/fixture-api.mjs";
 
+test("path fixtures preserve ordered steps, period counts, retries and site ownership without real writes", async () => {
+  const calls = [];
+  const server = createFixtureApi(async (url, init) => {
+    calls.push([url, init.method]);
+    if (!url.endsWith("/api/account")) throw new Error("Only the fixture account may reach upstream");
+    return Response.json({ sites: [{ key: "owned" }], site_key: "owned" });
+  }, { pathMode: "remove-error" });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const read = days => fetch(`${origin}/api/paths?site_key=owned&days=${days}`).then(value => value.json());
+  const post = body => fetch(`${origin}/api/paths?site_key=owned`, { method: "POST", body: JSON.stringify(body) });
+  try {
+    await fetch(origin + "/api/account", { method: "POST" });
+    assert.equal((await fetch(origin + "/api/paths?site_key=other")).status, 403);
+    const list = await read(7); assert.equal(list.paths[0].days, 7); assert.equal(list.paths[0].steps[0].all, 100);
+    assert.equal((await read(90)).paths[0].steps[0].all, 600);
+    const steps = ["https://example.com/cart", "https://example.com/checkout"];
+    assert.equal((await post({ name: "Duplicate", steps: [steps[0], steps[0]] })).status, 400);
+    const body = { name: "Fixture retry buying", steps };
+    assert.equal((await post(body)).status, 503);
+    const saved = await (await post(body)).json();
+    const path = (await read(30)).paths.find(value => value.id === saved.id);
+    assert.deepEqual(path.steps.map(value => value.page), steps);
+    assert.equal((await fetch(`${origin}/api/paths/${saved.id}?site_key=other`, { method: "DELETE" })).status, 403);
+    assert.equal((await fetch(`${origin}/api/paths/${saved.id}?site_key=owned`, { method: "DELETE" })).status, 503);
+    assert.equal((await read(30)).paths.length, 2);
+    assert.equal((await fetch(`${origin}/api/paths/${saved.id}?site_key=owned`, { method: "DELETE" })).status, 200);
+    assert.equal((await read(30)).paths.length, 1);
+    assert.equal(calls.length, 1);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test("path fixtures cover empty counts, empty lists, plan restrictions and read recovery", async () => {
+  for (const pathMode of ["empty", "zero", "limited", "read-error", "full"]) {
+    const server = createFixtureApi(async () => Response.json({ sites: [{ key: "owned" }] }), { pathMode });
+    await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+    const origin = `http://127.0.0.1:${server.address().port}`;
+    try {
+      await fetch(origin + "/api/account", { method: "POST" });
+      let response = await fetch(origin + "/api/paths?site_key=owned");
+      if (pathMode === "limited") { assert.equal(response.status, 403); continue; }
+      if (pathMode === "read-error") { assert.equal(response.status, 503); response = await fetch(origin + "/api/paths?site_key=owned"); }
+      const data = await response.json();
+      if (pathMode === "empty") assert.deepEqual(data.paths, []);
+      if (pathMode === "zero") assert.ok(data.paths[0].steps.every(value => value.all === 0));
+      if (pathMode === "full") assert.equal(data.paths.length, data.cap);
+      assert.equal(response.status, 200);
+    } finally { await new Promise(resolve => server.close(resolve)); }
+  }
+});
+
 test("change-note fixtures enforce ownership, recover failed writes and never forward mutations", async () => {
   const calls = [];
   const server = createFixtureApi(async (url, init) => {

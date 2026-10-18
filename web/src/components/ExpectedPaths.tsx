@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import type React from "react";
-import { pageLabel, percent, type PathFunnel } from "@tracetray/shared";
+import { pageLabel, pathStepStats, percent, type PathFunnel } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
@@ -25,13 +25,13 @@ function Funnel({ path, onRemoved }: { path: PathFunnel; onRemoved: () => void }
       {first === 0 ? <p className="muted">No journeys have reached the first step in the last {path.days} days.</p> : (
         <ol className="funnel-steps">
           {path.steps.map((step, i) => {
-            const previous = i ? path.steps[i - 1].all : step.all;
+            const stats = pathStepStats(path.steps, i);
             return (
               <li key={step.page}>
                 <span className="funnel-label"><b>{pageLabel(step.page)}</b>
-                  <small>{i === 0 ? "start" : previous ? `${percent(step.all / previous)} of the step before` : "–"} · desktop {step.desktop.toLocaleString()}, phones {step.mobile.toLocaleString()}</small>
+                  <small>{i === 0 ? "start" : stats.fromPrevious !== null ? `${percent(stats.fromPrevious)} of the step before` : "–"} · desktop {step.desktop.toLocaleString()}, phones {step.mobile.toLocaleString()}</small>
                 </span>
-                <span className="meter"><i style={{ width: `${(step.all / first) * 100}%` }} /></span>
+                <span className="meter"><i style={{ width: `${(stats.fromStart || 0) * 100}%` }} /></span>
                 <b className="num">{step.all.toLocaleString()}</b>
               </li>
             );

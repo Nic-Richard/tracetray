@@ -1,5 +1,5 @@
-import { useLocalSearchParams } from "expo-router";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { journeyLabel, pageLabel, percent } from "@tracetray/shared";
 import { useApi } from "../../../lib/api";
@@ -37,6 +37,7 @@ export default function JourneysScreen() {
   return <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={result.loading} onRefresh={result.reload} tintColor={colors.accent} />}>
       <Text style={styles.title}>{site?.name}</Text>
+      <Pressable accessibilityRole="button" style={styles.button} onPress={() => router.push({ pathname: "/paths", params: { site: siteKey } })}><Text style={styles.buttonText}>Expected paths</Text></Pressable>
       <Text style={styles.muted}>How visitors move through the whole site in the last 30 days: where they arrive, where they go next, and where they leave.</Text>
       {!data.total_visitors ? <View style={styles.panel}><Text style={styles.heading}>No journeys yet</Text><Text style={styles.muted}>Journeys appear as visitors arrive and move between pages.</Text></View> : <>
         <View style={styles.panel}>

@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 
 const { parseGoal } = createRequire(import.meta.url)("../../server/src/lib/goals.js");
 
-const READS = new Set(["/api/config", "/api/pages", "/api/sites", "/api/stats", "/api/sessions/timeseries", "/api/goal-rates", "/api/goals", "/api/pages/members", "/api/usage"]);
+const READS = new Set(["/api/config", "/api/pages", "/api/sites", "/api/stats", "/api/sessions/timeseries", "/api/goal-rates", "/api/goals", "/api/pages/members", "/api/usage", "/api/journey"]);
 
 async function readBody(request) {
   const chunks = [];
@@ -18,7 +18,7 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, emailMode = "normal", deletionMode = "normal", comparisonMode = "normal" } = {}) {
+export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, emailMode = "normal", deletionMode = "normal", comparisonMode = "normal", pathMode = "normal" } = {}) {
   let deletion = { state: "none" };
   let deletionAttempts = 0;
   const questions = [];
@@ -29,6 +29,10 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
   const goalLists = new Map();
   const changeLists = new Map();
   const changeWrites = [];
+  const pathLists = new Map();
+  const pathWrites = [];
+  const pathReads = [];
+  const pageLists = new Map();
   const emailChanges = [];
   let emailReads = 0;
   const emailPrefs = { weekly_summary: false, shift_alerts: false, available: { weekly_summary: true, shift_alerts: emailMode !== "limited" } };
@@ -41,6 +45,50 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
       const url = new URL(request.url, "http://localhost");
       const path = url.pathname;
       if (path.startsWith("/api/") && !["/api/config", "/api/account-deletion"].includes(path) && deletion.state !== "none") return reply(410, { error: "Account deletion has been requested.", account_deleting: true });
+      const pathId = /^\/api\/paths\/([^/]+)$/.exec(path)?.[1];
+      if (path === "/api/paths" || pathId) {
+        const key = url.searchParams.get("site_key");
+        if (!websites?.some(site => site.key === key)) return reply(403, { error: "website not available" });
+        if (pathMode === "limited") return reply(403, { error: "funnels are part of Ultra", limit_reached: "plan" });
+        const pages = ["https://example.com/products/:product", "https://example.com/cart", "https://example.com/checkout"];
+        if (!pathLists.has(key)) pathLists.set(key, pathMode === "empty" ? [] : [{ id: `fixture-path-${key}`, name: "Buying a pack", steps: pages }]);
+        const list = pathLists.get(key);
+        if (request.method === "GET" && path === "/api/paths") {
+          pathReads.push({ site: key, days: url.searchParams.get("days") });
+          if (pathMode === "read-error" && pathReads.filter(value => value.site === key).length === 1) return reply(503, { error: "fixture paths unavailable" });
+          const days = [7, 30, 90].includes(Number(url.searchParams.get("days"))) ? Number(url.searchParams.get("days")) : 30;
+          return reply(200, { cap: pathMode === "full" ? 1 : 10, paths: list.map(value => ({ ...value, days, steps: value.steps.map((page, index) => {
+            const count = pathMode === "zero" ? 0 : Math.max(0, (100 - index * 35)) * (days === 7 ? 1 : days === 30 ? 3 : 6);
+            return { page, all: count, desktop: Math.round(count * 0.6), mobile: count - Math.round(count * 0.6) };
+          }) })) });
+        }
+        if (request.method === "POST" && path === "/api/paths") {
+          if (list.length >= (pathMode === "full" ? 1 : 10)) return reply(400, { error: "remove a path first" });
+          const body = await readBody(request);
+          if (typeof body.name !== "string" || !body.name.trim() || !Array.isArray(body.steps) || body.steps.length < 2 || body.steps.length > 6 || body.steps.some(value => typeof value !== "string" || !/^https?:\/\//.test(value)) || new Set(body.steps).size !== body.steps.length) return reply(400, { error: "choose a name and 2 to 6 different pages" });
+          pathWrites.push({ method: "POST", site: key, ...body });
+          const attemptKey = `path:${key}:${body.name}`;
+          if (body.name.startsWith("Fixture retry") && !attempts.has(attemptKey)) { attempts.set(attemptKey, 1); return reply(503, { error: "fixture path save unavailable" }); }
+          const added = { id: `fixture-path-${pathWrites.length}`, name: body.name.trim().slice(0, 60), steps: [...body.steps] };
+          list.push(added);
+          setTimeout(() => reply(201, { id: added.id }), 700);
+          return;
+        }
+        if (request.method === "DELETE" && pathId) {
+          const index = list.findIndex(value => value.id === decodeURIComponent(pathId));
+          if (index < 0) return reply(404, { error: "that path isn't there" });
+          pathWrites.push({ method: "DELETE", site: key, id: decodeURIComponent(pathId) });
+          if (pathMode === "remove-error" && !attempts.has(`remove:${pathId}`)) { attempts.set(`remove:${pathId}`, 1); return reply(503, { error: "fixture path removal unavailable" }); }
+          list.splice(index, 1);
+          return reply(200, { deleted: true });
+        }
+        return reply(503, { error: "fixture method disabled" });
+      }
+      if (path === "/api/pages" && ["empty-pages", "pages-error"].includes(pathMode)) {
+        const attemptKey = `path-pages:${url.searchParams.get("site_key")}`;
+        if (pathMode === "pages-error" && !attempts.has(attemptKey)) { attempts.set(attemptKey, 1); return reply(503, { error: "fixture pages unavailable" }); }
+        if (pathMode === "empty-pages") return reply(200, []);
+      }
       const changeId = /^\/api\/page-changes\/([^/]+)$/.exec(path)?.[1];
       if (path === "/api/page-changes" || changeId || path === "/api/compare") {
         const key = url.searchParams.get("site_key");
@@ -98,7 +146,7 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
         deletion = { state: deletionMode === "retrying" ? "retrying" : "pending", requested_at: new Date().toISOString() };
         return reply(202, deletion);
       }
-      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists), changeWrites, changeLists: Object.fromEntries(changeLists), emailChanges, emailPrefs, emailReads });
+      if (request.method === "GET" && path === "/__fixtures") return reply(200, { questions, reports, websiteChanges, sites: websites, goalChanges, goalLists: Object.fromEntries(goalLists), changeWrites, changeLists: Object.fromEntries(changeLists), pathWrites, pathReads, pathLists: Object.fromEntries(pathLists), pageLists: Object.fromEntries(pageLists), emailChanges, emailPrefs, emailReads });
       if (path === "/api/email-prefs") {
         if (request.method === "GET") {
           emailReads++;
@@ -235,6 +283,11 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
         ...(request.method === "POST" ? { body: "{}" } : {})
       });
       if (path === "/api/config" && configDelayMs) await new Promise(resolve => setTimeout(resolve, configDelayMs));
+      if (request.method === "GET" && path === "/api/pages" && upstream.ok) {
+        const pages = await upstream.json();
+        pageLists.set(siteKey, pages);
+        return reply(200, pages);
+      }
       if (request.method === "GET" && path === "/api/goals" && upstream.ok) {
         const list = await upstream.json();
         list.cap = list.goals.length + 2;
@@ -255,5 +308,5 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const configDelayMs = Math.min(30_000, Math.max(0, Number(process.env.FIXTURE_CONFIG_DELAY_MS) || 0));
-  createFixtureApi(fetch, { configDelayMs, emailMode: process.env.FIXTURE_EMAIL_MODE, deletionMode: process.env.FIXTURE_DELETION_MODE, comparisonMode: process.env.FIXTURE_COMPARISON_MODE }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; Ask/reports/websites/goals/changes/email preferences/account deletion are mocked and other writes are blocked."));
+  createFixtureApi(fetch, { configDelayMs, emailMode: process.env.FIXTURE_EMAIL_MODE, deletionMode: process.env.FIXTURE_DELETION_MODE, comparisonMode: process.env.FIXTURE_COMPARISON_MODE, pathMode: process.env.FIXTURE_PATH_MODE }).listen(5001, "127.0.0.1", () => console.log("Fixture API on 127.0.0.1:5001; dashboard writes are mocked and other writes are blocked."));
 }
