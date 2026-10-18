@@ -225,4 +225,14 @@ Android fixture checks cover 58 members, search, sorting, periods, retry, empty 
 and restricted-plan previews. These checks simulate plan responses; production plans,
 physical-phone and production-auth checks remain outstanding.
 
-Next: release assets/configuration, production authentication and physical-phone QA.
+Release preparation now includes app/adaptive/themed icons, a native light/dark splash,
+production EAS configuration, a standalone debug-signed phone APK, listing copy/artwork
+and four seeded-demo screenshots. The local EAS archive excludes secrets, native outputs
+and server data. See mobile/RELEASE.md for account/setup and submission steps.
+
+Nic confirms production Google sign-in returns to the dashboard on the Pixel after
+the Clerk allowlist and native callback routing fixes. Remaining phone checks cover
+session reopening, password recovery, dashboard views and network recovery.
+
+Next: approved deployments and live deletion, review credentials, Play declarations,
+separate signing and an approved EAS AAB.

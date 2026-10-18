@@ -24,7 +24,9 @@
     "predev": "npm run surfaces",
     "prebuild": "npm run surfaces",
     "precheck": "npm run surfaces",
-    "preandroid": "npm run surfaces"
+    "preandroid": "npm run surfaces",
+    "brand": "node scripts/build-brand-assets.mjs",
+    "eas-build-post-install": "node scripts/build-surfaces.mjs"
   },
   "dependencies": {
     "@clerk/expo": "^4.13.0",
@@ -38,6 +40,7 @@
     "expo-linking": "~58.0.13",
     "expo-router": "~58.0.23",
     "expo-secure-store": "~58.0.2",
+    "expo-splash-screen": "~58.0.10",
     "expo-status-bar": "~58.0.3",
     "expo-system-ui": "~58.0.6",
     "expo-web-browser": "~58.0.6",
@@ -48,9 +51,11 @@
     "react-native-webview": "14.0.1"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "esbuild": "^0.28.2",
+    "pngjs": "^3.4.0",
     "react-dom": "^19.3.1",
     "typescript": "~6.0.3"
   }

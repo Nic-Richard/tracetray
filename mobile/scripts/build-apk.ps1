@@ -1,6 +1,7 @@
 param(
     [string]$NodeExecutable = 'node',
-    [string]$Architectures = 'arm64-v8a,x86_64'
+    [string]$Architectures = 'arm64-v8a,x86_64',
+    [switch]$Standalone
 )
 
 $ErrorActionPreference = 'Stop'
@@ -22,28 +23,37 @@ if (!(Test-Path -LiteralPath $sdkPath)) { throw 'Install the Android SDK or set 
 $savedPath = $env:PATH
 $savedJava = $env:JAVA_HOME
 $savedAndroid = $env:ANDROID_HOME
+$savedApi = $env:EXPO_PUBLIC_API_URL
 Push-Location $mobileRoot
 try {
     $env:PATH = "$(Split-Path -Parent $nodePath);$savedPath"
     $env:JAVA_HOME = $jdkPath
     $env:ANDROID_HOME = $sdkPath
+    if ($Standalone) { $env:EXPO_PUBLIC_API_URL = 'https://tracetray.com' }
     $ErrorActionPreference = 'Continue'
     & $nodePath 'scripts/build-surfaces.mjs'
     if ($LASTEXITCODE -ne 0) { throw 'Shared surface build failed.' }
-    & $nodePath '..\node_modules\expo\bin\cli' prebuild --platform android --no-install
+    & $nodePath '..\node_modules\expo\bin\cli' prebuild --platform android --no-install --no-clean
     if ($LASTEXITCODE -ne 0) { throw 'Expo prebuild failed.' }
+    if ($Standalone -and [IO.File]::ReadAllText((Join-Path $mobileRoot 'android\app\build.gradle')) -notmatch '(?s)release\s*\{[^}]*signingConfig signingConfigs\.debug') {
+        throw 'Standalone QA builds require the generated debug signing configuration.'
+    }
 
     $localProperties = @("sdk.dir=$($sdkPath -replace '\\', '/' -replace ':', '\:')")
     $cmakePath = Join-Path $sdkPath 'cmake\3.31.6'
     if (Test-Path -LiteralPath $cmakePath) { $localProperties += "cmake.dir=$($cmakePath -replace '\\', '/' -replace ':', '\:')" }
     Set-Content -LiteralPath 'android\local.properties' -Value $localProperties -Encoding ascii
 
-    & '.\android\gradlew.bat' -p android :app:assembleDebug "-PreactNativeArchitectures=$Architectures" --max-workers=4 --console=plain
+    $variant = if ($Standalone) { 'release' } else { 'debug' }
+    $assembleTask = if ($Standalone) { ':app:assembleRelease' } else { ':app:assembleDebug' }
+    & '.\android\gradlew.bat' -p android $assembleTask "-PreactNativeArchitectures=$Architectures" --max-workers=4 --console=plain
     if ($LASTEXITCODE -ne 0) { throw 'Android build failed.' }
-    Write-Host (Join-Path $mobileRoot 'android\app\build\outputs\apk\debug\app-debug.apk')
+    if ($Standalone) { Write-Host 'Standalone QA APK uses the generated debug key. Do not upload it to Play.' }
+    Write-Host (Join-Path $mobileRoot "android\app\build\outputs\apk\$variant\app-$variant.apk")
 } finally {
     $env:PATH = $savedPath
     $env:JAVA_HOME = $savedJava
     $env:ANDROID_HOME = $savedAndroid
+    $env:EXPO_PUBLIC_API_URL = $savedApi
     Pop-Location
 }

@@ -45,6 +45,8 @@ inside `(app)`. The group adds no URL segment. Dashboard links keep Home behind 
 requested screen for Back navigation. An Expo config plugin retains Android's newest
 intent before forwarding it, so the initial URL is available even when a link arrives
 before JavaScript starts. This native change requires a fresh local APK.
+Clerk's hosted callback is consumed by its auth session rather than Router navigation.
+Cold callbacks open sign-in; normal TraceTray links keep their original routes.
 
 ## Fixture checks without model charges or support alerts
 
@@ -128,6 +130,18 @@ The current Android CLI names the platform package `platforms/android-37.0`;
 `platforms;android-37` is not available. Keep Android source generated; configure native
 changes in `app.json` or a config plugin. No production upload key exists yet.
 
+## Standalone phone QA and Play preparation
+
+Use `-Standalone` on the local APK script for a bundled, debug-signed QA APK at
+`mobile/android/app/build/outputs/apk/release/app-release.apk`. It targets the production
+API and needs no Metro server. It is not a Play release. The script preserves native
+build caches with Expo 58's `--no-clean` option; signing remains separate for EAS.
+
+The icon/splash reuse the website mark. `npm run brand -w mobile` regenerates assets
+and the Play feature graphic. Production EAS configuration builds an AAB and generates
+the shared surfaces in its post-install hook. See [RELEASE.md](RELEASE.md) for the
+phone check, Clerk setup, listing/declarations and approval-dependent release steps.
+
 ## Checks
 
 ```powershell
@@ -157,7 +171,7 @@ Hosted sign-in opened correctly, but the emulator's Chrome 124 renderer crashed 
 Clerk page; Google and browser-based recovery still need a current browser or real-phone
 check. No production sign-in, real-phone test, paid API call or EAS build has run.
 
-The npm audit currently reports 27 entries stemming from three unresolved transitive
+The npm audit currently reports 28 entries stemming from three unresolved transitive
 issues: braces in Metro, node-forge in Expo CLI signing tooling, and uuid in xcode.
 Compatible automatic fixes do not resolve them; no forced upgrades or overrides were
 applied. The website's Docker/deploy installs select only the web/shared workspaces.
