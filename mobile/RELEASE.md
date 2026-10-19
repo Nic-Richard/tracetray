@@ -14,7 +14,7 @@ plan comparisons in production. It reads stored account fields without calling S
 The app feature set is complete for the first release. `app.json` keeps
 `com.tracetray.app`, adds the existing TraceTray mark, adaptive/themed icons and a
 light/dark native splash. `eas.json` prepares a production AAB with the production
-API, Node 22 and increasing version codes. The EAS post-install hook builds the
+API, Node 22 and locally tracked version codes. The EAS post-install hook builds the
 shared web surfaces before Gradle bundles the app. No EAS project, signing key,
 cloud build, store upload or submission is created by these files.
 
@@ -43,10 +43,10 @@ checks below before submission.
    Google sign-in returns to the dashboard on the Pixel. Password recovery and the
    other phone checks below remain; no password login is expected for an account
    that only has Google configured.
-3. Choose the Expo account/organization for TraceTray. After approval, link a new
-   TraceTray project from `mobile/`, retain its project ID and create separate
-   TraceTray upload credentials. Do not reuse Miscellary's project or signing key.
-   Back up the upload key securely and enable Play App Signing. Register any
+3. Local AAB builds use a separate TraceTray upload key outside Git at
+   `C:\Projects\TraceTray\keys\tracetray-upload.jks`, with passwords protected for
+   the current Windows user in `tracetray-keystore.xml` beside it. Back up the key
+   and recoverable passwords securely and enable Play App Signing. Register any
    certificate fingerprints requested by Clerk/Google using the correct signing
    certificate; Play-distributed builds use Play's app-signing certificate.
 4. Provide a dedicated production review account with populated, non-sensitive demo
@@ -105,7 +105,22 @@ Phone check (about ten minutes):
 - Turn off network briefly: verify a readable failure, then reconnect and retry.
 - Use a disposable account for deletion only after the deployment/live-cleanup check is approved.
 
-## Approved cloud release
+## Local release bundle
+
+Local release builds are now preferred, following Miscellary's setup. From the repo root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File mobile/scripts/build-apk.ps1 -AppBundle -NodeExecutable <path-to-node-22>
+```
+
+This rebuilds shared surfaces and bundled JavaScript, signs with TraceTray's separate
+upload key and writes `mobile/android/app/build/outputs/bundle/release/app-release.aab`.
+Set `android.versionCode` in `app.json` before each new Play upload. EAS also uses local
+version sourcing; no EAS project or credit is needed for a local build.
+
+## Cloud fallback
+
+Cloud fallback requires a separate TraceTray Expo project and explicit build approval.
 
 After the preceding checks and separate build approval, from `mobile/`:
 
