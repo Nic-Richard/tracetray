@@ -63,7 +63,10 @@
     }
 
     async function initClerk() {
-      const destination = new URLSearchParams(location.search).get("returnTo") === "/app/delete-account" ? "/app/delete-account" : "/app/";
+      const params = new URLSearchParams(location.search);
+      const destination = params.get("returnTo") === "/app/delete-account" ? "/app/delete-account" : "/app/";
+      const signingUp = params.get("mode") === "sign-up";
+      const returnTo = destination === "/app/delete-account" ? "returnTo=%2Fapp%2Fdelete-account" : "";
       const response = await fetch("/api/config");
 
       if (!response.ok) {
@@ -94,9 +97,14 @@
         return;
       }
 
-      window.Clerk.mountSignIn(document.getElementById("clerk-mount"), {
+      const mount = signingUp ? "mountSignUp" : "mountSignIn";
+      document.title = `${signingUp ? "Sign Up" : "Sign In"} | TraceTray`;
+      window.Clerk[mount](document.getElementById("clerk-mount"), {
         routing: "hash",
+        signInUrl: `/sign-in${returnTo ? `?${returnTo}` : ""}`,
+        signUpUrl: `/sign-in?mode=sign-up${returnTo ? `&${returnTo}` : ""}`,
         forceRedirectUrl: destination,
+        signInForceRedirectUrl: destination,
         signUpForceRedirectUrl: destination
       });
     }
