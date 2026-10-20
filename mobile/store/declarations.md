@@ -54,8 +54,8 @@ and the installed providers' actual data practices. Reassess if an SDK or app fl
   standalone builds; sensitive credentials use SecureStore. This is encryption in
   transit, not a claim of end-to-end encryption.
 - In-app path: Account > Delete account > type DELETE > confirm. Web resource:
-  `https://tracetray.com/delete-account`. It must be deployed and checked before submission.
-- The prepared job cancels active billing/checkouts and removes account/site data,
+  `https://tracetray.com/delete-account`. It is deployed; recheck at submission.
+- The deployed job cancels active billing/checkouts and removes account/site data,
   files and matching bot alerts before deleting the Clerk identity. Failures retry.
 - The current privacy/terms promise a 30-day deletion receipt and expiring backups;
   payment records and operational logs have separate retention. Confirm actual
@@ -70,5 +70,6 @@ and the installed providers' actual data practices. Reassess if an SDK or app fl
 - Google profile fields and provider data handling. Production Google hosted sign-in
   returns to the dashboard on Nic's Pixel; the Android callback is allowlisted.
 - Final signed APK/AAB permissions and SDK inventory.
-- Live disposable-account deletion, alert erasure and backup/log retention.
+- Disposable-account deletion and alert erasure are recorded complete; final
+  provider/backup/log retention evidence remains separate.
 - Nic's final Data safety, target-audience and content-rating answers in Play Console.

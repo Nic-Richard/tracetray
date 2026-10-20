@@ -19,8 +19,8 @@ Prepared October 18, 2026. English (Canada). Upload after the release checks in
 | Ads | No ads in the current app |
 | Access | Sign-in required; provide a dedicated production review account |
 
-The deletion URL currently returns 404 in production. Deploy and verify it before
-entering it in the listing. Developer identity/contact fields come from Nic's Play account.
+The deletion page is deployed; recheck it at submission. Console's current default
+language is en-US. Developer identity/contact fields come from Nic's Play account.
 
 ## Full description
 

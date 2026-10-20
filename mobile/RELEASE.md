@@ -24,9 +24,10 @@ checks below before submission.
 
 ## What Nic needs to do
 
-1. Finish Play developer verification and any closed-testing requirement shown in
-   your Console. Create TraceTray as an app and confirm `com.tracetray.app` before
-   the first upload; the published package cannot later be renamed.
+1. Finish any developer verification and closed-testing requirement shown in Console.
+   TraceTray already exists as `com.tracetray.app`; code 1 is completed on Internal
+   testing. Local signed code 2 includes the accepted icon fix and awaits an approved
+   upload. Do not recreate the app or upload code 1 again.
 2. Production Google hosted authentication is confirmed on Nic's Pixel. Keep the
    Android namespace/package `com.tracetray.app` in the production Clerk setup.
    This installed Clerk SDK uses `clerk://com.tracetray.app.hosted-callback`; its
@@ -59,18 +60,11 @@ checks below before submission.
 
 ## Deployment and live deletion
 
-Approval is still needed to push/deploy the prepared server changes. Deploy the
-alerts relay and its authenticated nginx `/erase` route first, verify channel-history
-permissions, then deploy TraceTray. Do not compare `.env` hashes; Nic intentionally
-maintains different local environment values.
-
-Verify `https://tracetray.com/delete-account` returns the deletion page (it was 404
-on October 18). With an explicitly disposable production account, verify deletion
-closes API access, cancels subscriptions/checkouts, removes site data/files, clears
-matching bot alerts and deletes the Clerk identity. Failure must remain retryable.
-Do not use Nic's account, a real customer account or the permanent review account.
-Check that the backup/log retention described in the privacy policy matches actual
-server/provider configuration. Stripe transaction retention is separate.
+The deletion page, server cleanup and Alerts relay are deployed. The ship list
+records the disposable-account deletion check as complete. Do not repeat destructive
+production QA or use Nic's account to establish it again. Recheck the public URL at
+submission and preserve retryable cleanup. Provider/backup retention evidence remains
+separate from application deletion; Stripe retains its own financial records.
 
 Read-only server checks on October 18 confirm PM2 rotation at 10 MB or daily with
 seven retained compressed files, and nginx daily rotation with 14 archives. This
