@@ -72,6 +72,7 @@ function Conversation({ site, question }: { site: Site; question: string }) {
         <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || input.trim().length < 3 }} disabled={busy || input.trim().length < 3} style={[styles.button, { opacity: busy || input.trim().length < 3 ? 0.4 : 1 }]} onPress={() => ask(input)}><Text style={styles.buttonText}>Ask</Text></Pressable>
       </View>
       <Text style={styles.muted}>AI answers can be wrong. Check important details against the other views.</Text>
+      {entries.some(entry => entry.answer) ? <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: "/report", params: { site: site.key, source: "ask" } })} style={{ minHeight: 44, justifyContent: "center" }}><Text style={styles.link}>Report a problem with an answer</Text></Pressable> : null}
     </View>
   </KeyboardAvoidingView>;
 }

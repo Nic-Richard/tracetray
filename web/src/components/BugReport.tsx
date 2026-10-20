@@ -43,6 +43,7 @@ export default function BugReport({ onClose }: { onClose: () => void }) {
               <label>What happened?
                 <textarea rows={5} maxLength={5000} value={description} onChange={event => setDescription(event.target.value)} placeholder="What you were doing and what went wrong" />
               </label>
+              <p className="muted">Your report and account context are saved by TraceTray and sent to its private staff channel on Discord. Avoid including passwords or other sensitive information.</p>
               {state.error && <p className="page-status error" style={{ padding: 0 }}>{state.error}</p>}
             </>
           )}
