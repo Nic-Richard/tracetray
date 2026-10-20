@@ -18,9 +18,8 @@ API, Node 22 and locally tracked version codes. The EAS post-install hook builds
 shared web surfaces before Gradle bundles the app. No EAS project, signing key,
 cloud build, store upload or submission is created by these files.
 
-Listing copy and artwork live in [store/listing.md](store/listing.md). Declarations
-are in [store/declarations.md](store/declarations.md). Both need the final production
-checks below before submission.
+Nic handles store listing copy and artwork. The rejected drafts are removed;
+technical release checks below remain separate from store content.
 
 ## What Nic needs to do
 

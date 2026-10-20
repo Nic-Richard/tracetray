@@ -163,8 +163,8 @@ Use `-Standalone` on the local APK script for a bundled, debug-signed QA APK at
 API and needs no Metro server. It is not a Play release. The script preserves native
 build caches with Expo 58's `--no-clean` option; Play signing remains separate.
 
-The icon/splash reuse the website mark. `npm run brand -w mobile` regenerates assets
-and the Play feature graphic. Local `-AppBundle` builds produce the signed AAB;
+The icon/splash reuse the website mark. `npm run brand -w mobile` regenerates app assets.
+Local `-AppBundle` builds produce the signed AAB;
 optional EAS builds generate shared surfaces in their post-install hook. See [RELEASE.md](RELEASE.md) for the
 phone check, Clerk setup, listing/declarations and approval-dependent release steps.
 
