@@ -28,18 +28,34 @@ export default function AttentionScreen() {
       try {
         const { blob } = await api.pageShot(site, page, device, info.taken_at);
         return { src: await pictureDataUrl(blob), failed: false };
-      } catch { return { src: null, failed: true }; }
+      } catch {
+        return { src: null, failed: true };
+      }
     };
     const [desktop, phone] = await Promise.all([loadPicture("desktop"), loadPicture("mobile")]);
-    return { surface: { data, result: stats.last_analysis, desktopShot: desktop.src, phoneShot: phone.src }, pictureFailed: desktop.failed || phone.failed };
+    return {
+      surface: { data, result: stats.last_analysis, desktopShot: desktop.src, phoneShot: phone.src },
+      pictureFailed: desktop.failed || phone.failed,
+    };
   }, [api, owned, site, page]);
   if (result.error) return <Failure message={result.error} retry={result.reload} />;
   if (!result.data) return <Loading />;
-  return <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
-    <View style={{ padding: 20, gap: 8 }}>
-      <View style={styles.row}><Text style={[styles.heading, { flex: 1 }]}>{pageLabel(page)}</Text><Pressable accessibilityRole="button" onPress={result.reload} style={{ padding: 12 }}><Text style={styles.link}>Refresh</Text></Pressable></View>
-      {result.data.pictureFailed ? <Text style={styles.muted}>A page picture couldn't load. The measurements are still available; refresh to try again.</Text> : null}
-    </View>
-    <SharedSurface source={source} data={result.data.surface} scroll />
-  </SafeAreaView>;
+  return (
+    <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
+      <View style={{ padding: 20, gap: 8 }}>
+        <View style={styles.row}>
+          <Text style={[styles.heading, { flex: 1 }]}>{pageLabel(page)}</Text>
+          <Pressable accessibilityRole="button" onPress={result.reload} style={{ padding: 12 }}>
+            <Text style={styles.link}>Refresh</Text>
+          </Pressable>
+        </View>
+        {result.data.pictureFailed ? (
+          <Text style={styles.muted}>
+            A page picture couldn't load. The measurements are still available; refresh to try again.
+          </Text>
+        ) : null}
+      </View>
+      <SharedSurface source={source} data={result.data.surface} scroll />
+    </SafeAreaView>
+  );
 }

@@ -10,7 +10,7 @@ const items: { path: "/" | "/journeys" | "/ask" | "/account"; label: string; ico
   { path: "/", label: "Pages", icon: "pages" },
   { path: "/journeys", label: "Journeys", icon: "journeys" },
   { path: "/ask", label: "Ask", icon: "ask" },
-  { path: "/account", label: "Account", icon: "account" }
+  { path: "/account", label: "Account", icon: "account" },
 ];
 
 export default function DashboardNav() {
@@ -23,20 +23,77 @@ export default function DashboardNav() {
   useEffect(() => {
     const show = Keyboard.addListener("keyboardDidShow", () => setKeyboard(true));
     const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboard(false));
-    return () => { show.remove(); hide.remove(); };
+    return () => {
+      show.remove();
+      hide.remove();
+    };
   }, []);
   if (keyboard || !items.some(item => item.path === path)) return null;
   const key = path === "/" ? site?.key : account.sites.find(value => value.key === params.site)?.key || site?.key;
-  return <View accessibilityRole="tablist" style={{ flexDirection: "row", borderTopWidth: 1, borderColor: colors.line, backgroundColor: colors.panel, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 8), paddingHorizontal: 12 }}>
-    {items.map(item => {
-      const selected = path === item.path;
-      const disabled = !key && (item.path === "/ask" || item.path === "/journeys");
-      return <Pressable key={item.path} accessibilityRole="tab" accessibilityState={{ selected, disabled }} disabled={disabled}
-        onPress={() => { if (key) selectSite(key); router.navigate({ pathname: item.path, params: { ...(key ? { site: key } : {}), ...(item.path === "/ask" ? { q: "" } : {}) } }); }}
-        style={({ pressed }) => [{ flex: 1, minHeight: 54, alignItems: "center", justifyContent: "center", gap: 4, opacity: disabled ? 0.35 : 1 }, pressed && styles.pressed]}>
-        <View style={{ paddingHorizontal: 18, paddingVertical: 4, borderRadius: 12, overflow: "hidden", backgroundColor: selected ? colors.accentSoft : "transparent" }}><Icon name={item.icon} size={21} color={selected ? colors.accent : colors.muted} /></View>
-        <Text style={{ fontFamily: "InstrumentSans_600SemiBold", fontSize: 12, color: selected ? colors.accent : colors.muted }}>{item.label}</Text>
-      </Pressable>;
-    })}
-  </View>;
+  return (
+    <View
+      accessibilityRole="tablist"
+      style={{
+        flexDirection: "row",
+        borderTopWidth: 1,
+        borderColor: colors.line,
+        backgroundColor: colors.panel,
+        paddingTop: 8,
+        paddingBottom: Math.max(insets.bottom, 8),
+        paddingHorizontal: 12,
+      }}
+    >
+      {items.map(item => {
+        const selected = path === item.path;
+        const disabled = !key && (item.path === "/ask" || item.path === "/journeys");
+        return (
+          <Pressable
+            key={item.path}
+            accessibilityRole="tab"
+            accessibilityState={{ selected, disabled }}
+            disabled={disabled}
+            onPress={() => {
+              if (key) selectSite(key);
+              router.navigate({
+                pathname: item.path,
+                params: { ...(key ? { site: key } : {}), ...(item.path === "/ask" ? { q: "" } : {}) },
+              });
+            }}
+            style={({ pressed }) => [
+              {
+                flex: 1,
+                minHeight: 54,
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 4,
+                opacity: disabled ? 0.35 : 1,
+              },
+              pressed && styles.pressed,
+            ]}
+          >
+            <View
+              style={{
+                paddingHorizontal: 18,
+                paddingVertical: 4,
+                borderRadius: 12,
+                overflow: "hidden",
+                backgroundColor: selected ? colors.accentSoft : "transparent",
+              }}
+            >
+              <Icon name={item.icon} size={21} color={selected ? colors.accent : colors.muted} />
+            </View>
+            <Text
+              style={{
+                fontFamily: "InstrumentSans_600SemiBold",
+                fontSize: 12,
+                color: selected ? colors.accent : colors.muted,
+              }}
+            >
+              {item.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
 }

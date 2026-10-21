@@ -8,7 +8,15 @@ import { InlineFailure } from "./Status";
 
 const PAGE_SIZE = 25;
 
-export default function GroupPages({ page, site, onPageChange }: { page: string; site: string; onPageChange: () => void }) {
+export default function GroupPages({
+  page,
+  site,
+  onPageChange,
+}: {
+  page: string;
+  site: string;
+  onPageChange: () => void;
+}) {
   const api = useApi();
   const { styles, colors } = useTheme();
   const [query, setQuery] = useState("");
@@ -17,10 +25,16 @@ export default function GroupPages({ page, site, onPageChange }: { page: string;
   const [sort, setSort] = useState<MemberSort>("sessions");
   const [offset, setOffset] = useState(0);
   useEffect(() => {
-    const timer = setTimeout(() => { setSearch(query.trim()); setOffset(0); }, 300);
+    const timer = setTimeout(() => {
+      setSearch(query.trim());
+      setOffset(0);
+    }, 300);
     return () => clearTimeout(timer);
   }, [query]);
-  const result = useLoad(() => api.groupMembers(site, page, { q: search, days, sort, offset, limit: PAGE_SIZE }), [api, site, page, search, days, sort, offset]);
+  const result = useLoad(
+    () => api.groupMembers(site, page, { q: search, days, sort, offset, limit: PAGE_SIZE }),
+    [api, site, page, search, days, sort, offset],
+  );
   useEffect(() => {
     if (result.data && !result.data.limited && offset >= result.data.total && offset > 0) {
       setOffset(Math.max(0, Math.ceil(result.data.total / PAGE_SIZE) - 1) * PAGE_SIZE);
@@ -28,26 +42,97 @@ export default function GroupPages({ page, site, onPageChange }: { page: string;
   }, [result.data, offset]);
   const searching = query.trim() !== search;
   function option(label: string, selected: boolean, action: () => void) {
-    return <Pressable key={label} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => { setOffset(0); action(); }} style={{ minHeight: 44, padding: 10, borderRadius: 8, backgroundColor: selected ? colors.line : colors.panel }}><Text style={selected ? styles.link : styles.muted}>{label}</Text></Pressable>;
+    return (
+      <Pressable
+        key={label}
+        accessibilityRole="button"
+        accessibilityState={{ selected }}
+        onPress={() => {
+          setOffset(0);
+          action();
+        }}
+        style={{ minHeight: 44, padding: 10, borderRadius: 8, backgroundColor: selected ? colors.line : colors.panel }}
+      >
+        <Text style={selected ? styles.link : styles.muted}>{label}</Text>
+      </Pressable>
+    );
   }
-  return <View style={styles.panel}>
-    <Text style={styles.heading}>Pages in this group</Text>
-    {!result.data?.limited && <TextInput style={styles.input} value={query} onChangeText={setQuery} placeholder="Search pages in this group" placeholderTextColor={colors.muted} accessibilityLabel="Search pages in this group" autoCapitalize="none" autoCorrect={false} />}
-    <View style={styles.wrap}>{([7, 30, null] as const).map(value => option(value ? `${value} days` : "All time", days === value, () => setDays(value)))}</View>
-    <View style={styles.wrap}>{option("Most visits", sort === "sessions", () => setSort("sessions"))}{option("Most clicks", sort === "clicks", () => setSort("clicks"))}</View>
-    {result.error ? <InlineFailure message={result.error} retry={result.reload} /> : null}
-    {result.loading ? <ActivityIndicator color={colors.accent} /> : null}
-    {result.data ? <>
-      {result.data.rows.map(row => <View key={row.path} style={{ gap: 4, paddingVertical: 10, borderBottomWidth: 1, borderColor: colors.line }}>
-        <Text style={styles.text}>{row.path}</Text>
-        <Text style={styles.muted}>{row.sessions.toLocaleString()} visits · {row.clicks.toLocaleString()} clicks · {row.sessions ? Math.round(row.desktop / row.sessions * 100) : 0}% desktop</Text>
-      </View>)}
-      {!result.data.rows.length && <Text style={styles.muted}>{search ? "No pages match your search." : "No visits in this time range."}</Text>}
-      {result.data.limited ? <Text style={styles.muted}>Showing the busiest pages. Your plan limits the pages available here.</Text> : result.data.total > PAGE_SIZE ? <View style={styles.row}>
-        <Pressable accessibilityRole="button" disabled={!offset || searching} onPress={() => { onPageChange(); setOffset(Math.max(0, offset - PAGE_SIZE)); }} style={{ paddingVertical: 12, opacity: offset && !searching ? 1 : 0.4 }}><Text style={styles.link}>Previous</Text></Pressable>
-        <Text style={styles.muted}>{offset + 1}–{Math.min(offset + PAGE_SIZE, result.data.total)} of {result.data.total}</Text>
-        <Pressable accessibilityRole="button" disabled={offset + PAGE_SIZE >= result.data.total || searching} onPress={() => { onPageChange(); setOffset(offset + PAGE_SIZE); }} style={{ paddingVertical: 12, opacity: offset + PAGE_SIZE < result.data.total && !searching ? 1 : 0.4 }}><Text style={styles.link}>Next</Text></Pressable>
-      </View> : null}
-    </> : null}
-  </View>;
+  return (
+    <View style={styles.panel}>
+      <Text style={styles.heading}>Pages in this group</Text>
+      {!result.data?.limited && (
+        <TextInput
+          style={styles.input}
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search pages in this group"
+          placeholderTextColor={colors.muted}
+          accessibilityLabel="Search pages in this group"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      )}
+      <View style={styles.wrap}>
+        {([7, 30, null] as const).map(value =>
+          option(value ? `${value} days` : "All time", days === value, () => setDays(value)),
+        )}
+      </View>
+      <View style={styles.wrap}>
+        {option("Most visits", sort === "sessions", () => setSort("sessions"))}
+        {option("Most clicks", sort === "clicks", () => setSort("clicks"))}
+      </View>
+      {result.error ? <InlineFailure message={result.error} retry={result.reload} /> : null}
+      {result.loading ? <ActivityIndicator color={colors.accent} /> : null}
+      {result.data ? (
+        <>
+          {result.data.rows.map(row => (
+            <View
+              key={row.path}
+              style={{ gap: 4, paddingVertical: 10, borderBottomWidth: 1, borderColor: colors.line }}
+            >
+              <Text style={styles.text}>{row.path}</Text>
+              <Text style={styles.muted}>
+                {row.sessions.toLocaleString()} visits · {row.clicks.toLocaleString()} clicks ·{" "}
+                {row.sessions ? Math.round((row.desktop / row.sessions) * 100) : 0}% desktop
+              </Text>
+            </View>
+          ))}
+          {!result.data.rows.length && (
+            <Text style={styles.muted}>{search ? "No pages match your search." : "No visits in this time range."}</Text>
+          )}
+          {result.data.limited ? (
+            <Text style={styles.muted}>Showing the busiest pages. Your plan limits the pages available here.</Text>
+          ) : result.data.total > PAGE_SIZE ? (
+            <View style={styles.row}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={!offset || searching}
+                onPress={() => {
+                  onPageChange();
+                  setOffset(Math.max(0, offset - PAGE_SIZE));
+                }}
+                style={{ paddingVertical: 12, opacity: offset && !searching ? 1 : 0.4 }}
+              >
+                <Text style={styles.link}>Previous</Text>
+              </Pressable>
+              <Text style={styles.muted}>
+                {offset + 1}–{Math.min(offset + PAGE_SIZE, result.data.total)} of {result.data.total}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                disabled={offset + PAGE_SIZE >= result.data.total || searching}
+                onPress={() => {
+                  onPageChange();
+                  setOffset(offset + PAGE_SIZE);
+                }}
+                style={{ paddingVertical: 12, opacity: offset + PAGE_SIZE < result.data.total && !searching ? 1 : 0.4 }}
+              >
+                <Text style={styles.link}>Next</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </>
+      ) : null}
+    </View>
+  );
 }

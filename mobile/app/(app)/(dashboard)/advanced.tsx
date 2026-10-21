@@ -23,8 +23,19 @@ export default function AdvancedScreen() {
   }, [api, site?.key, page]);
   if (result.error) return <Failure message={result.error} retry={result.reload} />;
   if (!result.data) return <Loading />;
-  return <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
-    <View style={{ padding: 20, gap: 6 }}><Text style={styles.heading}>{pageLabel(page)}</Text><Text style={styles.muted}>Swipe tables sideways to compare visitor groups.</Text></View>
-    {result.data.last_analysis ? <SharedSurface source={source} data={{ result: result.data.last_analysis }} scroll /> : <View style={styles.content}><Text style={styles.text}>Refresh this page's analysis to see the advanced tables.</Text></View>}
-  </SafeAreaView>;
+  return (
+    <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
+      <View style={{ padding: 20, gap: 6 }}>
+        <Text style={styles.heading}>{pageLabel(page)}</Text>
+        <Text style={styles.muted}>Swipe tables sideways to compare visitor groups.</Text>
+      </View>
+      {result.data.last_analysis ? (
+        <SharedSurface source={source} data={{ result: result.data.last_analysis }} scroll />
+      ) : (
+        <View style={styles.content}>
+          <Text style={styles.text}>Refresh this page's analysis to see the advanced tables.</Text>
+        </View>
+      )}
+    </SafeAreaView>
+  );
 }
