@@ -30,6 +30,7 @@ app.use((req, res, next) => {
     next();
 });
 app.use(cors());
+app.post("/api/moderation/discord", express.raw({ type: "application/json", limit: "64kb" }), require("./src/lib/moderationAuth").actionHandler(require("./src/lib/reportModeration").moderateReport));
 app.use(clerkMiddleware());
 
 // Stripe verifies the raw webhook body.

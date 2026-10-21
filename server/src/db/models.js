@@ -88,8 +88,10 @@ const BugReport = mongoose.model("BugReport", new mongoose.Schema({
     page_url:      String,
     user_agent:    String,
     status:        { type: String, enum: ["open", "resolved"], default: "open", index: true },
+    moderation:    { type: mongoose.Schema.Types.Mixed },
+    moderation_history: { type: [mongoose.Schema.Types.Mixed], default: [] },
     created_at:    { type: Date, default: Date.now, index: true }
-}), "bug_reports");
+}).index({ "moderation_history.requestId": 1 }, { unique: true, sparse: true }), "bug_reports");
 
 // Daily visit and click counts per real page path, kept small so per-page lists work at any size.
 const pageDaySchema = new mongoose.Schema({
