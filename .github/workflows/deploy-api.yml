@@ -1,0 +1,57 @@
+name: Deploy API
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: tracetray-production-api
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Require successful CI for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          result=$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --branch main --event push --json conclusion --jq '.[0].conclusion')
+          test "$result" = success || { echo 'This commit must pass CI before deployment.'; exit 1; }
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build dashboard assets
+        run: |
+          npm ci --workspace=web --workspace=@tracetray/shared
+          npm run build:web
+          test -f server/public/app/index.html
+      - name: Deploy application source and assets
+        env:
+          DEPLOY_KEY: ${{ secrets.TRACETRAY_DEPLOY_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.TRACETRAY_DEPLOY_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          key="$RUNNER_TEMP/tracetray-deploy-key"
+          hosts="$RUNNER_TEMP/tracetray-known-hosts"
+          archive="$RUNNER_TEMP/tracetray-source.tar"
+          trap 'rm -f "$key" "$hosts" "$archive"' EXIT
+          printf '%s\n' "$DEPLOY_KEY" > "$key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$hosts"
+          git archive --format=tar HEAD client server/server.js server/src server/public server/scripts server/package.json server/package-lock.json > "$archive"
+          tar -rf "$archive" server/public/app
+          gzip -c "$archive" |
+            ssh -T -i "$key" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$hosts" root@5.78.178.181 "deploy $GITHUB_SHA"
