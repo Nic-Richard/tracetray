@@ -16,6 +16,7 @@ mobile/dist/
 !.env.example
 !.env.deploy.example
 !.env.docker.example
+!.env.production.example
 !mobile/.env.example
 
 # Page pictures for Attention

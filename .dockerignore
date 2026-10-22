@@ -1,0 +1,16 @@
+**/node_modules
+**/.env
+**/.env.*
+!**/.env.*.example
+.git
+mobile
+shots
+logs
+data/features/*.json
+data/output/*
+**/__pycache__
+venv
+.venv
+server/public/app
+AGENTS.md
+CHANGELOG.md

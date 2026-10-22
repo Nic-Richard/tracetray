@@ -1,0 +1,41 @@
+# Production-style stack: TraceTray behind your TLS proxy, with MongoDB requiring a login.
+# Copy .env.production.example to .env.production, then:
+#   docker compose -f docker-compose.production.yml up --build -d
+services:
+  mongo:
+    image: mongo:7.0.14
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env.production}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?set MONGO_APP_PASSWORD in .env.production}
+    volumes:
+      - mongodata:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/tracetray.js:ro
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.runCommand({ ping: 1 }).ok']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    env_file: .env.production
+    environment:
+      MONGODB_URI: mongodb://tracetray:${MONGO_APP_PASSWORD}@mongo:27017/sessionDB?authSource=sessionDB
+    ports:
+      - '${APP_PORT:-5000}:5000'
+    volumes:
+      - shots:/app/shots
+      - analysis:/app/data
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mongodata:
+  shots:
+  analysis:
