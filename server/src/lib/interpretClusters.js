@@ -2,6 +2,9 @@
 // Deterministic: the same behaviour always gets the same name, so groups can be compared across runs.
 
 const STRONG = 0.4;
+// Below this many analysed visits a group is a handful of people, too few to base a change on.
+// packages/shared/src/analysis.ts keeps the same number for analyses saved before this rule.
+const MIN_ADVICE_VISITS = 100;
 
 const pct = v => `${Math.round(v * 100)}%`;
 const secs = ms => `${(ms / 1000).toFixed(1)} s`;
@@ -439,7 +442,7 @@ function describeDevice(result, archetypes, deviceLabel, goal = null) {
         priority = [...ordered].sort((a, b) => missing(b) - missing(a) || (b.n || 0) - (a.n || 0));
     }
     const advice = [];
-    if (result.structure !== "none") {
+    if (result.structure !== "none" && (result.session_count || 0) >= MIN_ADVICE_VISITS) {
         for (const c of priority) {
             const item = adviceFor(c, stories[c.id], base, goal, deviceLabel, visits);
             if (item) { stories[c.id].suggestions = [item.action]; advice.push({ ...item, device: deviceLabel, group: stories[c.id].headline }); }
@@ -462,7 +465,7 @@ function dataNote(result) {
     const n = result?.session_count || 0;
     const visits = `${n.toLocaleString("en-US")} desktop visit${n === 1 ? "" : "s"} with cursor movement`;
     if (result?.structure === "none") return `Based on ${visits}. Every split was checked against groupless data and on samples of the visits, and none held up.`;
-    if (n < 50) return `Based on ${visits}, so treat these groups as early signals that may change as more visitors arrive.`;
+    if (n < MIN_ADVICE_VISITS) return `Based on only ${visits}, too few to suggest changes. Treat these groups as early signs that may change as more visitors arrive.`;
     if (result?.structure === "some") return `Based on ${visits}. The groups overlap, so read the differences between them as tendencies rather than sharp lines.`;
     if (result?.structure === "clear") return `Based on ${visits}. The groups are well separated and held up when re-checked on samples of the data.`;
     if (n < 200) return `Based on ${visits}. The patterns are meaningful and will sharpen with more traffic.`;

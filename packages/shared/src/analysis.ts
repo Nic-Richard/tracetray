@@ -96,13 +96,19 @@ export function visitorIntro(result: AnalysisResult, device: Device, groups: num
   const left = inactive ? `${inactive.toLocaleString()} left without interacting. ` : "";
   if (source.structure === "none") return `${lead}. ${left}${inactive ? "The rest" : "They"} behave much alike, so they're described as one.`;
   const sorted = `${inactive ? `The other ${source.session_count.toLocaleString()}` : "They"} are sorted into ${groups} groups by how people ${device === "mobile" ? "scrolled, paused and tapped" : "moved, paused, clicked and scrolled"}.`;
-  return `${lead}. ${left}${sorted}${source.structure === "some" ? " The groups overlap, so read them as tendencies." : ""}`;
+  const caution = source.session_count < MIN_ADVICE_VISITS
+    ? " That's too few visits to suggest changes, so read the groups as early signs."
+    : source.structure === "some" ? " The groups overlap, so read them as tendencies." : "";
+  return `${lead}. ${left}${sorted}${caution}`;
 }
+
+/** Below this many analysed visits on a device, groups are shown as early signs and no changes are suggested. */
+export const MIN_ADVICE_VISITS = 100;
 
 export function analysisAdvice(result: AnalysisResult): NonNullable<Interpretation["advice"]> {
   return (interpretationOf(result)?.advice || []).filter(item => {
     const source = deviceAnalysis(result, item.device);
-    return source?.clusters.length && source.structure !== "none" && item.action.trim() && item.evidence.trim();
+    return source?.clusters.length && source.structure !== "none" && source.session_count >= MIN_ADVICE_VISITS && item.action.trim() && item.evidence.trim();
   });
 }
 

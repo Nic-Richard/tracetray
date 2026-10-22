@@ -9,6 +9,15 @@ const UNITS: Record<string, string> = {
   spatial_entropy: "bits", top_zone_ratio: "share", centre_zone_ratio: "share", bottom_zone_ratio: "share", scroll_depth_reached: "share"
 };
 
+const NAMES: Record<string, string> = {
+  pause_rate: "Pauses", click_rate: "Clicks", move_density: "Cursor moves", direction_change_rate: "Scrolls back up",
+  scroll_burst_rate: "Scroll bursts", tap_rate: "Taps", attention_pause_rate: "Reading stops", distance_per_move: "Distance per cursor move",
+  avg_cursor_velocity: "Cursor speed", scroll_velocity_rate: "Scroll speed", dwell_before_click: "Wait before clicking",
+  dwell_before_tap: "Wait before tapping", avg_attention_pause_ms: "Typical reading stop", spatial_entropy: "Cursor spread",
+  top_zone_ratio: "Cursor time in the top third", centre_zone_ratio: "Cursor time in the middle third",
+  bottom_zone_ratio: "Cursor time in the bottom third", scroll_depth_reached: "How far down"
+};
+
 const STRUCTURE: Record<string, string> = {
   clear: "Clear groups: well separated, and stable when re-run on samples of the data.",
   some: "Overlapping groups: real, but the lines between them are soft.",
@@ -60,7 +69,7 @@ function Model({ title, data, result, device }: { title: string; data: DeviceAna
               const unused = used && !used.includes(feature);
               return (
                 <tr key={feature} className={unused ? "unused" : ""} title={unused ? "Not used to form the groups: it didn't vary, or repeats another feature" : undefined}>
-                  <td className={significant.has(feature) ? "strong" : ""}>{feature} <small className="muted">{UNITS[feature]}</small></td>
+                  <td className={significant.has(feature) ? "strong" : ""}>{NAMES[feature] || feature}<small className="muted feature-key">{feature}{UNITS[feature] ? `, ${UNITS[feature]}` : ""}</small></td>
                   {ordered.map(c => <td key={c.id} className="right num">{typeof c.feature_means[feature] === "number" ? fixed(c.feature_means[feature] as number, feature) : "–"}</td>)}
                   <td className="right num">{test?.effect_size != null ? test.effect_size.toFixed(2) : "–"}</td>
                 </tr>

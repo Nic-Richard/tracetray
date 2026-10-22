@@ -70,6 +70,16 @@ test("a group falling short gets a suggestion only when its numbers say why", ()
     assert.deepEqual(unplaced.advice, [], "leaving early proves nothing without knowing where the goal sits");
 });
 
+test("fewer than 100 analysed visits gets no suggestions and says why", () => {
+    const goal = { id: "g1", name: "checkout", type: "click", match: { href: "/cart" }, position: { desktop: 0.8, mobile: null } };
+    const result = interpretClusters({ desktop: { session_count: 60, structure: "clear", clusters: [
+        { ...cluster(0, 30, { scroll_depth_reached: 0.95, click_rate: 0.05 }), goal_hits: { g1: 18 } },
+        { ...cluster(1, 30, { scroll_depth_reached: 0.45, click_rate: 0.05 }), goal_hits: { g1: 1 } },
+    ] }, goal });
+    assert.deepEqual(result.advice, []);
+    assert.match(result.data_note, /too few to suggest changes/);
+});
+
 test("mobile groups are named too and devices are compared in plain numbers", () => {
     const mobile = { session_count: 40, clusters: [
         cluster(0, 25, { tap_rate: 0.002, scroll_depth_reached: 0.1, attention_pause_rate: 0.02 }),

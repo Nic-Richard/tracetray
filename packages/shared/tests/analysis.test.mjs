@@ -43,10 +43,21 @@ test("unreliable groups get the alike explanation and no stale suggestions", () 
   assert.match(visitorIntro(result, "desktop", 2), /The rest behave much alike/);
   assert.deepEqual(analysisAdvice(result), []);
   result.structure = "some";
+  result.session_count = 160;
   assert.match(visitorIntro(result, "desktop", 2), /groups overlap/);
   assert.equal(analysisAdvice(result).length, 1);
   result.interpretation.advice[0].evidence = "";
   assert.deepEqual(analysisAdvice(result), []);
+});
+
+test("groups from fewer than 100 analysed visits are early signs with no suggestions", () => {
+  const result = fixture();
+  result.interpretation.advice = [{ action: "Move the button", evidence: "Measured clicks", device: "desktop", group: "Deciders" }];
+  assert.match(visitorIntro(result, "desktop", 2), /too few visits to suggest changes/);
+  assert.deepEqual(analysisAdvice(result), []);
+  result.session_count = 100;
+  assert.doesNotMatch(visitorIntro(result, "desktop", 2), /too few/);
+  assert.equal(analysisAdvice(result).length, 1);
 });
 
 test("phone groups use their own stories, counts and inactive visitors", () => {
