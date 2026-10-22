@@ -33,7 +33,7 @@ export default function DashboardLayout() {
       <Stack.Screen name="emails" options={{ title: "Email preferences" }} />
       <Stack.Screen name="delete-account" options={{ title: "Delete account" }} />
       <Stack.Screen name="changes" options={{ title: "Before and after" }} />
-      <Stack.Screen name="paths" options={{ title: "Expected paths" }} />
+      <Stack.Screen name="paths" options={{ title: "Funnels" }} />
     </Stack>
     <DashboardNav />
     </View>

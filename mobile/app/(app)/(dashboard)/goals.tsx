@@ -118,7 +118,7 @@ function Goals({ siteKey, page }: { siteKey: string; page: string }) {
       ) : null}
       <View style={styles.row}>
         <Text style={styles.heading}>
-          {goals.length} of {cap} goals
+          {goals.length} {goals.length === 1 ? "goal" : "goals"} · up to {cap}
         </Text>
       </View>
       {pollError ? (

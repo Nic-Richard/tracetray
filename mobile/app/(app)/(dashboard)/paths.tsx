@@ -137,7 +137,7 @@ export default function PathsScreen() {
       setAdding(false);
       setName("");
       setSteps(["", ""]);
-      setNotice("Expected path saved.");
+      setNotice("Funnel saved.");
       Keyboard.dismiss();
       list.reload();
     } catch (err) {
@@ -155,7 +155,7 @@ export default function PathsScreen() {
     setNotice("");
     try {
       await api.removePath(site.key, id);
-      setNotice("Expected path removed. Visit history is kept.");
+      setNotice("Funnel removed. Visit history is kept.");
       list.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't remove the path.");
@@ -209,7 +209,7 @@ export default function PathsScreen() {
           }
         >
           <Text style={styles.muted}>{site?.name}</Text>
-          <Text style={styles.title}>Expected paths</Text>
+          <Text style={styles.title}>Funnels</Text>
           <Text style={styles.text}>
             Choose the pages you expect visitors to go through, in order. Each step counts journeys that reached every
             earlier step first; other pages along the way don't count against them.
@@ -243,11 +243,11 @@ export default function PathsScreen() {
             </Text>
           ) : null}
           {!list.data.paths.length ? (
-            <Text style={styles.muted}>No expected paths yet. Add a path to see where journeys drop off.</Text>
+            <Text style={styles.muted}>No funnels yet. Add one to see where journeys drop off.</Text>
           ) : null}
           {full ? (
             <Text style={styles.muted}>
-              You can keep {list.data.cap} paths per website. Remove one before adding another.
+              You can keep {list.data.cap} funnels per website. Remove one before adding another.
             </Text>
           ) : (
             <>
@@ -260,13 +260,13 @@ export default function PathsScreen() {
                   setError("");
                 }}
               >
-                <Text style={styles.buttonText}>{adding ? "Cancel new path" : "Add expected path"}</Text>
+                <Text style={styles.buttonText}>{adding ? "Cancel new funnel" : "Add funnel"}</Text>
               </Pressable>
               {adding ? (
                 <View style={styles.panel}>
-                  <Text style={styles.heading}>New expected path</Text>
+                  <Text style={styles.heading}>New funnel</Text>
                   <TextInput
-                    accessibilityLabel="Path name"
+                    accessibilityLabel="Funnel name"
                     style={styles.input}
                     value={name}
                     onChangeText={setName}

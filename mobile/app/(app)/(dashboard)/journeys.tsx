@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { journeyLabel, pageLabel, percent } from "@tracetray/shared";
 import { useApi } from "../../../lib/api";
@@ -8,6 +8,7 @@ import { useLoad } from "../../../lib/useLoad";
 import { useTheme } from "../../../lib/theme";
 import { Failure, Loading } from "../../../components/Status";
 import SitePicker from "../../../components/SitePicker";
+import ActionRow from "../../../components/ActionRow";
 
 function Ranked({
   title,
@@ -70,13 +71,6 @@ export default function JourneysScreen() {
         }
       >
         <SitePicker siteKey={siteKey} onSelect={key => router.setParams({ site: key })} />
-        <Pressable
-          accessibilityRole="button"
-          style={styles.secondaryButton}
-          onPress={() => router.push({ pathname: "/paths", params: { site: siteKey } })}
-        >
-          <Text style={styles.link}>Explore expected paths</Text>
-        </Pressable>
         <Text style={styles.muted}>
           How visitors move through the whole site in the last 30 days: where they arrive, where they go next, and where
           they leave.
@@ -132,6 +126,14 @@ export default function JourneysScreen() {
             />
           </>
         )}
+        <View style={[styles.panel, { paddingVertical: 4 }]}>
+          <ActionRow
+            icon="journeys"
+            title="Funnels"
+            detail="Pick the pages you expect visitors to go through and see where they drop off"
+            onPress={() => router.push({ pathname: "/paths", params: { site: siteKey } })}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

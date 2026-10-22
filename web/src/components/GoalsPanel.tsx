@@ -148,7 +148,7 @@ export default function GoalsPanel() {
     <section className="panel" id="goals">
       <div className="panel-head">
         <h2>Goals</h2>
-        {list.data && <div className="end"><span className="ask-note">{goals.length} of {list.data.cap}</span></div>}
+        {list.data && <div className="end"><span className="ask-note">{goals.length} {goals.length === 1 ? "goal" : "goals"} · up to {list.data.cap}</span></div>}
       </div>
       <div className="panel-body setup-copy">
         <p>A goal is what a page is for: a button or link people click, a form they send, or a page they go on to, like checkout or a thank-you page. Each page then shows how many visits reached it, and new goals are checked against past visits too.</p>

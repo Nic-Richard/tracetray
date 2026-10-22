@@ -67,9 +67,9 @@ export default function PageScreen() {
               accessibilityRole="button"
               disabled={actions.busy}
               onPress={actions.refresh}
-              style={[styles.button, { flex: 1, opacity: actions.busy ? 0.5 : 1 }]}
+              style={[styles.secondaryButton, { flex: 1, opacity: actions.busy ? 0.5 : 1 }]}
             >
-              <Text style={styles.buttonText}>{actions.busy ? "Working…" : "Refresh analysis"}</Text>
+              <Text style={styles.link}>{actions.busy ? "Working…" : "Refresh analysis"}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -87,15 +87,18 @@ export default function PageScreen() {
           ) : null}
         </View>
         <View style={styles.panel}>
-          <Text style={styles.eyebrow}>Last 30 days</Text>
           <View style={styles.wrap}>
             <View style={styles.stat}>
               <Text style={styles.number}>{compactNumber(visits.total_sessions)}</Text>
-              <Text style={styles.muted}>Visits</Text>
+              <Text style={styles.muted}>Visits, last 30 days</Text>
             </View>
             <View style={styles.stat}>
               <Text style={styles.number}>{visits.total_sessions ? percent(visits.engagement_rate) : "–"}</Text>
-              <Text style={styles.muted}>Engaged</Text>
+              <Text style={styles.muted}>Engaged visits</Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={styles.number}>{inactiveShare === null ? "–" : percent(inactiveShare)}</Text>
+              <Text style={styles.muted}>Left without interacting</Text>
             </View>
           </View>
         </View>
@@ -155,20 +158,6 @@ export default function PageScreen() {
           >
             <Text style={styles.link}>Manage goals for this page</Text>
           </Pressable>
-        </View>
-        <View style={styles.panel}>
-          <Text style={styles.heading}>Analysis</Text>
-          <Text style={styles.text}>
-            {stats.last_analysis
-              ? `Last analyzed ${timeAgo(stats.last_analysis.ran_at)}`
-              : "This page hasn't been analyzed yet."}
-          </Text>
-          <Text style={styles.number}>{percent(inactiveShare)}</Text>
-          <Text style={styles.muted}>
-            Left without interacting
-            {inactiveShare === null ? " · Shows after analysis" : " · Didn't scroll, click, tap or move the cursor"}
-          </Text>
-          <Text style={styles.muted}>{stats.total_sessions.toLocaleString()} visits recorded in total</Text>
         </View>
         {analysis ? <Suggestions result={analysis} /> : null}
         {analysis ? <VisitorGroups result={analysis} /> : null}
