@@ -4,6 +4,8 @@ module.exports = {
       name: 'tracetray',
       script: './server/server.js',
       cwd: '/var/www/tracetray',
+      uid: 'tracetray',
+      gid: 'tracetray',
       exec_mode: 'fork',
       instances: 1,
       autorestart: true,
@@ -12,6 +14,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 5000,
+        HOME: '/var/lib/tracetray',
       },
     },
   ],

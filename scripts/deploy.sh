@@ -77,6 +77,7 @@ ssh "$SERVER" "\
   mv '$RELEASE/ecosystem.config.js' '$REMOTE/ecosystem.config.js' && \
   mv '$RELEASE/.env' '$REMOTE/.env' && \
   rm -rf '$RELEASE' && \
+  chown tracetray:tracetray '$REMOTE/.env' && chown -R tracetray:tracetray '$REMOTE/data' && \
   cd '$REMOTE' && pm2 startOrRestart ecosystem.config.js --update-env && pm2 save"
 
 scp "$ROOT_DIR/deploy/nginx.conf" "$SERVER:/tmp/tracetray.nginx.conf"

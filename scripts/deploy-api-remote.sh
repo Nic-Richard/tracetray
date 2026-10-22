@@ -26,7 +26,7 @@ PY
 test -f "$stage/server/public/app/index.html"
 while IFS= read -r -d '' file; do node --check "$file"; done < <(find "$stage/server/src" "$stage/server/scripts" "$stage/client" -name '*.js' -print0)
 node --check "$stage/server/server.js"
-(cd "$stage/server" && npm ci --omit=dev)
+(umask 022 && cd "$stage/server" && npm ci --omit=dev)
 node "$stage/server/scripts/smoke-lib.js"
 
 install -d -m 700 "$backup" "$stage/restore"
