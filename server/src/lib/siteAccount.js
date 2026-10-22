@@ -2,7 +2,6 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const { Account, Session, AnalysisResult, BugReport, PageDay } = require("../db/models");
-const { TRACETRAY_MODE, MAX_SITES_PER_ACCOUNT } = require("../config");
 const { analysisRunning } = require("./analysisState");
 const { planLimits } = require("./plans");
 const { removeShots } = require("./pageShots");
@@ -12,7 +11,6 @@ function generateSiteKey() {
 }
 
 function getSiteLimit(account) {
-    if (TRACETRAY_MODE === "beta") return MAX_SITES_PER_ACCOUNT;
     const limits = planLimits(account.plan);
     if (!limits) return 1;
     return limits.sites ?? 100;

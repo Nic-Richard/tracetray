@@ -9,7 +9,6 @@ const { countSession } = require("../lib/pageDays");
 const { overVisitAllowance } = require("../lib/limits");
 const { detailRate, inSample } = require("../lib/sampling");
 const { markBatch } = require("../lib/goalHits");
-const { TRACETRAY_MODE } = require("../config");
 const { visitorIdFor } = require("../lib/visitorId");
 const { startCollection } = require("../lib/collectionState");
 
@@ -116,7 +115,7 @@ router.post("/collect", async (req, res) => {
         const deviceType = data.device_type === "mobile" ? "mobile" : "desktop";
 
         // In production an account with no plan only keeps collecting during its 30-day hold.
-        if (TRACETRAY_MODE === "production" && account.plan === "none" && !account.delete_after) return res.sendStatus(204);
+        if (account.plan === "none" && !account.delete_after) return res.sendStatus(204);
 
         // Past the plan's monthly visits a visit keeps its summary but not its raw events. Busy pages keep
         // full detail for a sample of visits; the rest keep only clicks, taps and sent forms, which goals need.

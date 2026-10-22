@@ -1,8 +1,7 @@
-// Applies each plan's limits in production. In beta every check passes.
+// Applies each plan's limits.
 // Counts that would cost a query on every request are cached per account for a few minutes;
 // a limit can be crossed by a few minutes' worth of visits before it takes effect.
 const { PageDay } = require("../db/models");
-const { TRACETRAY_MODE } = require("../config");
 const { planLimits } = require("./plans");
 const { getAccountSites } = require("./siteAccount");
 const { monthOf, monthRange } = require("./usage");
@@ -11,7 +10,7 @@ const CACHE_MS = 5 * 60 * 1000;
 const cache = new Map();
 
 function limitsFor(account) {
-    return TRACETRAY_MODE === "production" ? planLimits(account.plan) : null;
+    return planLimits(account.plan);
 }
 
 async function cached(key, load) {
@@ -79,9 +78,8 @@ function askLimitReached(account, used) {
     return !!limit && used >= limit;
 }
 
-// Everything is on during the beta.
-function hasFeature(account, feature, mode = TRACETRAY_MODE) {
-    return mode !== "production" || !!planLimits(account.plan)?.[feature];
+function hasFeature(account, feature) {
+    return !!planLimits(account.plan)?.[feature];
 }
 
 module.exports = { hasFeature, limitsFor, overVisitAllowance, lockedPages, lockUnits, isPageLocked, askLimitReached };

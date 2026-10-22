@@ -2,7 +2,6 @@
 // account's site data is deleted (the account itself stays so its owner can come back).
 // Production only; a subscription set delete_after when it ended and clears it on resubscribing.
 const { Account } = require("../db/models");
-const { TRACETRAY_MODE } = require("../config");
 const { getAccountSites, deleteSiteData } = require("../lib/siteAccount");
 const { sendEmail } = require("../lib/email");
 const { deletionNotice } = require("../lib/emailTemplates");
@@ -64,7 +63,6 @@ async function runDataHold(now = Date.now()) {
 }
 
 function startDataHoldJob() {
-    if (TRACETRAY_MODE !== "production") return;
     const run = () => runDataHold().catch(err => logger.error("data hold job error:", err));
     setTimeout(run, 2 * 60 * 1000);
     setInterval(run, 6 * 60 * 60 * 1000);

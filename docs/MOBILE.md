@@ -150,7 +150,7 @@ reset, unowned websites and leaving pending requests. Keyboard avoidance and scr
 were corrected during these checks. No live model call or physical-phone test.
 
 Account usage, legal links/sign-out and native problem reports are complete locally.
-The emulator shows actual beta usage; report validation, category selection, cleaned
+The emulator shows actual usage; report validation, category selection, cleaned
 page context, keyboard handling, failure/retry, duplicate taps and success are checked
 through fixtures. No support alerts are sent. Unit tests cover production allowance
 math (including zero/unlimited) and report size/privacy rules; production account

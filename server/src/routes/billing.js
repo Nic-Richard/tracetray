@@ -4,7 +4,6 @@ const { getAuth } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
 const stripe = require("../lib/stripe");
 const { Account, AccountDeletion } = require("../db/models");
-const { TRACETRAY_MODE } = require("../config");
 const logger = require("../lib/logger");
 const { sendAlert } = require("../lib/alerts");
 const { PRICE_KEYS, planForPrice } = require("../lib/plans");
@@ -45,10 +44,6 @@ async function alertAccount(title, customerId) {
 
 router.post("/api/create-checkout-session", requireAuth(), async (req, res) => {
     try {
-        if (TRACETRAY_MODE !== "production") {
-            return res.status(403).json({ error: "subscriptions are not available during the beta" });
-        }
-
         const clerkUserId = getAuth(req).userId;
         const lookupKey = PRICE_KEYS[req.body.plan]?.[req.body.interval === "year" ? "year" : "month"];
         if (!lookupKey) return res.status(400).json({ error: "invalid plan" });

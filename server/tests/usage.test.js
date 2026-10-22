@@ -60,11 +60,10 @@ test("busy pages keep full detail for a sample of visits, the same one for every
 test("the weekly summary comes with every plan, shift alerts and exports from Pro up", () => {
     const { wantsEmail, emailAvailable } = require("../src/lib/emailPrefs");
     const { hasFeature } = require("../src/lib/limits");
-    assert.equal(wantsEmail({ plan: "starter" }, "weekly_summary", "production"), true);
-    assert.equal(emailAvailable({ plan: "starter" }, "shift_alerts", "production"), false);
-    assert.equal(emailAvailable({ plan: "ultra" }, "shift_alerts", "production"), true);
-    assert.equal(emailAvailable({ plan: "none" }, "weekly_summary", "production"), false);
-    assert.equal(hasFeature({ plan: "starter" }, "csvExport", "production"), false);
-    assert.equal(hasFeature({ plan: "pro" }, "csvExport", "production"), true);
-    assert.equal(hasFeature({ plan: "starter" }, "csvExport", "beta"), true);
+    assert.equal(wantsEmail({ plan: "starter" }, "weekly_summary"), true);
+    assert.equal(emailAvailable({ plan: "starter" }, "shift_alerts"), false);
+    assert.equal(emailAvailable({ plan: "ultra" }, "shift_alerts"), true);
+    assert.equal(emailAvailable({ plan: "none" }, "weekly_summary"), false);
+    assert.equal(hasFeature({ plan: "starter" }, "csvExport"), false);
+    assert.equal(hasFeature({ plan: "pro" }, "csvExport"), true);
 });

@@ -285,9 +285,8 @@ function UsageMeter({ label, used, limit, accent }: { label: string; used: numbe
 
 function Plan() {
   const api = useApi();
-  const { account, mode: siteMode } = useSite();
+  const { account } = useSite();
   const usage = useLoad(() => api.usage(), [api]);
-  const mode = usage.data?.mode ?? siteMode;
   const name = PLAN_NAMES[usage.data?.plan ?? account.plan];
   const limits = usage.data?.limits;
   const used = usage.data?.usage;
@@ -296,9 +295,9 @@ function Plan() {
     <section className="panel">
       <div className="panel-head"><h2>Plan and usage</h2>{month && <div className="end"><span className="ask-note">{month} so far</span></div>}</div>
       <div className="panel-body setup-copy">
-        <p>{mode === "beta" ? "TraceTray is in beta, so nothing is limited while it lasts. This is what you've used this month." : `You're on ${name}.`}</p>
+        <p>{(usage.data?.plan ?? account.plan) === "none" ? "No active plan. Choose one under Manage billing to keep collecting." : `You're on ${name}.`}</p>
         {usage.error && <p className="page-status error" style={{ padding: 0 }}>{usage.error}</p>}
-        {used && (mode === "beta" || !limits ? (
+        {used && (!limits ? (
           <div className="usage-figures">
             <div style={{ "--fill": "var(--d1)" } as React.CSSProperties}><b className="num">{used.visits.toLocaleString()}</b><span>visits</span></div>
             <div style={{ "--fill": "var(--d2)" } as React.CSSProperties}><b className="num">{used.pages.toLocaleString()}</b><span>pages tracked</span></div>
@@ -313,7 +312,7 @@ function Plan() {
             <UsageMeter label="Ask questions" used={used.askQuestions} limit={limits.askQuestions} accent="var(--d5)" />
           </div>
         ))}
-        {used && limits && mode !== "beta" && (
+        {used && limits && (
           (limits.pages && used.pages > limits.pages) || (limits.visits && used.visits > limits.visits)
         ) && (
           <p className="note">Over a limit, TraceTray keeps collecting: extra pages are locked and extra visits keep their summary only. Both reset on the 1st, or right away on a bigger plan.</p>
@@ -326,7 +325,7 @@ function Plan() {
 
 function Export() {
   const api = useApi();
-  const { siteKey, mode } = useSite();
+  const { siteKey } = useSite();
   const [days, setDays] = useState(30);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -349,7 +348,7 @@ function Export() {
 
   return (
     <section className="panel">
-      <div className="panel-head"><h2>Export</h2>{mode === "production" && <div className="end"><span className="ask-note">Pro and Ultra</span></div>}</div>
+      <div className="panel-head"><h2>Export</h2><div className="end"><span className="ask-note">Pro and Ultra</span></div></div>
       <div className="panel-body setup-copy exports">
         <p>Download this website's data as CSV, for a spreadsheet or your own reports.</p>
         <div className="export-row">

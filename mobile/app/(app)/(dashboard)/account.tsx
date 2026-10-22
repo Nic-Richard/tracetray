@@ -20,8 +20,8 @@ const MEASURES: { key: keyof Omit<Usage, "month">; label: string; color: number 
 
 function UsageCard({ data }: { data: UsageResponse }) {
   const { styles, colors } = useTheme();
-  const { mode, plan, limits, usage } = data;
-  const limited = mode === "production" && limits !== null;
+  const { plan, limits, usage } = data;
+  const limited = limits !== null;
   const month = new Date(`${usage.month}-01T00:00:00Z`).toLocaleDateString(undefined, {
     month: "long",
     year: "numeric",
@@ -34,9 +34,7 @@ function UsageCard({ data }: { data: UsageResponse }) {
       <Text style={styles.heading}>Plan and usage</Text>
       <Text style={styles.muted}>{month} so far</Text>
       <Text style={styles.text}>
-        {mode === "beta"
-          ? "TraceTray is in beta, so nothing is limited while it lasts."
-          : `You're on ${PLAN_NAMES[plan]}.`}
+        {plan === "none" ? "No active plan. Choose one on the web to keep collecting." : `You're on ${PLAN_NAMES[plan]}.`}
       </Text>
       <Text style={styles.muted}>
         Across all your websites. Visits, tracked pages and Ask questions reset on the 1st (UTC).

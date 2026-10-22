@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router";
-import { ApiError, type Account, type Mode } from "@tracetray/shared";
+import { ApiError, type Account } from "@tracetray/shared";
 import DeleteAccount from "./sections/DeleteAccount";
 import { useApi } from "./api";
 import { SiteProvider } from "./state/site";
@@ -62,7 +62,7 @@ function Shell() {
   );
 }
 
-export default function App({ mode }: { mode: Mode }) {
+export default function App() {
   const api = useApi();
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState("");
@@ -81,7 +81,7 @@ export default function App({ mode }: { mode: Mode }) {
   if (error) return <p className="loading">TraceTray couldn't load your account: {error}. Refresh the page to try again.</p>;
   if (!account) return <p className="loading">Loading…</p>;
   return (
-    <SiteProvider account={account} mode={mode}>
+    <SiteProvider account={account}>
       <Shell />
     </SiteProvider>
   );

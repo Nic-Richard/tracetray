@@ -1,6 +1,5 @@
 // Sends the weekly summary on Mondays from 13:00 UTC, once per account per week.
 const { Account } = require("../db/models");
-const { TRACETRAY_MODE } = require("../config");
 const { getWeeklySummary, lastWeekStart } = require("../lib/weeklySummary");
 const { weeklySummary } = require("../lib/emailTemplates");
 const { sendEmail } = require("../lib/email");
@@ -10,7 +9,7 @@ const logger = require("../lib/logger");
 
 const SEND_HOUR_UTC = 13;
 
-const wantsWeeklySummary = (account, mode = TRACETRAY_MODE) => wantsEmail(account, "weekly_summary", mode);
+const wantsWeeklySummary = account => wantsEmail(account, "weekly_summary");
 
 async function runWeeklySummaries(now = Date.now()) {
     const week = new Date(lastWeekStart(now)).toISOString().slice(0, 10);

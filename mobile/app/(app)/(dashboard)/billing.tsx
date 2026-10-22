@@ -40,10 +40,8 @@ export default function BillingScreen() {
         }
       >
         <View style={styles.panel}>
-          <Text style={styles.heading}>{data.mode === "beta" ? "TraceTray beta" : PLAN_NAMES[data.plan]}</Text>
-          {data.mode === "beta" ? (
-            <Text style={styles.text}>The beta has no subscription limits.</Text>
-          ) : sub ? (
+          <Text style={styles.heading}>{PLAN_NAMES[data.plan]}</Text>
+          {sub ? (
             <>
               <Text style={styles.text}>
                 {statuses[sub.status] || "Subscription status unavailable"}
@@ -86,11 +84,11 @@ export default function BillingScreen() {
         {data.plans?.map(plan => (
           <View
             key={plan.id}
-            style={[styles.panel, plan.id === data.plan && data.mode !== "beta" ? { borderColor: colors.accent } : {}]}
+            style={[styles.panel, plan.id === data.plan ? { borderColor: colors.accent } : {}]}
           >
             <Text style={styles.heading}>
               {PLAN_NAMES[plan.id]}
-              {plan.id === data.plan && data.mode !== "beta" ? " · Current plan" : ""}
+              {plan.id === data.plan ? " · Current plan" : ""}
             </Text>
             <Text style={styles.text}>{allowance(plan.limits.visits, "visit", "visits")} per month</Text>
             <Text style={styles.muted}>

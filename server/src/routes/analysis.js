@@ -14,7 +14,6 @@ const {
     createAnalysisPermit,
     consumeAnalysisPermit
 } = require("../lib/analysisState");
-const { TRACETRAY_MODE } = require("../config");
 const { isPageLocked } = require("../lib/limits");
 const logger = require("../lib/logger");
 
@@ -26,7 +25,7 @@ router.post("/api/analysis-permit", requireAuth(), async (req, res) => {
 
         const siteKey = resolveSiteKey(req, account);
         if (!siteKey) return res.status(403).json({ error: "website not available" });
-        if (TRACETRAY_MODE === "production" && account.plan === "none") {
+        if (account.plan === "none") {
             return res.status(403).json({ error: "active subscription required" });
         }
 
@@ -112,7 +111,7 @@ router.post("/api/run-analysis", requireAuth(), async (req, res) => {
     const siteKey = resolveSiteKey(req, account);
     if (!siteKey) return res.status(403).json({ error: "website not available" });
 
-    if (TRACETRAY_MODE === "production" && account.plan === "none") return res.status(403).json({ error: "active subscription required" });
+    if (account.plan === "none") return res.status(403).json({ error: "active subscription required" });
 
     if (analysisRunning[siteKey]) return res.status(409).json({ error: "analysis already running" });
 

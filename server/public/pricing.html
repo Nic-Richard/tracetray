@@ -151,7 +151,6 @@
   </div>
 </footer>
 <script>
-let appMode = "beta";
 let interval = "month";
 
 const money = n => `<sup>$</sup>${n.toLocaleString("en-US")}`;
@@ -224,7 +223,6 @@ async function loadClerk(pubKey) {
 async function init() {
   try {
     const config = await fetch("/api/config").then(r => r.json());
-    appMode = config.mode || "beta";
 
     // Clerk sets cookies, so it only loads for people the dashboard has marked as signed in.
     let signedInBefore = false;
@@ -237,7 +235,6 @@ async function init() {
 
   document.querySelectorAll("button[data-plan]").forEach(button => button.addEventListener("click", async () => {
     if (!window.Clerk?.user) { window.location.href = "/sign-in"; return; }
-    if (appMode !== "production") { window.location.href = "/app/"; return; }
     await subscribe(button.dataset.plan, button);
   }));
 }

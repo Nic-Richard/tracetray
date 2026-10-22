@@ -168,20 +168,17 @@ export interface EmailPrefs {
 }
 
 export interface UsageResponse {
-  mode: "beta" | "production";
   plan: Plan;
   limits: PlanLimits | null;
   usage: Usage;
   subscription?: { status: string; interval: string | null; trial_end: string | null; current_period_end: string | null; cancel_at_period_end: boolean } | null;
   plans?: { id: Exclude<Plan, "none">; limits: PlanLimits }[];
 }
-export type Mode = "beta" | "production";
 export type Device = "desktop" | "mobile";
 
 export interface Config {
   clerk_publishable_key: string;
   site_key: string | null;
-  mode: Mode;
 }
 
 export interface Site {

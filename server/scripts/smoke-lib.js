@@ -61,19 +61,11 @@ test('normalizeTrackingDomain rejects non-http protocols and invalid URLs', () =
   assert.strictEqual(normalizeTrackingDomain('ftp://example.com'), null);
 });
 
-test('getSiteLimit gives every account the beta limit while in beta mode', () => {
-  const originalMode = process.env.TRACETRAY_MODE;
-  process.env.TRACETRAY_MODE = 'beta';
-  delete require.cache[require.resolve('../src/config')];
-  delete require.cache[require.resolve('../src/lib/siteAccount')];
-  const { getSiteLimit: getSiteLimitBeta } = require('../src/lib/siteAccount');
-
-  assert.strictEqual(getSiteLimitBeta({ plan: 'none' }), 5);
-  assert.strictEqual(getSiteLimitBeta({ plan: 'pro' }), 5);
-
-  process.env.TRACETRAY_MODE = originalMode;
-  delete require.cache[require.resolve('../src/config')];
-  delete require.cache[require.resolve('../src/lib/siteAccount')];
+test('getSiteLimit follows the plan', () => {
+  assert.strictEqual(getSiteLimit({ plan: 'none' }), 1);
+  assert.strictEqual(getSiteLimit({ plan: 'starter' }), 1);
+  assert.strictEqual(getSiteLimit({ plan: 'pro' }), 5);
+  assert.strictEqual(getSiteLimit({ plan: 'ultra' }), 10);
 });
 
 test('getAccountSites builds a single-site fallback for legacy accounts', () => {

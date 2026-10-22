@@ -4,7 +4,6 @@ const { getAuth, clerkClient } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
 const { Account, AccountDeletion } = require("../db/models");
 const { generateSiteKey, getSiteLimit, ensureAccountSites, deleteSiteData } = require("../lib/siteAccount");
-const { TRACETRAY_MODE } = require("../config");
 const { PLANS, planLimits, subscriptionSummary } = require("../lib/plans");
 const { getUsage } = require("../lib/usage");
 const logger = require("../lib/logger");
@@ -71,7 +70,7 @@ router.get("/api/usage", requireAuth(), async (req, res) => {
         const account = await Account.findOne({ clerk_user_id: getAuth(req).userId }).lean();
         if (!account) return res.status(404).json({ error: "account not found" });
         res.json({
-            mode: TRACETRAY_MODE, plan: account.plan, limits: planLimits(account.plan), usage: await getUsage(account),
+            plan: account.plan, limits: planLimits(account.plan), usage: await getUsage(account),
             subscription: subscriptionSummary(account.subscription),
             plans: Object.entries(PLANS).map(([id, limits]) => ({ id, limits }))
         });

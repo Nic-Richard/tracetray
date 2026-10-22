@@ -44,7 +44,7 @@ createApi({ getToken: async () => null }).config()
           <SignedInOnly>
             <ApiProvider>
               <BrowserRouter basename="/app">
-                <App mode={config.mode} />
+                <App />
               </BrowserRouter>
             </ApiProvider>
           </SignedInOnly>

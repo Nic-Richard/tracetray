@@ -6,7 +6,6 @@ const { Account } = require("../db/models");
 const { resolveSiteKey, getAccountSites } = require("../lib/siteAccount");
 const { askAnalytics, ASK_MODEL } = require("../lib/askAnalytics");
 const { rateLimit } = require("../lib/rateLimit");
-const { TRACETRAY_MODE } = require("../config");
 const { recordAskQuestion, askCount, monthOf } = require("../lib/usage");
 const { askLimitReached, limitsFor } = require("../lib/limits");
 const logger = require("../lib/logger");
@@ -35,7 +34,7 @@ router.post("/api/ask", requireAuth(), userLimit, siteWideLimit, async (req, res
 
         const siteKey = resolveSiteKey(req, account);
         if (!siteKey) return res.status(403).json({ error: "website not available" });
-        if (TRACETRAY_MODE === "production" && account.plan === "none") {
+        if (account.plan === "none") {
             return res.status(403).json({ error: "active subscription required" });
         }
 

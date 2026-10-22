@@ -9,7 +9,6 @@ const { compareAroundChange } = require("../lib/compare");
 const { mainGoalFor } = require("../lib/goalHits");
 const { isPageLocked } = require("../lib/limits");
 const { planLimits } = require("../lib/plans");
-const { TRACETRAY_MODE } = require("../config");
 const logger = require("../lib/logger");
 
 const MAX_CHANGES_PER_SITE = 200;
@@ -20,7 +19,7 @@ async function loadSite(req, res) {
     const siteKey = resolveSiteKey(req, account);
     const site = siteKey && account.sites.find(item => item.key === siteKey);
     if (!site) { res.status(403).json({ error: "website not available" }); return null; }
-    if (TRACETRAY_MODE === "production" && !planLimits(account.plan)) {
+    if (!planLimits(account.plan)) {
         res.status(403).json({ error: "before-and-after comparisons need a plan", limit_reached: "plan" });
         return null;
     }

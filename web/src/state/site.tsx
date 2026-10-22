@@ -1,11 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router";
-import type { Account, Mode, PageSummary, Site } from "@tracetray/shared";
+import type { Account, PageSummary, Site } from "@tracetray/shared";
 import { useApi } from "../api";
 import { readStorage, writeStorage } from "../lib/storage";
 
 interface SiteState {
-  mode: Mode;
   account: Account;
   sites: Site[];
   site: Site;
@@ -25,7 +24,7 @@ interface SiteState {
 const SiteContext = createContext<SiteState | null>(null);
 const pinKey = (siteKey: string) => `tt-pins:${siteKey}`;
 
-export function SiteProvider({ account, mode, children }: { account: Account; mode: Mode; children: ReactNode }) {
+export function SiteProvider({ account, children }: { account: Account; children: ReactNode }) {
   const api = useApi();
   const [params, setParams] = useSearchParams();
   const [sites, setSites] = useState<Site[]>(account.sites);
@@ -80,7 +79,7 @@ export function SiteProvider({ account, mode, children }: { account: Account; mo
   const reloadPages = useCallback(() => setReloadCount(n => n + 1), []);
 
   const value: SiteState = {
-    mode, account, sites, site, siteKey, setSite, setSites,
+    account, sites, site, siteKey, setSite, setSites,
     pages, pagesError, reloadPages,
     page, setPage, pins, togglePin
   };

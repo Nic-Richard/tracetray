@@ -105,7 +105,6 @@ function analysisHandler({ failProcess = false, failSave = false, busy = false, 
                 analysisRunning: state.running,
                 consumeAnalysisPermit() { state.permits++; return true; },
             };
-            if (name === "../config") return { TRACETRAY_MODE: "beta" };
             if (name === "../lib/logger") return { debug() {}, info() {}, error() {} };
             return {};
     };

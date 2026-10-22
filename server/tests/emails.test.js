@@ -4,14 +4,12 @@ const { wantsWeeklySummary } = require("../src/jobs/weeklySummary");
 const { weeklySummary, deletionNotice } = require("../src/lib/emailTemplates");
 const { lastWeekStart } = require("../src/lib/weeklySummary");
 
-test("the weekly summary comes with every plan once plans are live, and is opt-in during the beta", () => {
-    assert.equal(wantsWeeklySummary({ plan: "pro" }, "production"), true);
-    assert.equal(wantsWeeklySummary({ plan: "enterprise" }, "production"), true);
-    assert.equal(wantsWeeklySummary({ plan: "pro", email_prefs: { weekly_summary: false } }, "production"), false);
-    assert.equal(wantsWeeklySummary({ plan: "starter" }, "production"), true);
-    assert.equal(wantsWeeklySummary({ plan: "none", email_prefs: { weekly_summary: true } }, "production"), false);
-    assert.equal(wantsWeeklySummary({ plan: "none" }, "beta"), false);
-    assert.equal(wantsWeeklySummary({ plan: "none", email_prefs: { weekly_summary: true } }, "beta"), true);
+test("the weekly summary comes with every plan unless turned off", () => {
+    assert.equal(wantsWeeklySummary({ plan: "pro" }), true);
+    assert.equal(wantsWeeklySummary({ plan: "enterprise" }), true);
+    assert.equal(wantsWeeklySummary({ plan: "pro", email_prefs: { weekly_summary: false } }), false);
+    assert.equal(wantsWeeklySummary({ plan: "starter" }), true);
+    assert.equal(wantsWeeklySummary({ plan: "none", email_prefs: { weekly_summary: true } }), false);
 });
 
 test("unsubscribe links only verify for the account they were made for", () => {
@@ -62,9 +60,9 @@ test("weekly runs take the busiest pages with new visits, within the plan's week
     const locked = new Set(["site|d"]);
     assert.deepEqual(pickPages(pages, lastRuns, locked, "site", 10).map(p => p.page), ["a", "e"]);
     assert.deepEqual(pickPages(pages, lastRuns, locked, "site", 1).map(p => p.page), ["a"]);
-    assert.equal(weeklyPageCap({ plan: "starter" }, "production"), 0);
-    assert.equal(weeklyPageCap({ plan: "ultra" }, "production"), 100);
-    assert.equal(weeklyPageCap({ plan: "none" }, "production"), 0);
+    assert.equal(weeklyPageCap({ plan: "starter" }), 0);
+    assert.equal(weeklyPageCap({ plan: "ultra" }), 100);
+    assert.equal(weeklyPageCap({ plan: "none" }), 0);
 });
 
 test("shift alerts name the page the way the dashboard does", () => {

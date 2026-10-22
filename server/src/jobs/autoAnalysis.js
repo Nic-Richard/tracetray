@@ -2,11 +2,10 @@
 // summary), so groups and trends stay current without anyone pressing Refresh. Pages that moved a
 // lot are emailed to accounts that get behaviour-shift alerts.
 const { Account, AnalysisResult } = require("../db/models");
-const { TRACETRAY_MODE } = require("../config");
 const { getAccountSites } = require("../lib/siteAccount");
 const { getPages } = require("../lib/siteData");
 const { lockedPages } = require("../lib/limits");
-const { PLANS, planLimits } = require("../lib/plans");
+const { planLimits } = require("../lib/plans");
 const { runAnalysis } = require("../lib/runAnalysis");
 const { biggestShift } = require("../lib/groupShifts");
 const { wantsEmail } = require("../lib/emailPrefs");
@@ -23,8 +22,7 @@ const ALERT_SHIFT = 0.10;
 const DAY_MS = 24 * 60 * 60 * 1000;
 let running = false;
 
-function weeklyPageCap(account, mode = TRACETRAY_MODE) {
-    if (mode !== "production") return PLANS.pro.weeklyPages;
+function weeklyPageCap(account) {
     return planLimits(account.plan)?.weeklyPages || 0;
 }
 

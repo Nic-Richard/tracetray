@@ -79,7 +79,6 @@ function billingFixture() {
         "../middleware/auth": { requireAuth: () => () => {} },
         "../lib/stripe": stripe,
         "../db/models": { Account: { findOne: async () => ({ email: "unused@example.com" }), updateOne: async () => { calls.push(["activate"]); return { matchedCount: 1 }; } }, AccountDeletion: { exists: async () => true } },
-        "../config": { TRACETRAY_MODE: "production" },
         "../lib/logger": { error() {}, info() {}, warn() {} },
         "../lib/alerts": { sendAlert() { calls.push(["alert"]); } },
         "../lib/plans": { PRICE_KEYS: { pro: { month: "pro-month" } }, planForPrice: () => "pro" }

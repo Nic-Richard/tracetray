@@ -5,7 +5,6 @@ const { requireAuth } = require("../middleware/auth");
 const { Account, PageDay, Session } = require("../db/models");
 const { resolveSiteKey } = require("../lib/siteAccount");
 const { limitsFor, hasFeature } = require("../lib/limits");
-const { PLANS } = require("../lib/plans");
 const { parseGoal, matchChanged, appliesTo, isGoalPage } = require("../lib/goals");
 const { queueBackfill, removeGoalMarks, goalRate, goalWeeks, mainGoalFor, milestoneCrossed, nextMilestone } = require("../lib/goalHits");
 const logger = require("../lib/logger");
@@ -21,8 +20,8 @@ async function loadSite(req, res) {
     return { account, site };
 }
 
-// Plans cap goals per website; the beta allows Ultra's number.
-const goalCap = account => limitsFor(account)?.goals ?? PLANS.ultra.goals;
+// Plans cap goals per website.
+const goalCap = account => limitsFor(account)?.goals ?? 0;
 
 const view = goal => ({ id: goal.id, name: goal.name, type: goal.type, match: goal.match, pages: goal.pages || [], target: goal.target ?? null, backfill: goal.backfill || "done" });
 

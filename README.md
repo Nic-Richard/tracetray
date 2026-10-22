@@ -48,7 +48,7 @@ A different root domain needs another key.
 
 Do not reuse one key across unrelated websites.
 
-In production, Starter supports one website, Pro up to five and Ultra up to ten; Enterprise is set per account. In beta mode (`TRACETRAY_MODE=beta`) every account can keep up to five.
+In production, Starter supports one website, Pro up to five and Ultra up to ten; Enterprise is set per account.
 
 Removing a website deletes its sessions, analyses, reports, generated feature data, and site key. Removing the last website resets it to `My website` and generates a new key.
 
@@ -193,7 +193,6 @@ MONGODB_URI
 CLERK_PUBLISHABLE_KEY
 CLERK_SECRET_KEY
 ANTHROPIC_API_KEY
-TRACETRAY_MODE
 ```
 
 `ASK_MODEL`, `ASK_EFFORT` and `ASK_DAILY_LIMIT` tune the Ask tab (defaults: `claude-sonnet-5-5`, `medium`, 100
@@ -201,8 +200,6 @@ questions a day across all accounts). Each account can also ask 20 questions a d
 
 `RAW_EVENT_RETENTION_DAYS` deletes raw cursor events (keeping session summaries) from sessions older than that many
 days. It's off when empty.
-
-`TRACETRAY_MODE=beta` keeps beta access enabled and allows up to five websites per account.
 
 ## Authentication
 
@@ -271,4 +268,4 @@ python3 -m py_compile ml/analyze.py
 
 ## Status
 
-TraceTray runs in production mode with paid plans (Starter, Pro, Ultra, and Enterprise set by hand), each with a 30-day trial. Plan limits and features live in `server/src/lib/plans.js`. Beta mode, still used for local development, lifts every limit and needs no subscription.
+TraceTray runs with paid plans (Starter, Pro, Ultra, and Enterprise set by hand), each with a 30-day trial. Plan limits and features live in `server/src/lib/plans.js`. Local development uses the same rules, so give a local account a plan to test with.
