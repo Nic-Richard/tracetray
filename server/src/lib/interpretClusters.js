@@ -365,11 +365,22 @@ function goalTarget(goal) {
 const clickLabel = target => target.text ? `“${target.text}”` : target.href ? `the link to ${target.href}` : `#${target.id}`;
 
 function isGoalTarget(goal, target) {
+    if (goal?.type === "page") return !!goal.match?.page && target.href === goal.match.page;
     const match = goal?.type === "click" ? goal.match || {} : {};
     if (match.id) return target.id === match.id;
     if (match.href) return target.href === match.href;
     if (match.text) return String(target.text || "").toLowerCase() === String(match.text).toLowerCase();
     return false;
+}
+
+// The tracker records a same-site link as its path and another site as its hostname. Buttons, toggles and links
+// back to this page (a size guide, a gallery, "#reviews") keep people on the page, so they aren't a way out.
+function leavesPage(target, pagePath) {
+    return !!target.href && target.href !== pagePath && /^\/|^[a-z0-9.-]+\.[a-z]{2,}$/i.test(target.href);
+}
+
+function pathOf(pageUrl) {
+    try { return new URL(pageUrl).pathname; } catch { return pageUrl || null; }
 }
 
 const ratio = (cluster, base, feature) => {
@@ -378,9 +389,9 @@ const ratio = (cluster, base, feature) => {
 };
 
 // Only a group that clearly falls short of the goal gets a suggestion, and only when its numbers say why:
-// it leaves before reaching the goal on the page, it mostly clicks something else, or it hesitates.
+// it leaves before reaching the goal on the page, it mostly follows a link off the page, or it hesitates.
 // Anything vaguer is left to the site owner reading the groups.
-function adviceFor(cluster, story, base, goal, deviceLabel, visits) {
+function adviceFor(cluster, story, base, goal, deviceLabel, visits, pagePath) {
     const standing = story.goal;
     if (!goal || standing?.standing !== "below") return null;
     const target = goalTarget(goal);
@@ -397,11 +408,12 @@ function adviceFor(cluster, story, base, goal, deviceLabel, visits) {
             evidence: `${who} leave about ${pct(depth)} of the way down, but ${target} sits at about ${pct(position)}, so ${reach} (${vs}).`
         };
     }
-    const rival = (cluster.top_clicks || []).find(t => t.share >= 0.25 && !isGoalTarget(goal, t));
+    const rival = (cluster.top_clicks || []).find(t => t.share >= 0.25 && !isGoalTarget(goal, t) && leavesPage(t, pagePath));
     if (rival) {
+        const exit = rival.text ? `${clickLabel(rival)} (${rival.href})` : `the link to ${rival.href}`;
         return {
-            action: `Look at ${clickLabel(rival)}: ${group} ${deviceLabel === "mobile" ? "tap" : "click"} it instead of ${target}.`,
-            evidence: `${pct(rival.share)} of ${group} (${pct((cluster.n || 0) / visits)} of ${deviceLabel} visits) ${deviceLabel === "mobile" ? "tap" : "click"} ${clickLabel(rival)}, and ${reach} (${vs}).`,
+            action: `Look at ${exit}: ${group} leave this page through it.`,
+            evidence: `${pct(rival.share)} of ${group} (${pct((cluster.n || 0) / visits)} of ${deviceLabel} visits) follow ${exit}, and ${reach} (${vs}).`,
             rival: clickLabel(rival)
         };
     }
@@ -416,7 +428,7 @@ function adviceFor(cluster, story, base, goal, deviceLabel, visits) {
     return null;
 }
 
-function describeDevice(result, archetypes, deviceLabel, goal = null) {
+function describeDevice(result, archetypes, deviceLabel, goal = null, pagePath = null) {
     const clusters = (result?.clusters || []).filter(c => (c.n || 0) > 0);
     if (clusters.length === 0) return null;
     const base = baselines(clusters);
@@ -444,7 +456,7 @@ function describeDevice(result, archetypes, deviceLabel, goal = null) {
     const advice = [];
     if (result.structure !== "none" && (result.session_count || 0) >= MIN_ADVICE_VISITS) {
         for (const c of priority) {
-            const item = adviceFor(c, stories[c.id], base, goal, deviceLabel, visits);
+            const item = adviceFor(c, stories[c.id], base, goal, deviceLabel, visits, pagePath);
             if (item) { stories[c.id].suggestions = [item.action]; advice.push({ ...item, device: deviceLabel, group: stories[c.id].headline }); }
         }
     }
@@ -527,8 +539,9 @@ function summarise(device, label) {
 
 function interpretClusters({ desktop, mobile = null, pageUrl = null, firstImpression = null, goal = null }) {
     const pageType = guessPageType(pageUrl);
-    const d = describeDevice(desktop, ARCHETYPES.desktop, "desktop", goal);
-    const m = describeDevice(mobile, ARCHETYPES.mobile, "mobile", goal);
+    const pagePath = pathOf(pageUrl);
+    const d = describeDevice(desktop, ARCHETYPES.desktop, "desktop", goal, pagePath);
+    const m = describeDevice(mobile, ARCHETYPES.mobile, "mobile", goal, pagePath);
     // The same finding on phones adds nothing once desktop has it.
     const advice = [...(d?.advice || [])];
     for (const item of m?.advice || []) {

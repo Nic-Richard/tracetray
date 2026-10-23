@@ -55,12 +55,12 @@ test("a group falling short gets a suggestion only when its numbers say why", ()
         { ...cluster(0, 100, { scroll_depth_reached: 0.95, click_rate: 0.05 }), goal_hits: { g1: 60 } },
         { ...cluster(1, 100, { scroll_depth_reached: 0.45, click_rate: 0.05 }), goal_hits: { g1: 2 } },
         { ...cluster(2, 100, { scroll_depth_reached: 0.95, click_rate: 0.12 }), goal_hits: { g1: 3 }, top_clicks: [{ text: null, href: "/cart", id: null, share: 0.6 }, { text: "Join the list", href: "/signup", id: null, share: 0.7 }] },
-    ] }, goal });
+    ] }, pageUrl: "https://shop.example/products/boot", goal });
     const [early, busy] = result.advice;
     assert.match(early.action, /^Move the link to \/cart higher, or repeat it before 45% of the way down\.$/);
     assert.match(early.evidence, /leave about 45% of the way down, but the link to \/cart sits at about 80%/);
-    assert.match(busy.action, /^Look at “Join the list”: .+ click it instead of the link to \/cart\.$/);
-    assert.match(busy.evidence, /^70% of .* click “Join the list”, and only 3% reach checkout/);
+    assert.match(busy.action, /^Look at “Join the list” \(\/signup\): .+ leave this page through it\.$/);
+    assert.match(busy.evidence, /^70% of .* follow “Join the list” \(\/signup\), and only 3% reach checkout/);
     assert.deepEqual(result.cluster_stories[0].suggestions, []);
 
     const unplaced = interpretClusters({ desktop: { session_count: 200, clusters: [
@@ -68,6 +68,15 @@ test("a group falling short gets a suggestion only when its numbers say why", ()
         { ...cluster(1, 100, { scroll_depth_reached: 0.45, click_rate: 0.05 }), goal_hits: { g1: 2 } },
     ] }, goal: { ...goal, position: null } });
     assert.deepEqual(unplaced.advice, [], "leaving early proves nothing without knowing where the goal sits");
+
+    const onPage = interpretClusters({ desktop: { session_count: 200, clusters: [
+        { ...cluster(0, 100, { scroll_depth_reached: 0.95, click_rate: 0.05 }), goal_hits: { g1: 60 } },
+        { ...cluster(1, 100, { scroll_depth_reached: 0.95, click_rate: 0.12 }), goal_hits: { g1: 3 }, top_clicks: [
+            { text: "Size guide", href: null, id: null, share: 0.77 },
+            { text: "Reviews", href: "/products/boot", id: null, share: 0.5 },
+        ] },
+    ] }, pageUrl: "https://shop.example/products/boot", goal });
+    assert.deepEqual(onPage.advice, [], "a size guide or a jump to reviews keeps people on the page, so it isn't a way out");
 });
 
 test("fewer than 100 analysed visits gets no suggestions and says why", () => {
