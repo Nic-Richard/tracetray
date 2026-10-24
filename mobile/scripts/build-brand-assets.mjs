@@ -8,7 +8,7 @@ const logo = await readFile(new URL("../server/public/logo-mark.svg", root), "ut
 const paths = logo.match(/<path\b[^>]*\/>/g).join("");
 const gradient = logo.match(/<defs>[\s\S]*?<\/defs>/)[0];
 const fullIcon = logo.replace('rx="15"', 'rx="0"');
-const foreground = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -18 96 96">${paths}</svg>`;
+const foreground = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -16 96 96">${paths}</svg>`;
 const background = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">${gradient}<rect width="64" height="64" fill="url(#h)"/></svg>`;
 const fontFiles = ["400Regular", "600SemiBold", "700Bold"].map(weight => fileURLToPath(new URL(`../node_modules/@expo-google-fonts/instrument-sans/${weight}/InstrumentSans_${weight}.ttf`, root)));
 await mkdir(new URL("assets/", root), { recursive: true });
