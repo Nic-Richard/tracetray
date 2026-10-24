@@ -8,6 +8,7 @@ const { groupSizes } = require("../lib/pageDays");
 const { resolveSiteKey } = require("../lib/siteAccount");
 const { lockedPages, isPageLocked, limitsFor } = require("../lib/limits");
 const { getClickSummary } = require("../lib/clickSummary");
+const { refuseDemo } = require("../lib/demo");
 const { computeAttentionProfile } = require("../lib/attentionProfile");
 const { refreshShots, shotInfo, shotFile } = require("../lib/pageShots");
 const logger = require("../lib/logger");
@@ -125,6 +126,7 @@ router.post("/api/pages/reset", requireAuth(), async (req, res) => {
     try {
         const account = await Account.findOne({ clerk_user_id: getAuth(req).userId }).lean();
         if (!account) return res.status(404).json({ error: "account not found" });
+        if (refuseDemo(account, res)) return;
 
         const siteKey = resolveSiteKey(req, account);
         if (!siteKey) return res.status(403).json({ error: "website not available" });

@@ -7,6 +7,7 @@ const { Account, AccountDeletion } = require("../db/models");
 const logger = require("../lib/logger");
 const { sendAlert } = require("../lib/alerts");
 const { PRICE_KEYS, planForPrice } = require("../lib/plans");
+const { refuseDemo } = require("../lib/demo");
 
 const TRIAL_DAYS = 30;
 const DATA_HOLD_DAYS = 30;
@@ -50,6 +51,7 @@ router.post("/api/create-checkout-session", requireAuth(), async (req, res) => {
 
         const account = await Account.findOne({ clerk_user_id: clerkUserId });
         if (!account)  return res.status(404).json({ error: "account not found" });
+        if (refuseDemo(account, res)) return;
         if (account.subscription && !ENDED.includes(account.subscription.status)) {
             return res.status(409).json({ error: "you already have a plan; change it from billing" });
         }
@@ -158,6 +160,7 @@ router.post("/api/billing-portal", requireAuth(), async (req, res) => {
     try {
         const account = await Account.findOne({ clerk_user_id: getAuth(req).userId }).lean();
         if (!account) return res.status(404).json({ error: "account not found" });
+        if (refuseDemo(account, res)) return;
         if (!account.stripe_customer_id) return res.status(400).json({ error: "no billing account found" });
 
         const host    = `${req.protocol}://${req.get("host")}`;

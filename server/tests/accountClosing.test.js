@@ -54,7 +54,11 @@ test("deletion routes use the signed-in identity and never a submitted target", 
         express: { Router: () => ({ get: (url, auth, handler) => { routes.GET = handler; }, post: (url, auth, handler) => { routes.POST = handler; } }) },
         "@clerk/express": { getAuth: req => ({ userId: req.user }) },
         "../middleware/auth": { requireAuth: () => () => {} },
-        "../db/models": { AccountDeletion: { findOne: filter => ({ lean: async () => { calls.push(filter.clerk_user_id); return { state: "pending" }; } }) } },
+        "../db/models": {
+            Account: { findOne: () => ({ lean: async () => ({ plan: "pro" }) }) },
+            AccountDeletion: { findOne: filter => ({ lean: async () => { calls.push(filter.clerk_user_id); return { state: "pending" }; } }) }
+        },
+        "../lib/demo": require("../src/lib/demo"),
         "../lib/accountDeletion": { deletionStatus: value => value },
         "../jobs/accountDeletion": { service: { request: async (...args) => { calls.push(args); return { status: 202, body: { state: "pending" } }; } } }
     });
@@ -81,7 +85,8 @@ function billingFixture() {
         "../db/models": { Account: { findOne: async () => ({ email: "unused@example.com" }), updateOne: async () => { calls.push(["activate"]); return { matchedCount: 1 }; } }, AccountDeletion: { exists: async () => true } },
         "../lib/logger": { error() {}, info() {}, warn() {} },
         "../lib/alerts": { sendAlert() { calls.push(["alert"]); } },
-        "../lib/plans": { PRICE_KEYS: { pro: { month: "pro-month" } }, planForPrice: () => "pro" }
+        "../lib/plans": { PRICE_KEYS: { pro: { month: "pro-month" } }, planForPrice: () => "pro" },
+        "../lib/demo": require("../src/lib/demo")
     });
     return { routes, calls };
 }

@@ -13,6 +13,7 @@ const { startEventRetentionJob } = require("./src/jobs/eventRetention");
 const { startDataHoldJob } = require("./src/jobs/dataHold");
 const { startWeeklySummaryJob } = require("./src/jobs/weeklySummary");
 const { startAutoAnalysisJob } = require("./src/jobs/autoAnalysis");
+const { startCompAccessJob } = require("./src/jobs/compAccess");
 
 const app = express();
 // nginx is the only proxy in front, so req.ip is the address it saw.
@@ -97,4 +98,5 @@ require("./src/lib/goalHits").resumeBackfills().catch(err => logger.error("goal 
 startDataHoldJob();
 startWeeklySummaryJob();
 startAutoAnalysisJob();
+startCompAccessJob();
 require("./src/jobs/accountDeletion").startAccountDeletionJob();

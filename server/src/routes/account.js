@@ -7,6 +7,7 @@ const { generateSiteKey, getSiteLimit, ensureAccountSites, deleteSiteData } = re
 const { PLANS, planLimits, subscriptionSummary } = require("../lib/plans");
 const { getUsage } = require("../lib/usage");
 const logger = require("../lib/logger");
+const { refuseDemo } = require("../lib/demo");
 
 router.post("/api/account", requireAuth(), async (req, res) => {
     try {
@@ -146,6 +147,7 @@ router.delete("/api/sites/:key", requireAuth(), async (req, res) => {
     try {
         const account = await Account.findOne({ clerk_user_id: getAuth(req).userId });
         if (!account) return res.status(404).json({ error: "account not found" });
+        if (refuseDemo(account, res)) return;
 
         await ensureAccountSites(account);
         const siteKey = req.params.key;
