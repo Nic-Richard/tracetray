@@ -39,3 +39,27 @@ const icons = Object.fromEntries(Object.entries(iconPaths).map(([name, path]) =>
   return [name, `data:image/png;base64,${Buffer.from(new Resvg(svg, { fitTo: { mode: "width", value: 72 } }).render().asPng()).toString("base64")}`];
 }));
 await writeFile(new URL("assets/icons.json", root), JSON.stringify(icons) + "\n");
+
+const site = "../server/public/";
+for (const size of [16, 32, 192, 512]) {
+  await render(logo, `${site}${size < 100 ? `favicon-${size}x${size}` : `icon-${size}`}.png`, size);
+}
+await render(fullIcon, `${site}apple-touch-icon.png`, 180, true);
+const icoSizes = [16, 32, 48];
+const icoImages = icoSizes.map(size => new Resvg(logo, { fitTo: { mode: "width", value: size } }).render().asPng());
+const icoHeader = Buffer.alloc(6 + 16 * icoSizes.length);
+icoHeader.writeUInt16LE(1, 2);
+icoHeader.writeUInt16LE(icoSizes.length, 4);
+let icoOffset = icoHeader.length;
+icoSizes.forEach((size, i) => {
+  const entry = 6 + 16 * i;
+  icoHeader.writeUInt8(size, entry);
+  icoHeader.writeUInt8(size, entry + 1);
+  icoHeader.writeUInt16LE(1, entry + 4);
+  icoHeader.writeUInt16LE(32, entry + 6);
+  icoHeader.writeUInt32LE(icoImages[i].length, entry + 8);
+  icoHeader.writeUInt32LE(icoOffset, entry + 12);
+  icoOffset += icoImages[i].length;
+});
+await writeFile(new URL(`${site}favicon.ico`, root), Buffer.concat([icoHeader, ...icoImages]));
+console.log(`${site}favicon.ico`);

@@ -24,9 +24,9 @@ technical release checks below remain separate from store content.
 ## What Nic needs to do
 
 1. Finish any developer verification and closed-testing requirement shown in Console.
-   TraceTray already exists as `com.tracetray.app`; code 1 is completed on Internal
-   testing. Local signed code 2 includes the accepted icon fix and awaits an approved
-   upload. Do not recreate the app or upload code 1 again.
+   TraceTray already exists as `com.tracetray.app`. Code 5 is completed on Internal
+   testing and is the closed testing (Alpha) release in Google's review. Do not recreate
+   the app or reuse an earlier version code.
 2. Production Google hosted authentication is confirmed on Nic's Pixel. Keep the
    Android namespace/package `com.tracetray.app` in the production Clerk setup.
    This installed Clerk SDK uses `clerk://com.tracetray.app.hosted-callback`; its
