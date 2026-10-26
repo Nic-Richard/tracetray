@@ -175,6 +175,9 @@ async function goalWeeks(siteKey, goal, { page = null, weeks = 12, now = Date.no
         bucket.reached += row.goals?.[goal.id] || 0;
     }
     for (const b of buckets) b.rate = b.visits ? b.reached / b.visits : null;
+    // A week that has only just started says nothing yet, so it stays empty until it has enough visits.
+    const current = buckets[buckets.length - 1];
+    if (current.visits < MIN_WEEK_VISITS) current.rate = null;
     // The current week is still filling up, so it can't be the best one yet.
     const best = buckets.slice(0, -1).filter(b => b.visits >= MIN_WEEK_VISITS && b.rate !== null)
         .reduce((top, b) => (!top || b.rate > top.rate ? b : top), null);

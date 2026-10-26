@@ -79,6 +79,19 @@ test("a group falling short gets a suggestion only when its numbers say why", ()
     assert.deepEqual(onPage.advice, [], "a size guide or a jump to reviews keeps people on the page, so it isn't a way out");
 });
 
+test("the same suggestion on desktop and phones is given once, with both groups' numbers", () => {
+    const goal = { id: "g1", name: "Added to cart", type: "click", match: { text: "Add to cart" }, position: null };
+    const device = (wait, feature) => ({ session_count: 200, clusters: [
+        { ...cluster(0, 100, { [feature]: 400, click_rate: 0.05 }), goal_hits: { g1: 70 } },
+        { ...cluster(1, 100, { [feature]: wait, click_rate: 0.05 }), goal_hits: { g1: 10 } },
+    ] });
+    const result = interpretClusters({ desktop: device(2700, "dwell_before_click"), mobile: device(4200, "dwell_before_tap"),
+        pageUrl: "https://shop.example/products/boot", goal });
+    assert.equal(result.advice.length, 1);
+    assert.equal(result.advice[0].action, "Make it clearer what “Add to cart” leads to.");
+    assert.match(result.advice[0].evidence, /of desktop visits\) wait about 2\.7 s before clicking.+ On phones, .+of mobile visits\) wait about 4\.2 s before tapping/);
+});
+
 test("fewer than 100 analysed visits gets no suggestions and says why", () => {
     const goal = { id: "g1", name: "checkout", type: "click", match: { href: "/cart" }, position: { desktop: 0.8, mobile: null } };
     const result = interpretClusters({ desktop: { session_count: 60, structure: "clear", clusters: [

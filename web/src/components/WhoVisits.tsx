@@ -57,7 +57,8 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
   if (inactive) {
     rows.push({
       id: -2, headline: "Left without interacting", share: inactive.share, color: "var(--d-neutral)", text: INACTIVE_TEXT[device],
-      goal: inactive.goal && goal ? { rate: inactive.goal.rate, average: goal.rate } : null
+      // Visits that never touched the page only reach a goal by arriving at it, so a zero here says nothing.
+      goal: inactive.goal?.rate && goal ? { rate: inactive.goal.rate, average: goal.rate } : null
     });
   }
 

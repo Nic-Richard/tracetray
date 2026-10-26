@@ -7,9 +7,9 @@
 <meta name="description" content="Privacy-friendly behavioural analytics: machine-learning visitor groups, journeys and recommendations to improve user experience and conversions, with no cookies, recordings or proxy setup.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://tracetray.com/">
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="/favicon.ico?v=2" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
 <link rel="manifest" href="/site.webmanifest">
 <meta name="theme-color" content="#141724">
 <meta property="og:type" content="website">
@@ -123,7 +123,7 @@ section { padding: 104px 0; }
 .row + .row { margin-top: 112px; }
 .row.flip { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); }
 .row.flip .row-copy { order: 2; }
-.row-copy { display: grid; gap: 16px; }
+.row-copy { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .row-copy p { color: var(--ink-2); }
 .row-copy ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .row-copy li { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 12px; align-items: baseline; color: var(--ink-2); }
@@ -133,7 +133,7 @@ section { padding: 104px 0; }
 .pair .frame:first-child { width: 84%; }
 .pair .frame:last-child { position: absolute; right: 0; bottom: 0; width: 23%; box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45); }
 .frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--paper); box-shadow: 0 30px 60px -36px rgba(28, 32, 48, 0.5); }
-.card-shot { max-width: 340px; justify-self: center; }
+.card-shot { width: 100%; max-width: 340px; justify-self: center; }
 .row.tall { grid-template-columns: minmax(0, 500px) auto; justify-content: center; gap: 96px; }
 .row.flip.tall { grid-template-columns: auto minmax(0, 500px); }
 
@@ -146,12 +146,12 @@ section { padding: 104px 0; }
 .compare p { color: var(--ink-2); }
 .compare div:not(.us) h3 { color: var(--muted); }
 .compare .us { border: 2px solid transparent; background: linear-gradient(var(--paper), var(--paper)) padding-box, var(--heat) border-box; }
-.extras { padding-bottom: 0; }
+#how, .extras { padding-bottom: 0; }
 .extras-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .privacy-link { margin-top: 20px; font-weight: 600; }
 .findings { padding-bottom: 0; }
-.finding-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px 28px; }
-.finding-list li { display: grid; gap: 4px; padding-left: 16px; border-left: 3px solid var(--c); }
+.finding-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px 28px; }
+.finding-list li { display: grid; gap: 4px; align-content: start; padding-left: 16px; border-left: 3px solid var(--c); }
 .finding-list b { font-size: 18.5px; letter-spacing: -0.01em; }
 .finding-list span { color: var(--ink-2); }
 .lead-line { font-size: 19px; color: var(--ink); font-weight: 500; }
@@ -162,7 +162,7 @@ section { padding: 104px 0; }
 .extras-grid p { color: var(--ink-2); }
 
 .setup-note { font-size: 15px; color: var(--graphite-ink); }
-.questions { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.questions { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .questions li { display: block; width: max-content; max-width: 100%; border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 7px 16px; font-size: 15px; color: var(--ink); }
 
 .method li { display: block; padding-left: 14px; border-left: 3px solid var(--warm); }
@@ -203,11 +203,11 @@ footer span { margin-left: auto; }
   .pair .frame:last-child { position: static; width: 60%; justify-self: center; }
   .top nav a:not(.btn) { display: none; }
   .top nav { gap: 10px; }
-  .hero-grid, .row, .row.flip, .row.tall, .row.flip.tall, .faq { grid-template-columns: 1fr; gap: 36px; }
+  .hero-grid, .row, .row.flip, .row.tall, .row.flip.tall, .faq { grid-template-columns: minmax(0, 1fr); gap: 36px; }
   .row.flip .row-copy { order: 0; }
   .screen { transform: none; }
   .hud p { display: none; }
-  .steps, .plans, .compare, .extras-grid, .extras-grid.three { grid-template-columns: 1fr; }
+  .steps, .plans, .compare, .extras-grid, .extras-grid.three { grid-template-columns: minmax(0, 1fr); }
   section { padding: 72px 0; }
   .row + .row { margin-top: 72px; }
 }
@@ -253,7 +253,7 @@ footer span { margin-left: auto; }
         </div>
         <p class="setup-note">Two lines to install. No proxy or tag manager. Start collecting in minutes.</p>
       </div>
-      <div class="screen"><img src="/assets/home/dash-group.webp" width="2880" height="1800" alt="The TraceTray dashboard showing an outdoor gear shop's product pages, how many reach Added to cart, and the visitor groups who use them"></div>
+      <div class="screen"><img src="/assets/home/dash-group.webp?v=2" width="2880" height="1800" alt="The TraceTray dashboard showing an outdoor gear shop's product pages, how many reach Added to cart, and the visitor groups who use them"></div>
     </div>
     <div class="wrap">
       <div class="hud" aria-live="off">
@@ -303,7 +303,7 @@ footer span { margin-left: auto; }
           <h2>Goals for every page</h2>
           <p>Pick what a page is for, such as a buy button, a sign-up form or the next page, and see how many visits get there, week by week.</p>
         </div>
-        <div class="frame"><img src="/assets/home/goals.webp" width="1416" height="948" alt="Product pages: 46% of visits reached Added to cart in the last 30 days, with the rate for each of the last 12 weeks"></div>
+        <div class="frame"><img src="/assets/home/goals.webp?v=2" width="1424" height="1076" alt="Product pages: 52% of visits reached Added to cart in the last 30 days, with the rate for each week and the best week the most recent"></div>
       </div>
 
       <div class="row flip">
@@ -311,7 +311,7 @@ footer span { margin-left: auto; }
           <h2>What to change, and why</h2>
           <p>When a group of visitors falls short of the page's goal, TraceTray shows why from the numbers: where they stop scrolling, which link takes them off the page, or how long they hesitate. No suggestion appears without the figures behind it.</p>
         </div>
-        <div class="frame"><img src="/assets/home/advice.webp" width="1186" height="688" alt="What to try: make it clearer what Add to cart leads to. Re-checkers wait about 2.7 seconds before clicking, 1.8 times the page average, and only 21% add to cart, against 47% overall"></div>
+        <div class="frame"><img src="/assets/home/advice.webp?v=2" width="1186" height="508" alt="What to try: make it clearer what Add to cart leads to. Window shoppers wait about 2.6 seconds before clicking, 2.2 times the page average, and only 19% add to cart against 47% overall, and phones show the same"></div>
       </div>
 
       <div class="row tall">
@@ -323,7 +323,7 @@ footer span { margin-left: auto; }
             <li>Every split is checked against data with no groups in it and on random samples. If none holds up, TraceTray says visitors behave alike.</li>
           </ul>
         </div>
-        <div class="frame card-shot"><img src="/assets/home/who.webp" width="766" height="1558" alt="Who visits the product pages: each group with how often it adds to cart against the average, from quick deciders near 90% to re-checkers near 20%"></div>
+        <div class="frame card-shot"><img src="/assets/home/who.webp?v=2" width="766" height="1478" alt="Who visits the product pages: each group with how often it adds to cart against the average, from quick deciders at 83% to window shoppers at 19%"></div>
       </div>
 
       <div class="row flip">
@@ -332,8 +332,8 @@ footer span { margin-left: auto; }
           <p>See it on the page itself: where cursors spend time, where the first screen ends, and how far down people get before they leave. Phones have no cursor, so there the shading shows where people stop to read.</p>
         </div>
         <div class="pair">
-          <div class="frame"><img src="/assets/home/attention.webp" width="2000" height="1300" alt="The shop's homepage shaded where the cursor spends time, with lines where the first screen ends and how far visitors get, beside the share of activity in each third of the page"></div>
-          <div class="frame"><img src="/assets/home/attention-phone.webp" width="492" height="1150" alt="On phones: the homepage shaded where visitors stop to read, with how far down they get, how often they tap and how long they stop"></div>
+          <div class="frame"><img src="/assets/home/attention.webp?v=2" width="2000" height="1300" alt="The shop's homepage shaded where the cursor spends time, with lines where the first screen ends and how far visitors get, beside the share of activity in each third of the page"></div>
+          <div class="frame"><img src="/assets/home/attention-phone.webp?v=2" width="492" height="1150" alt="On phones: the homepage shaded where visitors stop to read, with how far down they get, how often they tap and how long they stop"></div>
         </div>
       </div>
 
@@ -347,7 +347,7 @@ footer span { margin-left: auto; }
             <li>Has anything changed since I redesigned the homepage?</li>
           </ul>
         </div>
-        <div class="frame"><img src="/assets/home/ask.webp" width="1754" height="876" alt="Ask answering &ldquo;Why don&rsquo;t re-checkers on the product pages add to cart?&rdquo;: only 21% of them reach Added to cart against 47%, most open the size guide and reviews, and one suggestion"></div>
+        <div class="frame"><img src="/assets/home/ask.webp?v=2" width="1680" height="920" alt="Ask answering &ldquo;Why don&rsquo;t window shoppers on the product pages add to cart?&rdquo;: only 19% of them reach Added to cart against 47%, most open the size guide and reviews, and one suggestion"></div>
       </div>
 
       <div class="row flip">
@@ -355,7 +355,7 @@ footer span { margin-left: auto; }
           <h2>Detailed visitor journeys</h2>
           <p>Follow visitors across your whole site: where they arrive, the paths they take, and where they leave. Set up a funnel to see which step of a checkout or sign-up loses people.</p>
         </div>
-        <div class="frame"><img src="/assets/home/journeys.webp" width="2000" height="2200" alt="Journeys: where visitors arrive and leave, and the most common moves between pages"></div>
+        <div class="frame"><img src="/assets/home/journeys.webp?v=2" width="2000" height="2200" alt="Journeys: where visitors arrive and leave, and the most common moves between pages"></div>
       </div>
 
       <div class="row">
@@ -363,7 +363,7 @@ footer span { margin-left: auto; }
           <h2>Hundreds of pages, one view</h2>
           <p>Pages that share a URL pattern, like <b>/products/:product</b>, are analyzed together, so low-traffic pages still add up. TraceTray suggests the patterns.</p>
         </div>
-        <div class="frame"><img src="/assets/home/pages.webp" width="2200" height="1520" alt="The page tree with product, collection and post pages grouped, and the 24 product pages in one view"></div>
+        <div class="frame"><img src="/assets/home/pages.webp?v=2" width="2200" height="1520" alt="The page tree with product, collection and post pages grouped, and the 24 product pages in one view"></div>
       </div>
     </div>
   </section>
@@ -411,7 +411,7 @@ footer span { margin-left: auto; }
     <div class="wrap">
       <div class="section-head"><h2>Light on your site</h2></div>
       <div class="extras-grid three">
-        <div><h3>About 4 KB</h3><p>Smaller than most images. Loads after your page does.</p></div>
+        <div><h3>About 5 KB</h3><p>Smaller than most images. Loads after your page does.</p></div>
         <div><h3>No workarounds needed</h3><p>No proxy, tag manager or server-side setup to keep data coming in.</p></div>
         <div><h3>Works with single-page apps</h3><p>Route changes in React, Vue, Next.js and other SPAs are tracked&nbsp;automatically.</p></div>
       </div>

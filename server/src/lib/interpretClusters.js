@@ -421,7 +421,7 @@ function adviceFor(cluster, story, base, goal, deviceLabel, visits, pagePath) {
     const waitMs = cluster.feature_means?.[deviceLabel === "mobile" ? "dwell_before_tap" : "dwell_before_click"];
     if (goal.type !== "page" && wait !== null && wait >= 1.5 && waitMs >= 1000) {
         return {
-            action: `Make it clearer what ${target} leads to; ${group} hesitate before acting.`,
+            action: `Make it clearer what ${target} leads to.`,
             evidence: `${who} wait about ${secs(waitMs)} before ${deviceLabel === "mobile" ? "tapping" : "clicking"}, ${wait.toFixed(1)}× the page average, and ${reach} (${vs}).`
         };
     }
@@ -542,10 +542,12 @@ function interpretClusters({ desktop, mobile = null, pageUrl = null, firstImpres
     const pagePath = pathOf(pageUrl);
     const d = describeDevice(desktop, ARCHETYPES.desktop, "desktop", goal, pagePath);
     const m = describeDevice(mobile, ARCHETYPES.mobile, "mobile", goal, pagePath);
-    // The same finding on phones adds nothing once desktop has it.
-    const advice = [...(d?.advice || [])];
+    // The same finding on phones joins the desktop one instead of repeating it.
+    const advice = (d?.advice || []).map(a => ({ ...a }));
     for (const item of m?.advice || []) {
-        if (!advice.some(a => (a.rival && a.rival === item.rival) || a.action === item.action)) advice.push(item);
+        const same = advice.find(a => (a.rival && a.rival === item.rival) || a.action === item.action);
+        if (!same) advice.push(item);
+        else if (same.device !== "mobile") same.evidence = `${same.evidence} On phones, ${item.evidence.charAt(0).toLowerCase()}${item.evidence.slice(1)}`;
     }
     advice.splice(2);
 

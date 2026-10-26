@@ -10,6 +10,7 @@ const { regroupSite } = require("../src/lib/pageDays");
 const DAY_MS = 24 * 60 * 60 * 1000;
 const VISITORS = 3200;
 const HISTORY_DAYS = 84;
+const CHANGE_DAYS_AGO = 20;
 
 const PRODUCTS = [
     "ridge-40-pack", "summit-25-daypack", "trailhead-55-pack", "cedar-2-tent", "alpine-ultralight-tent", "basecamp-4-tent",
@@ -32,7 +33,7 @@ const between = (a, b) => a + rand() * (b - a);
 const DESKTOP = {
     buyer:    { weight: 40, duration: [25, 60], speed: [0.5, 0.9], pauses: [2, 5], depth: [0.4, 0.65], yBias: 0.9, dwell: [400, 900] },
     comparer: { weight: 35, duration: [90, 240], speed: [0.15, 0.35], pauses: [8, 18], depth: [0.75, 1], yBias: 0.55, dwell: [2000, 4200], backtrack: true },
-    scanner:  { weight: 25, duration: [4, 10], speed: [1.6, 2.6], pauses: [0, 1], depth: [0.05, 0.15], yBias: 2.6, dwell: [200, 500] }
+    scanner:  { weight: 25, duration: [8, 18], speed: [1.6, 2.6], pauses: [0, 1], depth: [0.05, 0.15], yBias: 2.6, dwell: [200, 500] }
 };
 const PHONE = {
     tapper:  { weight: 40, duration: [20, 60], taps: [3, 7], pauses: [1, 3], pauseMs: [800, 1600], depth: [0.4, 0.7] },
@@ -46,8 +47,8 @@ function journey() {
     if (r < 0.12) return ["/journal/" + pick(POSTS), "/products/" + product];
     if (r < 0.3) return ["/products/" + product, "/products/" + pick(PRODUCTS)];
     const path = ["/", "/collections/" + pick(COLLECTIONS), "/products/" + product];
-    if (rand() < 0.35) path.push("/cart");
-    if (path.includes("/cart") && rand() < 0.55) path.push("/checkout");
+    if (rand() < 0.4) path.push("/cart");
+    if (path.includes("/cart") && rand() < 0.8) path.push("/checkout");
     return path.slice(0, 1 + Math.floor(rand() * path.length));
 }
 
@@ -56,14 +57,14 @@ const target = text => ({ tag: rand() < 0.6 ? "BUTTON" : "A", id: null, text, hr
 // What each kind of shopper clicks, so the demo's groups, goals and suggestions tell one consistent story.
 const KIND = { buyer: "decider", tapper: "decider", comparer: "browser", reader: "browser", scanner: "leaver", bouncer: "leaver" };
 function clickChoices(kind, path) {
-    if (path === "/") return { decider: [["Shop hiking packs", 90], ["New arrivals", 10]], browser: [["New arrivals", 70], ["Shop hiking packs", 15], ["Journal", 15]], leaver: [["New arrivals", 1]] }[kind];
-    if (path.startsWith("/products")) return { decider: [["Add to cart", 80], ["Colour: Moss", 12], ["Size: M", 8]], browser: [["Size guide", 52], ["Reviews", 40], ["Add to cart", 8]], leaver: [["Reviews", 1]] }[kind];
+    if (path === "/") return { decider: [["Shop hiking packs", 70], ["New arrivals", 30]], browser: [["New arrivals", 70], ["Shop hiking packs", 15], ["Journal", 15]], leaver: [["Shop hiking packs", 60], ["New arrivals", 40]] }[kind];
+    if (path.startsWith("/products")) return { decider: [["Add to cart", 55], ["Colour: Moss", 25], ["Size: M", 20]], browser: [["Size guide", 52], ["Reviews", 40], ["Add to cart", 8]], leaver: [["Add to cart", 65], ["Reviews", 35]] }[kind];
     if (path.startsWith("/collections")) return [["Ridge 40L Pack", 40], ["Summit 25 Daypack", 35], ["Filter: Waterproof", 25]];
     if (path === "/cart") return [["Checkout", 80], ["Remove", 20]];
     if (path === "/checkout") return [["Pay now", 1]];
     return [["Shop the gear", 1]];
 }
-const clickCount = kind => kind === "leaver" ? (rand() < 0.1 ? 1 : 0) : kind === "decider" ? 2 + Math.floor(rand() * 2) : 1 + Math.floor(rand() * 4);
+const clickCount = kind => kind === "leaver" ? (rand() < 0.3 ? 1 : 0) : kind === "decider" ? 2 + Math.floor(rand() * 2) : 1 + Math.floor(rand() * 4);
 // Where the storefront's main button sits, as a share of the page, so its clicks land on it in the demo picture.
 const HERO_BUTTON = { desktop: 0.173, mobile: 0.13 };
 
@@ -130,7 +131,7 @@ function phoneEvents(start, persona, path) {
             viewport_midpoint: scrollAt(scrolls, t) + viewport / 2, page_height: pageHeight, viewport_height: viewport, timestamp: t });
     }
     const firstScroll = (scrolls[1]?.timestamp ?? start + durationMs) - start;
-    const count = KIND[persona] === "leaver" ? (rand() < 0.1 ? 1 : 0) : Math.max(1, Math.min(taps, 3));
+    const count = KIND[persona] === "leaver" ? (rand() < 0.3 ? 1 : 0) : Math.max(1, Math.min(taps, 3));
     for (let i = 0; i < count; i++) {
         const text = weighted(clickChoices(KIND[persona], path));
         const hero = path === "/" && text === "Shop hiking packs";
@@ -164,11 +165,17 @@ function isLocal(uri) {
         const daysAgo = Math.floor(HISTORY_DAYS * rand() ** 1.6);
         let start = now - daysAgo * DAY_MS - Math.floor(rand() * DAY_MS * 0.9);
         const mobile = rand() < 0.38;
-        const persona = mobile ? weighted(Object.entries(PHONE).map(([k, p]) => [k, p.weight])) : weighted(Object.entries(DESKTOP).map(([k, p]) => [k, p.weight]));
+        // The store improved its product pages three weeks ago, so more shoppers buy from then on.
+        const lift = daysAgo < CHANGE_DAYS_AGO ? 30 : 0;
+        const weights = (personas, first) => Object.entries(personas).map(([k, p]) => [k, k === first ? p.weight + lift : p.weight]);
+        const persona = mobile ? weighted(weights(PHONE, "tapper")) : weighted(weights(DESKTOP, "buyer"));
         const source = weighted(SOURCES);
         const path = journey();
         path.forEach((page, step) => {
-            const { events, durationMs } = mobile ? phoneEvents(start, persona, page) : desktopEvents(start, persona, page);
+            // A few visits open the page and do nothing at all.
+            const { events, durationMs } = rand() < 0.05
+                ? (d => ({ events: [{ type: "page_load", scroll_depth: 1, measured: true, timestamp: start }], durationMs: d }))(between(3, 9) * 1000)
+                : mobile ? phoneEvents(start, persona, page) : desktopEvents(start, persona, page);
             const count = type => events.filter(e => e.type === type).length;
             docs.push({
                 site_key: site.key, session_id: `demo-${v}-${step}`, visitor_id: `demo-visitor-${v}`,

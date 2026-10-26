@@ -92,7 +92,7 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
               <div className="panel-body type-body">
                 <div className="meter" aria-hidden="true"><i style={{ width: `${inactive.share * 100}%` }} /></div>
                 <p className="muted">{inactive.count.toLocaleString()} visits</p>
-                {inactive.goal && <p className="group-goal"><span className="verdict">{rate(inactive.goal.rate)} reached {inactive.goal.name}</span></p>}
+                {inactive.goal?.rate ? <p className="group-goal"><span className="verdict">{rate(inactive.goal.rate)} reached {inactive.goal.name}</span></p> : null}
                 <p>{INACTIVE_TEXT[device]} Some read without touching anything; others left straight away. They can't be grouped, since there's no behaviour to compare.</p>
               </div>
             </section>

@@ -29,7 +29,7 @@ function attentionInsight({ top, middle, bottom }) {
     const [quiet, quietShare] = ranked[2];
     const p = v => `${Math.round(v * 100)}%`;
     if (share >= 0.5 && share >= ranked[1][1] * 1.25) {
-        if (lead === "top") return `Most cursor activity stays near the top: ${p(share)} happens in the top third of the page, so many visitors don't go much further.`;
+        if (lead === "top") return `Most cursor activity happens near the top: ${p(share)} of it is in the top third of the page.`;
         if (lead === "middle") return `Cursor activity gathers in the middle of the page, with ${p(share)} in the middle third.`;
         return `Visitors spend much of their time low on the page: ${p(share)} of cursor activity is in the bottom third.`;
     }
