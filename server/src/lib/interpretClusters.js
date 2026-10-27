@@ -542,7 +542,6 @@ function interpretClusters({ desktop, mobile = null, pageUrl = null, firstImpres
     const pagePath = pathOf(pageUrl);
     const d = describeDevice(desktop, ARCHETYPES.desktop, "desktop", goal, pagePath);
     const m = describeDevice(mobile, ARCHETYPES.mobile, "mobile", goal, pagePath);
-    // The same finding on phones joins the desktop one instead of repeating it.
     const advice = (d?.advice || []).map(a => ({ ...a }));
     for (const item of m?.advice || []) {
         const same = advice.find(a => (a.rival && a.rival === item.rival) || a.action === item.action);

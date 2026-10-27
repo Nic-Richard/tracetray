@@ -22,6 +22,8 @@ test("unbounded process output is stopped", async () => {
 
 async function extractFailure(stage) {
     const observed = { writes: 0, closed: false };
+    let finished;
+    const done = new Promise(resolve => { finished = resolve; });
     const fakeProcess = { env: { TRACETRAY_SITE_KEY: "tt_test" } };
     const mongoose = {
         async connect() { if (stage === "connect") throw new Error("offline"); },
@@ -29,16 +31,17 @@ async function extractFailure(stage) {
         model() {
             return {
                 find() {
-                    const query = { sort: () => query, limit: () => query, async lean() { if (stage === "query") throw new Error("offline"); return []; } };
+                    const rows = { async *[Symbol.asyncIterator]() { if (stage === "query") throw new Error("offline"); } };
+                    const query = { sort: () => query, limit: () => query, lean: () => query, cursor: () => rows };
                     return query;
                 },
                 async aggregate() { return []; }
             };
         },
-        connection: { async close() { observed.closed = true; } },
+        connection: { async close() { observed.closed = true; finished(); } },
     };
     const code = fs.readFileSync(path.resolve(__dirname, "../../analysis/extractFeatures.js"), "utf8");
-    await vm.runInNewContext(code, {
+    vm.runInNewContext(code, {
         require(name) {
             if (name === "mongoose") return mongoose;
             if (name === "path") return path;
@@ -52,6 +55,7 @@ async function extractFailure(stage) {
         process: fakeProcess,
         console: { log() {}, error() {} },
     });
+    await done;
     assert.equal(fakeProcess.exitCode, 1);
     assert.equal(observed.closed, true);
     assert.equal(observed.writes, stage === "write" ? 1 : 0);

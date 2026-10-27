@@ -13,7 +13,8 @@ const scrollFeatures = require("./featureModules/scrollFeatures");
 const SessionSchema = new mongoose.Schema({}, { strict: false });
 const Session = mongoose.model("Session", SessionSchema, "sessions");
 
-const MAX_SESSIONS_PER_DEVICE = 3000;
+const MAX_SESSIONS_PER_DEVICE = 20000;
+const WINDOW_DAYS = 90;
 
 // The links and buttons a visit clicked or tapped, once each, so each group's most clicked targets can be named.
 function clickTargets(session) {
@@ -44,18 +45,23 @@ async function run() {
             { "summary.taps": { $gt: 0 } },
             { "summary.scrolls": { $gt: 0 } }
         ];
-        const visitFilter = { ...siteKeyFilter, ...pageFilter, end_time: { $ne: null }, detailed: { $ne: false } };
+        const since = Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000;
+        const visitFilter = { ...siteKeyFilter, ...pageFilter, end_time: { $ne: null }, detailed: { $ne: false }, start_time: { $gte: since } };
         const filter = { ...visitFilter, "events.0": { $exists: true }, $or: interacted };
-        // The most recent visits are plenty for clustering and keep memory flat however busy a site gets.
-        const recent = device => Session.find({ ...filter, ...device }).sort({ start_time: -1 }).limit(MAX_SESSIONS_PER_DEVICE).lean();
-        const [desktopSessions, mobileSessions] = await Promise.all([
-            recent({ device_type: { $ne: "mobile" } }),
-            recent({ device_type: "mobile" })
-        ]);
+        // Visits are read one at a time and only their feature rows kept, so memory stays flat at the cap.
+        const recent = async (device, toRow) => {
+            const rows = [];
+            let oldest = null;
+            for await (const session of Session.find({ ...filter, ...device }).sort({ start_time: -1 }).limit(MAX_SESSIONS_PER_DEVICE).lean().cursor()) {
+                rows.push(toRow(session));
+                oldest = session.start_time;
+            }
+            return { rows, oldest };
+        };
 
         // goal_hits and click_targets aren't features; they ride along so each group's goal rate and most
         // clicked targets can be counted.
-        const desktopDataset = desktopSessions.map(session => ({
+        const desktop = await recent({ device_type: { $ne: "mobile" } }, session => ({
             session_id: session.session_id,
             goal_hits: session.goal_hits || [],
             click_targets: clickTargets(session),
@@ -65,7 +71,7 @@ async function run() {
             ...scrollFeatures(session)
         }));
 
-        const mobileDataset = mobileSessions.map(session => ({
+        const mobile = await recent({ device_type: "mobile" }, session => ({
             session_id: session.session_id,
             goal_hits: session.goal_hits || [],
             click_targets: clickTargets(session),
@@ -75,14 +81,14 @@ async function run() {
             ...mobileFeatures(session),
             ...scrollFeatures(session)
         }));
+        const desktopDataset = desktop.rows, mobileDataset = mobile.rows;
 
         // Visits that never moved, scrolled or tapped can't be grouped, but they're counted (with the goals they
         // reached) over the same stretch of time as the grouped ones, so the groups can be read against every visit.
-        const inactiveOf = async (sessions, device) => {
+        const inactiveOf = async ({ rows: sessions, oldest }, device) => {
             if (sessions.length === 0) return { visits: 0, inactive: 0, inactive_goal_hits: {} };
-            const since = sessions[sessions.length - 1].start_time;
             const rows = await Session.aggregate([
-                { $match: { ...visitFilter, ...device, start_time: { $gte: since }, $nor: interacted } },
+                { $match: { ...visitFilter, ...device, start_time: { $gte: oldest }, $nor: interacted } },
                 { $project: { hits: { $setUnion: [{ $ifNull: ["$goal_hits", []] }, []] } } },
                 { $facet: {
                     count: [{ $count: "n" }],
@@ -97,8 +103,8 @@ async function run() {
             };
         };
         const meta = {
-            desktop: await inactiveOf(desktopSessions, { device_type: { $ne: "mobile" } }),
-            mobile: await inactiveOf(mobileSessions, { device_type: "mobile" })
+            desktop: await inactiveOf(desktop, { device_type: { $ne: "mobile" } }),
+            mobile: await inactiveOf(mobile, { device_type: "mobile" })
         };
 
         // Desktop and mobile datasets are analyzed separately.

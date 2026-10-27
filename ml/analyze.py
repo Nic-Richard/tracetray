@@ -34,6 +34,7 @@ SILHOUETTE_TOLERANCE = 0.02
 NULL_REPS = 10
 STABILITY_REPS = 10
 SILHOUETTE_SAMPLE = 2000
+WARD_SAMPLE = 3000
 # Kruskal-Wallis epsilon squared; around 0.08 is a medium effect.
 MEDIUM_EFFECT = 0.08
 
@@ -60,11 +61,9 @@ UNSKEWED = {"spatial_entropy", "top_zone_ratio", "centre_zone_ratio", "bottom_zo
 # Waits before a click or tap only exist for visits that clicked or tapped.
 ONLY_WHEN_ACTED = {"dwell_before_click", "dwell_before_tap"}
 
-# Measured from the cursor, so unknown for desktop visits that only scrolled.
 CURSOR_FEATURES = {"pause_rate", "move_density", "distance_per_move", "avg_cursor_velocity", "dwell_before_click",
                    "spatial_entropy", "top_zone_ratio", "centre_zone_ratio", "bottom_zone_ratio"}
 
-# Unknown values are filled before clustering (see fill_from_observed) instead of counting as zero.
 FILL_TYPICAL = ONLY_WHEN_ACTED | CURSOR_FEATURES
 
 
@@ -273,7 +272,6 @@ def structure_verdict(sil, null, stab):
 
 
 def cluster(X, k_range, min_size):
-    """Picks the number of groups, fits them and judges how real they are."""
     k_metrics, best_k = select_k(X, k_range, min_size)
     if best_k is None:
         # Every split leaves a group too small to describe: a few unusual visits, not real groups.
@@ -287,6 +285,10 @@ def cluster(X, k_range, min_size):
 
 
 def hierarchical_agreement(X, km_labels, k):
+    # Ward needs memory that grows with the square of the visits, so busy pages are checked on a sample.
+    if len(X) > WARD_SAMPLE:
+        idx = np.random.default_rng(RANDOM_SEED).choice(len(X), size=WARD_SAMPLE, replace=False)
+        X, km_labels = X[idx], km_labels[idx]
     hc_labels = AgglomerativeClustering(n_clusters=k, linkage="ward").fit_predict(X)
     cost = np.zeros((k, k), dtype=int)
     for i in range(k):

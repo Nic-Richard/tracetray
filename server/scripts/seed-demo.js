@@ -172,7 +172,6 @@ function isLocal(uri) {
         const source = weighted(SOURCES);
         const path = journey();
         path.forEach((page, step) => {
-            // A few visits open the page and do nothing at all.
             const { events, durationMs } = rand() < 0.05
                 ? (d => ({ events: [{ type: "page_load", scroll_depth: 1, measured: true, timestamp: start }], durationMs: d }))(between(3, 9) * 1000)
                 : mobile ? phoneEvents(start, persona, page) : desktopEvents(start, persona, page);

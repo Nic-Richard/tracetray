@@ -8,7 +8,7 @@ import analyze
 
 
 def desktop_visits(rng, n, types, scroll_only=0.0):
-    """Made-up desktop visits. types: list of (share, clicks a second, seconds on page, page depth, cursor speed)."""
+    """types: list of (share, clicks a second, seconds on page, page depth, cursor speed)."""
     shares = np.array([t[0] for t in types])
     truth = rng.choice(len(types), size=n, p=shares / shares.sum())
     rows = []
