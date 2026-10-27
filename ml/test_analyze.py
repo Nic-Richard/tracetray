@@ -86,7 +86,8 @@ def windowed_visits(rng, n, depth_effect):
 
 class GoalModelTest(unittest.TestCase):
     def fit(self, df):
-        return goal_model.fit(df, "g", analyze.engineer_desktop_features, analyze.DESKTOP_ENGINEERED_FEATURES, analyze.clustering_matrix)
+        return goal_model.fit(df, "g", analyze.engineer_desktop_features, analyze.DESKTOP_ENGINEERED_FEATURES,
+                              fill_features=analyze.FILL_TYPICAL, unskewed=analyze.UNSKEWED, excluded=analyze.CLUSTER_EXCLUDED)
 
     def test_a_real_link_is_found_with_its_direction(self):
         result = self.fit(windowed_visits(np.random.default_rng(5), 800, depth_effect=1.0))

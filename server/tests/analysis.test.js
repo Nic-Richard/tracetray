@@ -241,6 +241,8 @@ test("goal windows never include the goal itself and both sides use the same win
     await done;
     const rows = Object.fromEntries(JSON.parse(written["dataset_tt_test_desktop.json"]).map(r => [r.session_id, r]));
     assert.equal(rows.buyer.goal_after_ms, 25000);
+    assert.equal(rows.buyer.start_time, start);
+    assert.equal(rows.browser.start_time, start);
     assert.deepEqual(Object.keys(rows.buyer.windows), ["5", "10", "20"]);
     assert.ok(Object.values(rows.buyer.windows).every(w => !w.clicks.includes("Add to cart")));
     assert.deepEqual(Object.keys(rows.browser.windows), ["5", "10", "20", "40"]);

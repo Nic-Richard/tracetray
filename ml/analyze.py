@@ -495,7 +495,7 @@ def main(device, site_key):
             df_out[column] = df_raw[column].values
 
     model = goal_model.fit(df_raw, goal and goal.get("id"), engineer_desktop_features if device == "desktop" else engineer_mobile_features,
-                           engineered, clustering_matrix)
+                           engineered, fill_features=FILL_TYPICAL, unskewed=UNSKEWED, excluded=CLUSTER_EXCLUDED)
 
     quality = {
         "silhouette": sil,

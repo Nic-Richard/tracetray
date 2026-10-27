@@ -91,6 +91,7 @@ async function run() {
         });
         const desktop = await recent({ device_type: { $ne: "mobile" } }, session => ({
             session_id: session.session_id,
+            start_time: session.start_time,
             goal_hits: session.goal_hits || [],
             click_targets: clickTargets(session),
             ...desktopFeatures(session),
@@ -106,6 +107,7 @@ async function run() {
         });
         const mobile = await recent({ device_type: "mobile" }, session => ({
             session_id: session.session_id,
+            start_time: session.start_time,
             goal_hits: session.goal_hits || [],
             click_targets: clickTargets(session),
             ...mobileMeasures(session),

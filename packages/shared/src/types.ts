@@ -338,6 +338,21 @@ export interface GoalModel {
   /** Seconds from the start of each visit that were compared; null when whole visits were. */
   window_s: number | null;
   too_quick?: number;
+  later_visits?: {
+    status: "ok" | "missing_time" | "no_time_split" | "too_few";
+    auc?: number;
+    baseline_auc?: number;
+    auc_gain?: number;
+    baseline_features?: string[];
+    train_visits?: number;
+    test_visits?: number;
+    train_reached?: number;
+    test_reached?: number;
+    window_s?: number | null;
+    cutoff_ms?: number;
+    train_from_ms?: number;
+    test_to_ms?: number;
+  };
   drivers?: GoalDriver[];
 }
 
