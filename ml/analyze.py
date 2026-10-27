@@ -172,12 +172,12 @@ def fill_from_observed(values, rng):
     return values
 
 
-def clustering_matrix(df, features):
+def clustering_matrix(df, features, fill_seed=RANDOM_SEED):
     """Fills unknown values from visits where they were measured, log-scales skewed features, standardizes, clips
     outliers and drops features that don't vary. Returns the matrix, the features it kept and the values before
     standardizing, which describe each group in units that stay comparable from one analysis to the next."""
     cols, kept = [], []
-    rng = np.random.default_rng(RANDOM_SEED)
+    rng = np.random.default_rng(fill_seed)
     for feat in features:
         if feat in CLUSTER_EXCLUDED:
             continue
@@ -267,14 +267,18 @@ def select_k(X, k_range, min_size, reached=None):
 
 
 def null_silhouettes(X, k):
-    """Silhouettes for data with the same spread and correlations as X but no groups at all (one Gaussian).
-    Real groups should separate clearly better than that."""
+    """Gaussian and bounded uniform clouds with X's covariance, both without distinct groups.
+    A smooth bounded range can split more cleanly than a Gaussian, so both references are checked."""
     rng = np.random.default_rng(RANDOM_SEED)
-    cov = np.cov(X, rowvar=False)
+    cov = np.atleast_2d(np.cov(X, rowvar=False))
+    values, vectors = np.linalg.eigh(cov)
+    root = vectors * np.sqrt(np.maximum(values, 0))
     out = []
     for i in range(NULL_REPS):
         fake = np.clip(rng.multivariate_normal(np.zeros(X.shape[1]), cov, size=len(X), method="eigh"), -4, 4)
         out.append(silhouette(fake, fit_kmeans(fake, k, seed=RANDOM_SEED + i, n_init=5).labels_))
+        bounded = np.clip(rng.uniform(-np.sqrt(3), np.sqrt(3), size=X.shape) @ root.T, -4, 4)
+        out.append(silhouette(bounded, fit_kmeans(bounded, k, seed=RANDOM_SEED + i, n_init=5).labels_))
     return out
 
 

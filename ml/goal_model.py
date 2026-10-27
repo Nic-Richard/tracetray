@@ -128,7 +128,7 @@ def later_visits(df_raw, goal_id, engineer, features, fill_features, unskewed, w
 def fit(df_raw, goal_id, engineer, features, *, fill_features=(), unskewed=(), excluded=()):
     if not goal_id or "goal_hits" not in df_raw.columns:
         return None
-    windowed = "windows" in df_raw.columns and df_raw["windows"].apply(lambda w: isinstance(w, dict) and len(w) > 0).any()
+    windowed = "windows" in df_raw.columns
     if windowed:
         frame, y, window, too_quick = matched_windows(df_raw, goal_id)
     else:

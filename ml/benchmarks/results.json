@@ -1,0 +1,160 @@
+{
+  "mode": "full",
+  "visits_per_dataset": 800,
+  "versions": {
+    "python": "3.11.2",
+    "numpy": "2.4.6",
+    "sklearn": "1.9.1"
+  },
+  "passed": true,
+  "cases": {
+    "shuffled_labels": {
+      "passed": true,
+      "runs": 400,
+      "seeds_per_device": 200,
+      "false_findings": 0,
+      "false_finding_rate": 0.0,
+      "failing_seeds": [],
+      "auc": {
+        "min": 0.4045,
+        "mean": 0.4947,
+        "max": 0.5776
+      }
+    },
+    "whole_vs_windows": {
+      "passed": true,
+      "runs": 20,
+      "whole_auc": {
+        "min": 1.0,
+        "mean": 1.0,
+        "max": 1.0
+      },
+      "window_auc": {
+        "min": 0.4266,
+        "mean": 0.4977,
+        "max": 0.5594
+      }
+    },
+    "after_conversion_only": {
+      "passed": true,
+      "runs": 20,
+      "false_findings": 0,
+      "false_finding_rate": 0.0,
+      "failing_seeds": []
+    },
+    "empty_pre_goal_windows": {
+      "passed": true,
+      "runs": 20,
+      "false_findings": 0,
+      "false_finding_rate": 0.0,
+      "failing_seeds": []
+    },
+    "known_pre_goal_signal": {
+      "passed": true,
+      "runs": 20,
+      "recovered_with_right_direction": 20,
+      "recovery_rate": 1.0
+    },
+    "three_planted_groups": {
+      "passed": true,
+      "runs": 10,
+      "ari": {
+        "min": 1.0,
+        "mean": 1.0,
+        "max": 1.0
+      },
+      "ari_without_goal": {
+        "min": 1.0,
+        "mean": 1.0,
+        "max": 1.0
+      }
+    },
+    "overlapping_personas": {
+      "diagnostic_only": true,
+      "runs": 10,
+      "ari": {
+        "min": 0.6134,
+        "mean": 0.6305,
+        "max": 0.6627
+      },
+      "ari_when_forced_to_three": {
+        "min": 0.4475,
+        "mean": 0.5303,
+        "max": 0.5908
+      }
+    },
+    "no_real_groups": {
+      "passed": true,
+      "runs": 10,
+      "false_group_rate": 0.0,
+      "confident_group_rate": 0.0,
+      "verdicts": [
+        "none",
+        "none",
+        "none",
+        "none",
+        "none",
+        "none",
+        "none",
+        "none",
+        "none",
+        "none"
+      ]
+    },
+    "gradual_behaviour": {
+      "passed": true,
+      "runs": 10,
+      "confident_group_rate": 0.0,
+      "verdicts": [
+        "none",
+        "none",
+        "none",
+        "none",
+        "none",
+        "none",
+        "none",
+        "none",
+        "none",
+        "none"
+      ]
+    },
+    "tracking_independent": {
+      "passed": true,
+      "runs": 10,
+      "groups": 30,
+      "new_groups": 0,
+      "false_new_rate": 0.0,
+      "wrong_matches": 0,
+      "wrong_match_rate": 0.0
+    },
+    "tracking_overlapping": {
+      "passed": true,
+      "runs": 10,
+      "groups": 30,
+      "new_groups": 0,
+      "false_new_rate": 0.0,
+      "wrong_matches": 0,
+      "wrong_match_rate": 0.0
+    },
+    "missing_value_seeds": {
+      "passed": true,
+      "datasets": 10,
+      "fill_seeds_per_dataset": 5,
+      "ari": {
+        "min": 0.9215,
+        "mean": 0.9513,
+        "max": 0.9751
+      },
+      "switched_share": {
+        "min": 0.0063,
+        "mean": 0.0123,
+        "max": 0.02
+      },
+      "switched_share_among_missing": {
+        "min": 0.0227,
+        "mean": 0.0529,
+        "max": 0.0877
+      }
+    }
+  }
+}

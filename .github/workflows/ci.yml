@@ -37,3 +37,9 @@ jobs:
           python-version: "3.12"
       - name: Python syntax and clustering tests
         run: python -m compileall -q ml && python -m pip install -q -r ml/requirements.txt && (cd ml && python -m unittest -q)
+      - name: ML benchmarks
+        env:
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+        run: cd ml && python -m benchmarks --fast
