@@ -89,7 +89,7 @@ function Wins() {
             <span>
               <b>{pageLabel(win.page)}{win.note ? `: ${win.note}` : ""}</b>
               <small>{win.goal} went from {win.before === null ? "–" : asPercent(win.before)} to {win.after === null ? "–" : asPercent(win.after)} after {new Date(`${win.day}T00:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })}</small>
-              {win.days != null && <small>{comparisonPeriods(win.day, win.days)} {win.before_visits?.toLocaleString()} visits before, {win.after_visits?.toLocaleString()} after.</small>}
+              {win.days != null && <small>{comparisonPeriods(win.day, win.days, win.device)} {win.before_visits?.toLocaleString()} visits before, {win.after_visits?.toLocaleString()} after.</small>}
             </span>
           </li>
         ))}

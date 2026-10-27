@@ -159,7 +159,7 @@ export default function PageScreen() {
             <Text style={styles.link}>Manage goals for this page</Text>
           </Pressable>
         </View>
-        {analysis ? <Suggestions result={analysis} /> : null}
+        {analysis ? <Suggestions result={analysis} site={siteKey} page={page} /> : null}
         {analysis ? <VisitorGroups result={analysis} /> : null}
         {isPageGroup(page) ? (
           <View

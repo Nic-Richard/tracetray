@@ -5,6 +5,7 @@ const { getAccountSites } = require("./siteAccount");
 const { biggestShift } = require("./groupShifts");
 const { goalTotals, goalWeeks, milestoneCrossed, mainGoalFor } = require("./goalHits");
 const { compareAroundChange } = require("./compare");
+const { goalForChange } = require("./changeFinding");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MIN_MOVER_VISITS = 20;
@@ -79,15 +80,15 @@ async function goalLines(site, start) {
     return lines;
 }
 
-// Marked changes from the last three weeks that have since clearly raised their page's goal.
+// Marked changes followed by higher goal rates, without attributing the rise to the change.
 async function recentWins(site, start) {
     const end = start + 7 * DAY_MS;
     const wins = [];
     for (const change of site.page_changes || []) {
         if (change.day < day(start - WIN_LOOKBACK_DAYS * DAY_MS) || change.day >= day(end)) continue;
-        const goal = await mainGoalFor(site.key, change.page);
+        const goal = change.comparison_version === 2 ? goalForChange(site, change).goal : await mainGoalFor(site.key, change.page);
         if (!goal) continue;
-        const result = await compareAroundChange(site.key, change.page, change.day, end, goal);
+        const result = await compareAroundChange(site.key, change.page, change.day, end, goal, change.finding?.device);
         if (result.goal?.verdict === "better") wins.push({ page: change.page, day: change.day, note: change.note, goal: goal.name, before: result.goal.before, after: result.goal.after });
     }
     return wins.slice(0, 3);

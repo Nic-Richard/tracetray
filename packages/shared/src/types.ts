@@ -106,9 +106,30 @@ export interface GoalRates {
 
 export interface PageChange {
   id: string;
-  /** YYYY-MM-DD, counted from the start of the day (UTC). */
+  /** YYYY-MM-DD (UTC); the change day is excluded from comparisons. */
   day: string;
   note: string;
+  finding?: ChangeFinding | null;
+  goal_snapshot?: Pick<Goal, "id" | "name" | "type" | "match" | "pages"> | null;
+}
+
+export interface FindingReference {
+  ran_at: string;
+  device: Device;
+  group: string;
+  action: string;
+}
+
+export interface FindingPopulation {
+  session_count: number;
+  inactive_count?: number | null;
+  scope?: DeviceAnalysis["scope"];
+}
+
+export interface ChangeFinding extends FindingReference, FindingPopulation {
+  evidence: string;
+  related_scopes?: (FindingPopulation & { device: Device })[];
+  goal_informed?: boolean | null;
 }
 
 export interface ChangeMeasures {
@@ -129,14 +150,17 @@ export interface ComparisonGroupScope {
 }
 
 export interface ChangeComparison {
-  /** False until a full day has passed since the change. */
+  /** False until the first complete UTC day after the change day has ended. */
   ready: boolean;
   days: number;
+  provisional?: boolean;
+  device?: Device | null;
+  goal_status?: "changed" | "backfilling" | "none" | "legacy" | "ready";
   before?: ChangeMeasures;
   after?: ChangeMeasures;
   groups?: { before: { group: string; share: number }[] | null; after: { group: string; share: number }[] | null; before_scope?: ComparisonGroupScope | null; after_scope?: ComparisonGroupScope | null };
   /** The page's main goal; "unclear" until 30 visits have reached it across both sides. */
-  goal?: { id: string; name: string; before: number | null; after: number | null; reached: number; verdict: "better" | "worse" | "same" | "unclear" } | null;
+  goal?: { id: string; name: string; before: number | null; after: number | null; reached: number; before_reached?: number; after_reached?: number; difference_ci?: [number, number] | null; provisional?: boolean; verdict: "better" | "worse" | "same" | "unclear" } | null;
 }
 
 export interface GoalWeek {
@@ -166,6 +190,7 @@ export interface Win {
   days?: number;
   before_visits?: number;
   after_visits?: number;
+  device?: Device | null;
 }
 
 export type EmailList = "weekly_summary" | "shift_alerts";

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import {
   Alert,
@@ -13,21 +13,30 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { changeDayError, pageLabel, pagePath, type PageChange } from "@tracetray/shared";
+import { changeDayError, pageLabel, pagePath, type FindingReference, type PageChange } from "@tracetray/shared";
 import { useApi } from "../../../lib/api";
 import { useSite } from "../../../lib/site";
 import { useLoad } from "../../../lib/useLoad";
 import { useTheme } from "../../../lib/theme";
 import { Failure, Loading } from "../../../components/Status";
 import ChangeComparison from "../../../components/ChangeComparison";
+import FindingEvidence from "../../../components/FindingEvidence";
 
 export default function ChangesScreen() {
-  const params = useLocalSearchParams<{ site?: string | string[]; page?: string | string[] }>();
+  const params = useLocalSearchParams<{ site?: string | string[]; page?: string | string[]; finding?: string }>();
   const siteKey = typeof params.site === "string" ? params.site : "";
   const page = typeof params.page === "string" ? params.page : "";
   const { account } = useSite();
   const site = account.sites.find(value => value.key === siteKey);
   const api = useApi();
+  const source = useMemo<FindingReference | null>(() => {
+    try {
+      const value = params.finding ? JSON.parse(params.finding) : null;
+      return value && typeof value.ran_at === "string" && ["desktop", "mobile"].includes(value.device)
+        && typeof value.group === "string" && typeof value.action === "string" ? value : null;
+    } catch { return null; }
+  }, [params.finding]);
+  const draft = useLoad(() => source ? api.changeFinding(siteKey, page, source) : Promise.resolve(null), [api, siteKey, page, source]);
   const { styles, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const changes = useLoad(() => {
@@ -35,12 +44,13 @@ export default function ChangesScreen() {
     return api.pageChanges(site.key, page);
   }, [api, site?.key, page]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(!!params.finding);
   const [day, setDay] = useState(new Date().toISOString().slice(0, 10));
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const pending = useRef(false);
+  useEffect(() => { setSelected(null); setAdding(!!params.finding); setDay(new Date().toISOString().slice(0, 10)); setNote(""); setError(""); }, [siteKey, page, params.finding]);
   const list = changes.data || [];
   const current = list.find(value => value.id === selected) || list[0];
   async function save() {
@@ -50,11 +60,19 @@ export default function ChangesScreen() {
       setError(validation);
       return;
     }
+    if (params.finding && (!source || !draft.data || draft.error)) {
+      setError("Reopen this finding from the page's analysis.");
+      return;
+    }
+    if (source && !note.trim()) {
+      setError("Describe what you actually changed before recording it.");
+      return;
+    }
     pending.current = true;
     setBusy(true);
     setError("");
     try {
-      const added = await api.addPageChange(site.key, { page, day, note: note.trim() });
+      const added = await api.addPageChange(site.key, { page, day, note: note.trim(), ...(source ? { source } : {}) });
       changes.setData(values => [added, ...(values || [])].sort((a, b) => b.day.localeCompare(a.day)));
       setSelected(added.id);
       setNote("");
@@ -128,7 +146,7 @@ export default function ChangesScreen() {
             <Text style={styles.muted}>{pagePath(page)}</Text>
           </View>
           <Text style={styles.muted}>
-            Mark the day you changed this page. TraceTray compares equal periods on either side, up to 14 days each. A
+            Mark the day you changed this page. TraceTray excludes that day and compares equal complete UTC days on either side, up to 14 days each. A
             comparison shows what changed, not what caused it.
           </Text>
           <Pressable
@@ -149,6 +167,10 @@ export default function ChangesScreen() {
           ) : null}
           {adding ? (
             <View style={styles.panel}>
+              {params.finding ? (draft.error || !source ? <Text style={styles.error} accessibilityRole="alert">{draft.error || "Reopen this finding from the page's analysis."}</Text>
+                : draft.data ? <FindingEvidence finding={draft.data} /> : <Text style={styles.muted}>Loading the original finding…</Text>) : null}
+              {source && draft.error ? <Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={draft.reload}><Text style={styles.text}>Retry finding</Text></Pressable> : null}
+              <Text style={styles.muted}>Record this only after making the change. New visits are needed before comparing; the change day is excluded.</Text>
               <Text style={styles.text}>Day you changed it (UTC)</Text>
               <TextInput
                 accessibilityLabel="Change date"
@@ -161,7 +183,7 @@ export default function ChangesScreen() {
                 editable={!busy}
                 style={styles.input}
               />
-              <Text style={styles.text}>What changed (optional)</Text>
+              <Text style={styles.text}>What you actually changed{source ? "" : " (optional)"}</Text>
               <TextInput
                 accessibilityLabel="Change note"
                 value={note}
@@ -174,11 +196,11 @@ export default function ChangesScreen() {
               />
               <Pressable
                 accessibilityRole="button"
-                disabled={busy}
+                disabled={busy || !!params.finding && (draft.loading || !!draft.error || !draft.data || !source)}
                 style={[styles.button, { opacity: busy ? 0.5 : 1 }]}
                 onPress={save}
               >
-                <Text style={styles.buttonText}>{busy ? "Saving…" : "Save change"}</Text>
+                <Text style={styles.buttonText}>{busy ? "Saving…" : "Record completed change"}</Text>
               </Pressable>
             </View>
           ) : null}
@@ -214,14 +236,18 @@ export default function ChangesScreen() {
           ) : (
             <Text style={styles.muted}>Changed something on this page? Mark the day to start a comparison.</Text>
           )}
-          {current && site ? (
+          {current && site && !adding ? (<>
+            {current.finding ? <FindingEvidence finding={current.finding} /> : null}
+            {current.goal_snapshot ? <Text style={styles.muted}>Recorded goal: {current.goal_snapshot.name}.</Text> : null}
             <ChangeComparison
-              key={`${site.key}:${page}:${current.day}`}
+              key={`${site.key}:${page}:${current.id}`}
               site={site.key}
               page={page}
               day={current.day}
+              change={current.id}
+              linked={!!current.finding}
             />
-          ) : null}
+          </>) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

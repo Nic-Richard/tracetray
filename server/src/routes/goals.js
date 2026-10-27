@@ -87,7 +87,7 @@ router.patch("/api/goals/:id", requireAuth(), async (req, res) => {
         const parsed = parseGoal({ name: req.body.name ?? before.name, match: req.body.match, pages: req.body.pages, ...("target" in req.body ? { target: req.body.target } : {}) }, before);
         if (parsed.error) return res.status(400).json({ error: parsed.error });
         const recheck = matchChanged(before, parsed.goal);
-        const goal = { ...before, ...parsed.goal, ...(recheck ? { backfill: "queued" } : {}) };
+        const goal = { ...before, ...parsed.goal, ...(recheck ? { backfill: "queued", measurement_version: (before.measurement_version || 0) + 1 } : {}) };
         found.site.goals = goals.map(g => g.id === goal.id ? goal : g);
         await found.account.save();
         if (recheck) queueBackfill(found.site.key, goal);

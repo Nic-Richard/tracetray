@@ -138,7 +138,7 @@ function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }:
       <div className="split">
         <div className="split-stack">
           {group ? <GroupPages page={page} groupSize={groupSize || 0} /> : timeseries ? <TrafficPanel timeseries={timeseries} /> : <section className="panel"><p className="empty">Loading visits…</p></section>}
-          {result && <SummaryPanel result={result} page={page} />}
+          {result && <SummaryPanel key={`${result.site_key}:${page}`} result={result} page={page} />}
         </div>
         {result ? <WhoVisits result={result} page={page} /> : (
           <section className="panel">

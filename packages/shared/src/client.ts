@@ -1,7 +1,7 @@
 import type {
   Account, AccountDeletionStatus, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, ChangeComparison, Config, EmailList, EmailPrefs, GroupHistoryFrame,
   FormSeen, Goal, GoalInput, GoalList, PathFunnel, GoalRates, GoalTrend, GroupMembers, Journey, MemberSort, PageChange, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
-  SitesResponse, Stats, Timeseries, UsageResponse, UxTrends, Win
+  SitesResponse, Stats, Timeseries, UsageResponse, UxTrends, Win, FindingReference, ChangeFinding
 } from "./types";
 
 export class ApiError extends Error {
@@ -68,7 +68,8 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     timeseries: (siteKey: string, page?: string | null, days = 14) => request<Timeseries>("GET", "/api/sessions/timeseries", { siteKey, query: { page, days } }),
     uxTrends: (siteKey: string, page: string, weeks = 8) => request<UxTrends>("GET", "/api/ux-trends", { siteKey, query: { page, weeks } }),
     pageChanges: (siteKey: string, page: string) => request<PageChange[]>("GET", "/api/page-changes", { siteKey, query: { page } }),
-    addPageChange: (siteKey: string, change: { page: string; day: string; note: string }) => request<PageChange>("POST", "/api/page-changes", { siteKey, body: change }),
+    changeFinding: (siteKey: string, page: string, source: FindingReference) => request<ChangeFinding>("GET", "/api/change-finding", { siteKey, query: { page, ...source } }),
+    addPageChange: (siteKey: string, change: { page: string; day: string; note: string; source?: FindingReference }) => request<PageChange>("POST", "/api/page-changes", { siteKey, body: change }),
     deletePageChange: (siteKey: string, id: string) => request<{ deleted: boolean }>("DELETE", `/api/page-changes/${encodeURIComponent(id)}`, { siteKey }),
     exportCsv: (siteKey: string, kind: "daily" | "groups", days?: number) =>
       request<{ blob: Blob; filename: string }>("GET", `/api/export/${kind}`, { siteKey, query: { days }, raw: true }),
@@ -84,7 +85,7 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     removePath: (siteKey: string, id: string) => request<{ deleted: boolean }>("DELETE", `/api/paths/${encodeURIComponent(id)}`, { siteKey }),
     goalTrend: (siteKey: string, page: string) => request<GoalTrend>("GET", "/api/goal-trend", { siteKey, query: { page } }),
     wins: (siteKey: string) => request<Win[]>("GET", "/api/wins", { siteKey }),
-    compare: (siteKey: string, page: string, day: string) => request<ChangeComparison>("GET", "/api/compare", { siteKey, query: { page, day } }),
+    compare: (siteKey: string, page: string, day: string, change?: string) => request<ChangeComparison>("GET", "/api/compare", { siteKey, query: { page, day, change } }),
     recentSessions: (siteKey: string, limit = 50) => request<RecentSession[]>("GET", "/api/sessions/recent", { siteKey, query: { limit } }),
     journey: (siteKey: string) => request<Journey>("GET", "/api/journey", { siteKey }),
     attention: (siteKey: string, page?: string | null) => request<AttentionProfile>("GET", "/api/attention-profile", { siteKey, query: { page } }),

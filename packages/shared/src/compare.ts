@@ -1,4 +1,4 @@
-import type { ChangeComparison, ChangeMeasures, ComparisonGroupScope } from "./types";
+import type { ChangeComparison, ChangeMeasures, ComparisonGroupScope, Device } from "./types";
 
 export function comparisonGroupScope(scope: ComparisonGroupScope | null | undefined): string {
   if (!scope) return "This saved group snapshot has no scope details.";
@@ -9,17 +9,30 @@ export function comparisonGroupScope(scope: ComparisonGroupScope | null | undefi
 export function comparisonGoalSummary(goal: NonNullable<ChangeComparison["goal"]>): string {
   if (goal.before === null || goal.after === null) return `${goal.name}: not enough visits to compare goal rates.`;
   const direction = goal.after > goal.before ? "rose" : goal.after < goal.before ? "fell" : "was unchanged";
-  const uncertainty = goal.verdict === "unclear" ? "Too few goal completions to distinguish a change from sampling variation."
+  const uncertainty = goal.provisional ? "Provisional: still collecting the planned 14 complete days. No conclusion yet."
+    : goal.verdict === "unclear" ? "Too few visits or goal completions to distinguish a change from sampling variation."
     : goal.verdict === "same" ? "The data don't establish a clear difference; that doesn't prove the rates are equal."
     : "The difference exceeds the comparison's sampling threshold, but other changes in traffic or timing could explain it.";
-  return `${goal.name} ${direction}, from ${comparisonRate(goal.before)} to ${comparisonRate(goal.after)} of visits. ${uncertainty} This comparison doesn't establish that the page change caused the result.`;
+  const interval = goal.difference_ci ? ` Estimated difference: ${((goal.after - goal.before) * 100).toFixed(1)} percentage points; approximate 95% interval ${(goal.difference_ci[0] * 100).toFixed(1)} to ${(goal.difference_ci[1] * 100).toFixed(1)} points. This assumes independent visits and doesn't account for repeated visitors or other traffic changes.` : "";
+  return `${goal.name} ${direction}, from ${comparisonRate(goal.before)} to ${comparisonRate(goal.after)} of visits. ${uncertainty}${interval} This comparison doesn't establish that the page change caused the result.`;
 }
 
-export function comparisonPeriods(day: string, days: number): string {
+export function comparisonPeriods(day: string, days: number, device?: Device | null): string {
   const at = Date.parse(`${day}T00:00:00Z`);
   const date = (offset: number) => new Date(at + offset * 86400000).toISOString().slice(0, 10);
-  return `Before: ${date(-days)} to ${date(-1)}; after: ${day} to ${date(days - 1)} (UTC). Both devices; completed visits only, unfinished visits excluded.`;
+  return `Before: ${date(-days)} to ${date(-1)}; after: ${date(1)} to ${date(days)} (UTC). ${device ? `${device === "mobile" ? "Mobile" : "Desktop"} only` : "Both devices"}; completed visits only, unfinished visits excluded. The change day (${day}) is excluded.`;
 }
+
+export function comparisonStatus(data: ChangeComparison): string {
+  if (data.goal_status === "changed") return "The recorded goal was changed or removed. Record a new change with a new baseline before comparing goal rates.";
+  if (data.goal_status === "backfilling") return "Goal counts are being recounted or need attention. Goal-rate comparisons are paused until the recount finishes.";
+  if (data.goal_status === "none") return "No goal was recorded with this change. Behaviour can be compared, but there is no saved goal-rate baseline.";
+  if (data.goal_status === "legacy") return "This older change has no saved goal definition. Its rates use the current main goal, which may differ from the original.";
+  return "";
+}
+
+export const COMPARISON_WAITING = "Waiting for new visits. The change day is excluded; comparisons start after the next complete UTC day has ended. Refreshing the analysis doesn't create new visits.";
+export const COMPARISON_TRAFFIC_NOTE = "Follow-up rates include quick conversions and visits without interaction; they don't use the goal model's matched-window exclusions. Traffic sources, repeat visitors, timing and other page changes can move these figures. Matching the device doesn't control for those differences.";
 
 export const COMPARISON_MIN_VISITS = 30;
 export const comparisonRate = (value: number | null) => value === null || !Number.isFinite(value) ? "–" : `${(value * 100).toFixed(value < 0.1 ? 1 : 0)}%`;

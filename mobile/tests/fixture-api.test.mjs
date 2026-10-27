@@ -111,6 +111,39 @@ test("path fixtures cover empty counts, empty lists, plan restrictions and read 
   }
 });
 
+test("linked finding fixtures preserve evidence and scope without forwarding writes", async () => {
+  const calls = [];
+  const ran_at = "2026-01-01T12:00:00.000Z";
+  const source = { ran_at, device: "desktop", group: "Steady", action: "Try a clearer link" };
+  const server = createFixtureApi(async (url, init) => {
+    calls.push([url, init.method]);
+    if (url.endsWith("/api/account")) return Response.json({ sites: [{ key: "owned" }] });
+    if (url.includes("/api/stats")) return Response.json({ last_analysis: { ran_at, session_count: 200, clusters: [{ id: 0, n: 200 }], inactive_count: 10,
+      interpretation: { advice: [{ ...source, evidence: "They scroll less." }] } } });
+    throw Error("Unexpected upstream request");
+  }, { comparisonMode: "empty" });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  const path = "/api/page-changes?site_key=owned&page=/a";
+  try {
+    await fetch(origin + "/api/account", { method: "POST" });
+    await fetch(origin + "/api/stats?site_key=owned&page=/a");
+    const preview = await (await fetch(origin + "/api/change-finding?" + new URLSearchParams({ site_key: "owned", page: "/a", ...source }))).json();
+    assert.equal(preview.evidence, "They scroll less.");
+    const today = new Date().toISOString().slice(0, 10);
+    const response = await fetch(origin + path, { method: "POST", body: JSON.stringify({ page: "/a", day: today, note: "Moved the link", source }) });
+    assert.equal(response.status, 201);
+    const saved = await response.json();
+    assert.equal(saved.finding.session_count, 200);
+    assert.equal(saved.finding.inactive_count, 10);
+    const listed = await (await fetch(origin + path)).json();
+    assert.equal(listed[0].finding.evidence, preview.evidence);
+    const comparison = await (await fetch(origin + "/api/compare?" + new URLSearchParams({ site_key: "owned", page: "/a", day: today, change: saved.id }))).json();
+    assert.equal(comparison.ready, false);
+    assert.deepEqual(calls.map(([, method]) => method), ["POST", "GET"]);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
 test("change-note fixtures enforce ownership, recover failed writes and never forward mutations", async () => {
   const calls = [];
   const server = createFixtureApi(async (url, init) => {
@@ -133,7 +166,9 @@ test("change-note fixtures enforce ownership, recover failed writes and never fo
     const saved = await (await post(body)).json(); assert.equal(saved.note, body.note);
     const compare = origin + `/api/compare?site_key=owned&page=/&day=${day}`;
     assert.equal((await fetch(compare)).status, 503);
-    assert.equal((await (await fetch(compare)).json()).goal.verdict, "better");
+    const comparison = await (await fetch(compare)).json();
+    assert.equal(comparison.goal.verdict, "unclear");
+    assert.equal(comparison.provisional, true);
     assert.equal((await fetch(origin + `/api/page-changes/${saved.id}?site_key=other`, { method: "DELETE" })).status, 403);
     assert.equal((await fetch(origin + `/api/page-changes/${saved.id}?site_key=owned`, { method: "DELETE" })).status, 200);
     assert.equal((await (await fetch(origin + path)).json()).length, 2);

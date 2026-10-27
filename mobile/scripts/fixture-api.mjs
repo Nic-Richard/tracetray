@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 
 const { parseGoal } = createRequire(import.meta.url)("../../server/src/lib/goals.js");
+const { findingSnapshot } = createRequire(import.meta.url)("../../server/src/lib/changeFinding.js");
 
 const READS = new Set(["/api/config", "/api/pages", "/api/sites", "/api/stats", "/api/sessions/timeseries", "/api/goal-rates", "/api/goals", "/api/pages/members", "/api/usage", "/api/journey", "/api/ux-trends", "/api/goal-trend", "/api/attention-profile", "/api/page-shot", "/api/sessions/recent"]);
 
@@ -163,7 +164,7 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
         if (pathMode === "empty-pages") return reply(200, []);
       }
       const changeId = /^\/api\/page-changes\/([^/]+)$/.exec(path)?.[1];
-      if (path === "/api/page-changes" || changeId || path === "/api/compare") {
+      if (path === "/api/page-changes" || changeId || path === "/api/compare" || path === "/api/change-finding") {
         const key = url.searchParams.get("site_key");
         if (!websites?.some(site => site.key === key)) return reply(403, { error: "website not available" });
         if (comparisonMode === "limited") return reply(403, { error: "before-and-after comparisons need a plan", limit_reached: "plan" });
@@ -178,6 +179,14 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
         const page = body.page || url.searchParams.get("page");
         if (!page) return reply(400, { error: "pick a page first" });
         const listKey = `${key}|${page}`;
+        const sourceFinding = reference => {
+          const analysis = statsCache.get(`${key}:${page}`)?.last_analysis;
+          return analysis && new Date(analysis.ran_at).toISOString() === reference?.ran_at ? findingSnapshot(analysis, reference) : null;
+        };
+        if (path === "/api/change-finding" && request.method === "GET") {
+          const finding = sourceFinding(Object.fromEntries(url.searchParams));
+          return finding ? reply(200, finding) : reply(400, { error: "That finding isn't available. Reopen it from the page's analysis." });
+        }
         const dayAgo = days => new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
         if (!changeLists.has(listKey)) changeLists.set(listKey, comparisonMode === "empty" ? [] : [{ id: `fixture-change-${changeLists.size + 1}-latest`, day: dayAgo(3), note: "New product photos" }, { id: `fixture-change-${changeLists.size + 1}-older`, day: dayAgo(10), note: "Clearer checkout" }]);
         const list = changeLists.get(listKey);
@@ -185,25 +194,29 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
         if (path === "/api/page-changes" && request.method === "POST") {
           const day = body.day;
           if (typeof day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(Date.parse(`${day}T00:00:00Z`)) || new Date(`${day}T00:00:00Z`).toISOString().slice(0, 10) !== day || day > dayAgo(0)) return reply(400, { error: "pick a valid past date" });
+          const finding = body.source ? sourceFinding(body.source) : null;
+          if (body.source && (!finding || !String(body.note || "").trim() || day < finding.ran_at.slice(0, 10))) return reply(400, { error: "Reopen the finding and describe the completed change." });
           changeWrites.push({ method: "POST", site: key, page, day, note: body.note });
           if (String(body.note).startsWith("Fixture retry") && !attempts.has(`change:${body.note}`)) { attempts.set(`change:${body.note}`, 1); return reply(503, { error: "fixture change save unavailable" }); }
-          const change = { id: `fixture-change-${changeWrites.length}`, day, note: String(body.note || "").trim().slice(0, 120) };
+          const change = { id: `fixture-change-${changeWrites.length}`, day, note: String(body.note || "").trim().slice(0, 120), finding };
           list.push(change);
           setTimeout(() => reply(201, change), 500);
           return;
         }
         if (path === "/api/compare" && request.method === "GET") {
-          const day = url.searchParams.get("day");
+          const change = url.searchParams.get("change") ? list.find(value => value.id === url.searchParams.get("change")) : null;
+          if (url.searchParams.has("change") && !change) return reply(404, { error: "that change isn't there" });
+          const day = change?.day || url.searchParams.get("day");
           const attemptKey = `compare:${key}:${page}:${day}`;
           if (comparisonMode === "retry" && !attempts.has(attemptKey)) { attempts.set(attemptKey, 1); return reply(503, { error: "fixture comparison unavailable" }); }
-          const days = Math.min(14, Math.floor((Date.now() - Date.parse(`${day}T00:00:00Z`)) / 86400000));
+          const days = Math.min(14, Math.floor((Date.now() - Date.parse(`${day}T00:00:00Z`)) / 86400000) - 1);
           if (!Number.isFinite(days)) return reply(400, { error: "pick a day" });
           if (days < 1) return reply(200, { ready: false, days: 0 });
           const sparse = comparisonMode === "sparse";
-          return reply(200, { ready: true, days,
+          return reply(200, { ready: true, days, device: change?.finding?.device || null, provisional: days < 14, goal_status: "ready",
             before: { visits: sparse ? 2 : 300, visitsPerDay: sparse ? 0.5 : 100, engaged: sparse ? null : 0.4, timeOnPage: sparse ? null : 45000, actionsPerVisit: sparse ? null : 1.2, scrollDepth: sparse ? null : 0.5, phoneShare: sparse ? null : 0.25 },
             after: { visits: sparse ? 0 : 450, visitsPerDay: sparse ? 0 : 150, engaged: sparse ? null : 0.65, timeOnPage: sparse ? null : 50000, actionsPerVisit: sparse ? null : 1.5, scrollDepth: sparse ? null : 0.6, phoneShare: sparse ? null : 0.55 },
-            goal: { id: "fixture-goal", name: "Added to cart", before: sparse ? 0 : 0.1, after: sparse ? null : 0.25, reached: sparse ? 0 : 143, verdict: sparse ? "unclear" : "better" },
+            goal: { id: "fixture-goal", name: "Added to cart", before: sparse ? 0 : 0.1, after: sparse ? null : 113 / 450, reached: sparse ? 0 : 143, before_reached: sparse ? 0 : 30, after_reached: sparse ? 0 : 113, provisional: days < 14, verdict: sparse || days < 14 ? "unclear" : "better" },
             groups: sparse ? null : { before: [{ group: "Explorers", share: 0.6 }], after: [{ group: "Explorers", share: 0.4 }, { group: "Deciders", share: 0.6 }] }
           });
         }
@@ -361,7 +374,7 @@ export function createFixtureApi(upstreamFetch = fetch, { configDelayMs = 0, ema
         method: request.method, headers,
         ...(request.method === "POST" ? { body: "{}" } : {})
       });
-      if (analysisMode !== "disabled" && request.method === "GET" && path === "/api/stats" && upstream.ok) {
+      if (request.method === "GET" && path === "/api/stats" && upstream.ok) {
         const stats = await upstream.json();
         statsCache.set(`${siteKey}:${url.searchParams.get("page")}`, stats);
         return reply(200, stats);

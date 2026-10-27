@@ -1,4 +1,4 @@
-import type { AnalysisResult, Cluster, ClusterStory, Device, DeviceAnalysis, Interpretation, Trait } from "./types";
+import type { AnalysisResult, ChangeFinding, Cluster, ClusterStory, Device, DeviceAnalysis, Interpretation, Trait } from "./types";
 
 export function interpretationOf(result: AnalysisResult | null | undefined): Interpretation | null {
   return result?.interpretation || result?.ai_interpretation || null;
@@ -78,15 +78,25 @@ function scopeDate(value: string): string | null {
 }
 
 export function analysisPeriod(result: AnalysisResult, device: Device): string {
-  const scope = deviceAnalysis(result, device)?.scope;
+  return scopePeriod(deviceAnalysis(result, device)?.scope);
+}
+
+function scopePeriod(scope: DeviceAnalysis["scope"]): string {
   const from = scope && scopeDate(scope.from), to = scope && scopeDate(scope.to);
   return from && to ? `${from} to ${to} (UTC)` : "Dates weren't saved for this analysis";
 }
 
 export function analysisScope(result: AnalysisResult, device: Device): string {
-  const source = deviceAnalysis(result, device);
+  return measuredScope(deviceAnalysis(result, device), device);
+}
+
+export function findingScope(finding: ChangeFinding): string {
+  return [measuredScope(finding, finding.device), ...(finding.related_scopes || []).map(source => measuredScope(source, source.device))].join(" ");
+}
+
+function measuredScope(source: Pick<DeviceAnalysis, "scope" | "session_count" | "inactive_count"> | null, device: Device): string {
   const scope = source?.scope;
-  const parts = [`${(source?.session_count || 0).toLocaleString()} ${device} visits with recorded interaction. ${analysisPeriod(result, device)}.`];
+  const parts = [`${(source?.session_count || 0).toLocaleString()} ${device} visits with recorded interaction. ${scopePeriod(scope)}.`];
   parts.push(source?.inactive_count == null ? "Visits without recorded interaction are excluded from grouping; their count wasn't saved."
     : `${source.inactive_count.toLocaleString()} visits without recorded interaction excluded from grouping, included in overall goal rates and group shares.`);
   if (scope) {
@@ -101,7 +111,15 @@ export function analysisScope(result: AnalysisResult, device: Device): string {
 export function groupCountNote(result: AnalysisResult, device: Device): string | null {
   const source = deviceAnalysis(result, device);
   if (!result.goal || !source?.clusters.length || source.structure === "none" || source.k_rationale?.goal_informed === false) return null;
-  return source.k_rationale?.goal_informed === true
+  return goalSelectionNote(source.k_rationale?.goal_informed);
+}
+
+export function findingGroupNote(finding: ChangeFinding): string | null {
+  return finding.goal_informed === false ? null : goalSelectionNote(finding.goal_informed);
+}
+
+function goalSelectionNote(informed: unknown): string {
+  return informed === true
     ? "Goal outcomes helped choose the group count. Differences in goal rates are exploratory and haven't been confirmed on later visits."
     : "This saved analysis doesn't record whether the goal helped choose the group count. Differences in goal rates haven't been confirmed on later visits.";
 }

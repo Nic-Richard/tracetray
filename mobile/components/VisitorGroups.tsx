@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import {
   alikeNote,
@@ -24,7 +25,7 @@ import AnalysisScope from "./AnalysisScope";
 
 const rate = (value: number) => percent(value, value > 0 && value < 0.01 ? 1 : 0);
 
-export function Suggestions({ result }: { result: AnalysisResult }) {
+export function Suggestions({ result, site, page }: { result: AnalysisResult; site: string; page: string }) {
   const { styles } = useTheme();
   const advice = analysisAdvice(result);
   if (!advice.length) return null;
@@ -33,11 +34,15 @@ export function Suggestions({ result }: { result: AnalysisResult }) {
       <Text style={styles.heading}>What to try</Text>
       {advice.map((item, index) => (
         <View key={`${item.device}:${item.group}:${index}`} style={{ gap: 6, marginTop: 8 }}>
-          <Text style={styles.text}>{item.action}</Text>
           <Text style={styles.muted}>{item.evidence}</Text>
           {(item.devices || [item.device]).map(device => (
             <View key={device}><AnalysisScope result={result} device={device} />{groupCountNote(result, device) ? <Text style={styles.muted}>{groupCountNote(result, device)}</Text> : null}</View>
           ))}
+          <Text style={styles.text}>Change to try: {item.action}</Text>
+          {(item.devices || [item.device]).map(device => <Pressable key={device} accessibilityRole="button" style={styles.secondaryButton}
+            onPress={() => router.push({ pathname: "/changes", params: { site, page, finding: JSON.stringify({ ran_at: result.ran_at, device, group: item.group, action: item.action }) } })}>
+            <Text style={styles.text}>Record this change{item.devices ? ` for ${device}` : ""}</Text>
+          </Pressable>)}
         </View>
       ))}
     </View>

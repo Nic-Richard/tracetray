@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { alikeNote, analysisAdvice, analysisPeriod, analysisScope, deviceGoal, goalDrivers, groupCountNote, inactiveVisits, traitRows, visitCount, visitorIntro, visitorTypes } from "../src/analysis.ts";
+import { alikeNote, analysisAdvice, analysisPeriod, analysisScope, findingScope, deviceGoal, goalDrivers, groupCountNote, inactiveVisits, traitRows, visitCount, visitorIntro, visitorTypes } from "../src/analysis.ts";
 import { groupColorSlots } from "../src/palette.ts";
 
 function fixture() {
@@ -14,6 +14,16 @@ function fixture() {
     interpretation: { cluster_stories: { 1: { headline: "Deciders", key: "quick_deciders", goal: { rate: 0.5, average: 0.33 } } } }
   };
 }
+
+test("recorded finding scope survives independently of later analyses and includes merged evidence", () => {
+  const scope = { from: "2026-09-01", to: "2026-10-01", window_days: 90, limit: 20000, at_limit: false, excluded_detail: 5, excluded_events: 3 };
+  const finding = { device: "mobile", session_count: 200, inactive_count: 10, scope,
+    related_scopes: [{ device: "desktop", session_count: 300, inactive_count: 15, scope }] };
+  assert.match(findingScope(finding), /200 mobile visits/);
+  assert.match(findingScope(finding), /300 desktop visits/);
+  assert.match(findingScope(finding), /5 visits without full detail and 3/);
+  assert.match(findingScope(finding), /10 visits without recorded interaction/);
+});
 
 test("shares and goal averages include visits that never interacted", () => {
   const result = fixture();

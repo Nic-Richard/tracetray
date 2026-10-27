@@ -1,13 +1,13 @@
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
-import { COMPARISON_ROWS, COMPARISON_MIN_VISITS, comparisonGoalSummary, comparisonGroupScope, comparisonPeriods, comparisonRate, comparisonVerdict, percent } from "@tracetray/shared";
+import { COMPARISON_ROWS, COMPARISON_MIN_VISITS, COMPARISON_WAITING, COMPARISON_TRAFFIC_NOTE, comparisonStatus, comparisonGoalSummary, comparisonGroupScope, comparisonPeriods, comparisonRate, comparisonVerdict, percent } from "@tracetray/shared";
 import { useApi } from "../lib/api";
 import { useLoad } from "../lib/useLoad";
 import { useTheme } from "../lib/theme";
 
-export default function ChangeComparison({ site, page, day }: { site: string; page: string; day: string }) {
+export default function ChangeComparison({ site, page, day, change, linked }: { site: string; page: string; day: string; change?: string; linked?: boolean }) {
   const api = useApi();
   const { styles, colors } = useTheme();
-  const result = useLoad(() => api.compare(site, page, day), [api, site, page, day]);
+  const result = useLoad(() => api.compare(site, page, day, change), [api, site, page, day, change]);
   const data = result.data;
   if (result.error)
     return (
@@ -23,9 +23,7 @@ export default function ChangeComparison({ site, page, day }: { site: string; pa
   if (!data) return <ActivityIndicator color={colors.accent} accessibilityLabel="Comparing visits" />;
   if (!data.ready || !data.before || !data.after)
     return (
-      <Text style={styles.muted}>
-        Comparisons start once a full day has passed since the change. Check back tomorrow.
-      </Text>
+      <View><Text style={styles.muted}>{COMPARISON_WAITING}</Text><Text style={styles.muted}>{comparisonStatus(data)}</Text></View>
     );
   const { before, after, goal, groups } = data;
   const judged = before.visits >= COMPARISON_MIN_VISITS && after.visits >= COMPARISON_MIN_VISITS;
@@ -53,18 +51,22 @@ export default function ChangeComparison({ site, page, day }: { site: string; pa
   return (
     <View style={{ gap: 16 }}>
       <Text style={styles.text}>
-        {data.days} {data.days === 1 ? "day" : "days"} before {day} against the same number from it (UTC):{" "}
+        {data.days} complete {data.days === 1 ? "day" : "days"} on each side of {day}, excluding the change day (UTC):{" "}
         {before.visits.toLocaleString()} visits before, {after.visits.toLocaleString()} after.
       </Text>
-      <Text style={styles.muted}>{comparisonPeriods(day, data.days)}</Text>
+      <Text style={styles.muted}>{comparisonPeriods(day, data.days, data.device)}</Text>
+      {data.provisional ? <Text style={styles.muted}>Provisional: collecting 14 complete days after the change. No conclusion yet.</Text> : null}
+      {comparisonStatus(data) ? <Text style={styles.muted}>{comparisonStatus(data)}</Text> : null}
+      <Text style={styles.muted}>{COMPARISON_TRAFFIC_NOTE}</Text>
       {goal ? <Text style={styles.text}>{comparisonGoalSummary(goal)}</Text> : null}
+      {goal ? <Text style={styles.muted}>Goal completions: {goal.before_reached} before; {goal.after_reached} after.</Text> : null}
       {goal ? (
         row(
           `Reached ${goal.name}`,
           comparisonRate(goal.before),
           comparisonRate(goal.after),
           goal.verdict === "unclear"
-            ? "Too early to tell"
+            ? "Inconclusive"
             : goal.verdict === "same"
               ? "No clear difference"
               : goal.verdict === "better"
@@ -73,7 +75,7 @@ export default function ChangeComparison({ site, page, day }: { site: string; pa
           goal.verdict,
         )
       ) : (
-        <Text style={styles.muted}>Choose a main goal for this page to compare goal rates.</Text>
+        <Text style={styles.muted}>No comparable goal rates are available for this record.</Text>
       )}
       {COMPARISON_ROWS.map(measure => {
         const b = before[measure.key],
@@ -97,7 +99,7 @@ export default function ChangeComparison({ site, page, day }: { site: string; pa
       })}
       {goal?.verdict === "unclear" ? (
         <Text style={styles.muted}>
-          The goal gets a verdict once 30 visits have reached it across both sides ({goal.reached} so far).
+          A direction is reported after 14 complete days, with at least 30 visits on each side and 30 goal completions across both ({goal.reached} so far). Otherwise the result stays inconclusive.
         </Text>
       ) : null}
       <Text style={styles.muted}>
@@ -117,7 +119,7 @@ export default function ChangeComparison({ site, page, day }: { site: string; pa
           visitors tap and scroll differently, so that alone can move these numbers.
         </Text>
       ) : null}
-      <View style={styles.panel}>
+      {!linked ? <View style={styles.panel}>
         <Text style={styles.heading}>Visitor groups</Text>
         <Text style={styles.muted}>Group snapshots use their own analysis periods and may overlap. They don't isolate visits before and after this change.</Text>
         {groups?.before ? <Text style={styles.muted}>Before snapshot: {comparisonGroupScope(groups.before_scope)}</Text> : null}
@@ -138,7 +140,7 @@ export default function ChangeComparison({ site, page, day }: { site: string; pa
               : "Refresh the analysis to see how the visitor groups changed."}
           </Text>
         )}
-      </View>
+      </View> : null}
     </View>
   );
 }
