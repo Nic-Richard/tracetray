@@ -12,15 +12,18 @@ import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score, adjusted_rand_score
 from scipy.stats import kruskal
 from scipy.optimize import linear_sum_assignment
 
-warnings.filterwarnings("ignore")
+# K-means warns when a page has many identical visits, and pandas about future defaults; neither changes a result.
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 
-DATASET_DIR = "../data/features"
+DATASET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "features")
 RANDOM_SEED = 42
 
 # More groups than this stop being something a site owner can act on.
@@ -56,6 +59,13 @@ UNSKEWED = {"spatial_entropy", "top_zone_ratio", "centre_zone_ratio", "bottom_zo
 
 # Waits before a click or tap only exist for visits that clicked or tapped.
 ONLY_WHEN_ACTED = {"dwell_before_click", "dwell_before_tap"}
+
+# Measured from the cursor, so unknown for desktop visits that only scrolled.
+CURSOR_FEATURES = {"pause_rate", "move_density", "distance_per_move", "avg_cursor_velocity", "dwell_before_click",
+                   "spatial_entropy", "top_zone_ratio", "centre_zone_ratio", "bottom_zone_ratio"}
+
+# Unknown values are filled before clustering (see fill_from_observed) instead of counting as zero.
+FILL_TYPICAL = ONLY_WHEN_ACTED | CURSOR_FEATURES
 
 
 
@@ -116,6 +126,9 @@ def engineer_desktop_features(df):
         df["spatial_entropy"] = np.nansum(np.where(p > 0, -p * np.log2(p), 0), axis=1)
 
     df["dwell_before_click"] = df["dwell_before_click"].where(df["clicks"] > 0)
+    # Scrolling with a trackpad or keyboard leaves no cursor trail; those measures are unknown for the visit, not zero.
+    no_cursor = df["mouse_moves"].fillna(0) <= 0
+    df.loc[no_cursor, list(CURSOR_FEATURES)] = np.nan
     return fill_missing(df, DESKTOP_ENGINEERED_FEATURES)
 
 
@@ -137,21 +150,35 @@ def engineer_mobile_features(df):
 
 def fill_missing(df, features):
     for col in features:
-        if col not in ONLY_WHEN_ACTED:
-            df[col] = df[col].replace([np.inf, -np.inf], np.nan).fillna(0)
+        df[col] = df[col].replace([np.inf, -np.inf], np.nan)
+        if col not in FILL_TYPICAL:
+            df[col] = df[col].fillna(0)
     return df
 
 
+def fill_from_observed(values, rng):
+    """Unknown values take a value drawn from visits where it was measured. A single typical value would stack every
+    such visit on one point, and that stack alone can look like a group."""
+    known = values.dropna().to_numpy()
+    if len(known) == 0:
+        return values.fillna(0)
+    missing = values.isna()
+    values = values.copy()
+    values[missing] = rng.choice(known, size=int(missing.sum()))
+    return values
+
+
 def clustering_matrix(df, features):
-    """Log-scales skewed features, fills waits for visits that never acted with the median wait, standardizes,
-    clips outliers and drops features that don't vary. Returns the matrix and the features it kept."""
+    """Fills unknown values from visits where they were measured, log-scales skewed features, standardizes, clips
+    outliers and drops features that don't vary. Returns the matrix and the features it kept."""
     cols, kept = [], []
+    rng = np.random.default_rng(RANDOM_SEED)
     for feat in features:
         if feat in CLUSTER_EXCLUDED:
             continue
         values = df[feat].astype(float)
-        if feat in ONLY_WHEN_ACTED:
-            values = values.fillna(values.median() if values.notna().any() else 0)
+        if feat in FILL_TYPICAL:
+            values = fill_from_observed(values, rng)
         values = values.clip(lower=0)
         if feat not in UNSKEWED:
             values = np.log1p(values)
@@ -243,6 +270,20 @@ def structure_verdict(sil, null, stab):
     if beats_null and stab >= 0.6:
         return "some"
     return "none"
+
+
+def cluster(X, k_range, min_size):
+    """Picks the number of groups, fits them and judges how real they are."""
+    k_metrics, best_k = select_k(X, k_range, min_size)
+    if best_k is None:
+        # Every split leaves a group too small to describe: a few unusual visits, not real groups.
+        labels = fit_kmeans(X, 2).labels_
+        return k_metrics, 2, labels, silhouette(X, labels), None, None, "none"
+    labels = fit_kmeans(X, best_k).labels_
+    sil = float(k_metrics.loc[k_metrics["k"] == best_k, "silhouette"].values[0])
+    null = null_silhouettes(X, best_k)
+    stab = stability(X, best_k, labels)
+    return k_metrics, best_k, labels, sil, null, stab, structure_verdict(sil, null, stab)
 
 
 def hierarchical_agreement(X, km_labels, k):
@@ -391,21 +432,9 @@ def main(device, site_key):
     if X is None:
         return failure("no_variation", n_sessions, n_sessions, f"Every {what.split(' with ')[0][:-1]} on this page behaved the same way, so there are no groups to find.")
 
-    k_metrics, best_k = select_k(X, k_range, min_size)
+    k_metrics, best_k, km_labels, sil, null, stab, verdict = cluster(X, k_range, min_size)
     print(k_metrics.to_string(index=False))
-
-    small_groups = best_k is None
-    if small_groups:
-        # Every split leaves a group too small to describe: a few unusual visits, not real groups.
-        best_k = 2
-        km_labels = fit_kmeans(X, 2).labels_
-        sil, null, stab, verdict = silhouette(X, km_labels), None, None, "none"
-    else:
-        km_labels = fit_kmeans(X, best_k).labels_
-        sil = float(k_metrics.loc[k_metrics["k"] == best_k, "silhouette"].values[0])
-        null = null_silhouettes(X, best_k)
-        stab = stability(X, best_k, km_labels)
-        verdict = structure_verdict(sil, null, stab)
+    small_groups = null is None
     print(f"\nk={best_k} silhouette={sil:.3f} null_max={max(null) if null else '-'} stability={stab} structure={verdict}")
 
     df["cluster_km"] = km_labels

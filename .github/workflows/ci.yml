@@ -32,5 +32,8 @@ jobs:
         run: npm run check:mobile && npm test -w mobile && npm test -w packages/shared
       - name: Android bundle
         run: npm run build:mobile
-      - name: Python syntax
-        run: python3 -m compileall -q ml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python syntax and clustering tests
+        run: python -m compileall -q ml && python -m pip install -q -r ml/requirements.txt && (cd ml && python -m unittest -q)
