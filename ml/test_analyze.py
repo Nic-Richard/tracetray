@@ -62,5 +62,15 @@ class ClusteringTest(unittest.TestCase):
         self.assertEqual(groups(df)[1].tolist(), groups(df.copy())[1].tolist())
 
 
+    def test_snapshot_uses_fixed_axes_and_a_bounded_sample(self):
+        df, _ = desktop_visits(np.random.default_rng(4), 600, [(1, 0.03, 40, 0.5, 0.5)])
+        features = analyze.engineer_desktop_features(df)
+        labels = np.arange(len(df)) % 2
+        shot = analyze.snapshot(features, labels)
+        self.assertEqual(len(shot["points"]), analyze.SNAPSHOT_POINTS)
+        self.assertTrue(all(0 <= x <= 1 and 0 <= y <= np.log10(3600) for x, y, _ in shot["points"]))
+        self.assertEqual(set(shot["centres"]), {0, 1})
+
+
 if __name__ == "__main__":
     unittest.main()

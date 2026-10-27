@@ -237,6 +237,19 @@ export interface Cluster {
   track?: { id: string; since: string; new?: boolean };
 }
 
+/** One analysis on fixed axes: x is how far down the page (0-1), y is time on the page in log10 seconds. */
+export interface GroupSnapshot {
+  /** Sampled visits as [x, y, group id]. */
+  points: [number, number, number][];
+  groups: { id: number; track: string | null; key: string | null; headline: string; share: number; centre: [number, number] | null }[];
+}
+
+export interface GroupHistoryFrame {
+  ran_at: string;
+  desktop: GroupSnapshot | null;
+  mobile: GroupSnapshot | null;
+}
+
 export interface KruskalWallis {
   feature: string;
   /** Empty when every value of the feature was the same, so the test couldn't run. */

@@ -4,6 +4,7 @@ import { useLoad } from "../lib/useLoad";
 import BeforeAfter from "../components/BeforeAfter";
 import GoalTrend from "../components/GoalTrend";
 import TrendCharts from "../components/TrendCharts";
+import GroupTimelapse from "../components/GroupTimelapse";
 
 export default function TrendsTab({ page }: { page: string }) {
   const api = useApi();
@@ -13,6 +14,7 @@ export default function TrendsTab({ page }: { page: string }) {
   if (!trends.data) return <p className="loading">Loading?</p>;
   return <div className="content">
     <GoalTrend page={page} />
+    <GroupTimelapse page={page} />
     <BeforeAfter page={page} />
     <TrendCharts points={trends.data.points} />
   </div>;

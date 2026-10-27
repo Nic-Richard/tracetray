@@ -13,6 +13,20 @@ const { computeAttentionProfile } = require("../lib/attentionProfile");
 const { refreshShots, shotInfo, shotFile } = require("../lib/pageShots");
 const logger = require("../lib/logger");
 
+// About half a year of weekly analyses.
+const GROUP_HISTORY_FRAMES = 26;
+
+function historyFrame(source, stories = {}) {
+    if (!source?.snapshot) return null;
+    const total = (source.clusters || []).reduce((sum, c) => sum + (c.n || 0), 0) || 1;
+    // Groups that didn't hold up aren't drawn; their visits still are.
+    const groups = source.structure === "none" ? [] : (source.clusters || []).map(c => ({
+        id: c.id, track: c.track?.id || null, key: stories?.[c.id]?.key || null, headline: stories?.[c.id]?.headline || c.label,
+        share: (c.n || 0) / total, centre: source.snapshot.centres?.[c.id] || null
+    }));
+    return { points: source.snapshot.points || [], groups };
+}
+
 router.get("/api/stats", requireAuth(), async (req, res) => {
     try {
         const account = await Account.findOne({ clerk_user_id: getAuth(req).userId }).lean();
@@ -157,6 +171,33 @@ router.get("/api/journey", requireAuth(), async (req, res) => {
     } catch (err) {
         logger.error("journey error:", err);
         res.status(500).json({ error: "failed to fetch journey data" });
+    }
+});
+
+router.get("/api/group-history", requireAuth(), async (req, res) => {
+    try {
+        const account = await Account.findOne({ clerk_user_id: getAuth(req).userId }).lean();
+        if (!account) return res.status(404).json({ error: "account not found" });
+
+        const siteKey = resolveSiteKey(req, account);
+        if (!siteKey) return res.status(403).json({ error: "website not available" });
+
+        const page = req.query.page || "all";
+        if (await isPageLocked(account, siteKey, page)) {
+            return res.status(403).json({ error: "this page is past your plan's page limit for this month", limit_reached: "pages" });
+        }
+        const results = await AnalysisResult.find({ site_key: siteKey, page, snapshot: { $exists: true } },
+            { ran_at: 1, structure: 1, clusters: 1, snapshot: 1, "mobile.structure": 1, "mobile.clusters": 1, "mobile.snapshot": 1,
+              "interpretation.cluster_stories": 1, "interpretation.mobile_cluster_stories": 1 })
+            .sort({ ran_at: -1 }).limit(GROUP_HISTORY_FRAMES).lean();
+        res.json(results.reverse().map(r => ({
+            ran_at: r.ran_at,
+            desktop: historyFrame(r, r.interpretation?.cluster_stories),
+            mobile: historyFrame(r.mobile, r.interpretation?.mobile_cluster_stories)
+        })));
+    } catch (err) {
+        logger.error("group history error:", err);
+        res.status(500).json({ error: "failed to fetch group history" });
     }
 });
 

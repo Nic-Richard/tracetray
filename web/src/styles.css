@@ -559,3 +559,16 @@ td.strong { font-weight: 700; }
 .account-deletion form, .account-deletion label { display: grid; gap: 12px; }
 .account-deletion input { width: 100%; padding: 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--panel); color: var(--ink); font: inherit; }
 .account-deletion .deletion-submit { color: var(--danger); border-color: var(--danger); }
+
+/* Group timelapse */
+.timelapse-plot { width: 100%; height: auto; display: block; margin-top: 10px; }
+.timelapse-plot .grid { stroke: var(--line); stroke-width: 1; }
+.timelapse-plot .tick { fill: var(--muted); font-size: 12px; }
+.timelapse-plot .axis { fill: var(--muted); font-size: 12.5px; }
+.timelapse-plot .label { fill: var(--ink); font-size: 12.5px; font-weight: 600; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+.timelapse-controls { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+.timelapse-controls input { flex: 1; min-width: 0; accent-color: var(--d1); }
+.timelapse-table { margin-top: 12px; font-size: 13.5px; }
+.timelapse-table summary { cursor: pointer; color: var(--muted); }
+.timelapse-table table { margin-top: 8px; border-collapse: collapse; }
+.timelapse-table th, .timelapse-table td { padding: 4px 12px 4px 0; text-align: left; border-bottom: 1px solid var(--line); }
