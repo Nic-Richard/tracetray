@@ -19,8 +19,10 @@ export default function TrendsScreen() {
   const owned = account.sites.some(value => value.key === site);
   const result = useLoad(async () => {
     if (!owned || !page) throw new Error("Choose a page from one of your websites.");
-    const [trends, goal, visits] = await Promise.all([api.uxTrends(site, page, 8), api.goalTrend(site, page), api.timeseries(site, page, 30)]);
-    return { trends, goal, visits };
+    // The timelapse is extra, so the rest of the trends still show if its history can't load.
+    const [trends, goal, visits, history] = await Promise.all([api.uxTrends(site, page, 8), api.goalTrend(site, page), api.timeseries(site, page, 30),
+      api.groupHistory(site, page).catch(() => [])]);
+    return { trends, goal, visits, history };
   }, [api, owned, site, page]);
   if (result.error) return <Failure message={result.error} retry={result.reload} />;
   if (!result.data) return <Loading />;
