@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { percent, COMPARISON_ROWS as ROWS, COMPARISON_MIN_VISITS as MIN_VISITS, comparisonRate as rate, comparisonVerdict as verdict } from "@tracetray/shared";
+import { percent, COMPARISON_ROWS as ROWS, COMPARISON_MIN_VISITS as MIN_VISITS, comparisonGoalSummary, comparisonGroupScope, comparisonPeriods, comparisonRate as rate, comparisonVerdict as verdict } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
@@ -24,9 +24,8 @@ function Comparison({ page, day }: { page: string; day: string }) {
   return (
     <div className="compare">
       <p className="muted">{data.days} day{data.days === 1 ? "" : "s"} before {dayLabel(day)} against {data.days} day{data.days === 1 ? "" : "s"} from it: {before.visits.toLocaleString()} visits before, {after.visits.toLocaleString()} after.</p>
-      {data.goal?.verdict === "better" && (
-        <p className="win-banner"><b>A win.</b> {data.goal.name} went from {rate(data.goal.before)} to {rate(data.goal.after)} of visits after this change, more than chance would explain.</p>
-      )}
+      <p className="muted">{comparisonPeriods(day, data.days)}</p>
+      {data.goal && <p>{comparisonGoalSummary(data.goal)}</p>}
       <table>
         <thead><tr><th>Measure</th><th className="right">Before</th><th className="right">After</th><th className="right">Change</th></tr></thead>
         <tbody>
@@ -37,7 +36,7 @@ function Comparison({ page, day }: { page: string; day: string }) {
               <td className="right num">{rate(data.goal.after)}</td>
               <td className="right">{data.goal.verdict === "unclear"
                 ? <span className="muted" title="Fewer than 30 visits have reached the goal across both sides">Too early to tell</span>
-                : <span className={`verdict ${data.goal.verdict}`}>{data.goal.verdict === "better" ? "Better" : data.goal.verdict === "worse" ? "Worse" : "About the same"}</span>}</td>
+                : <span className={`verdict ${data.goal.verdict}`}>{data.goal.verdict === "better" ? "Higher rate" : data.goal.verdict === "worse" ? "Lower rate" : "No clear difference"}</span>}</td>
             </tr>
           )}
           {ROWS.map(row => {
@@ -49,7 +48,7 @@ function Comparison({ page, day }: { page: string; day: string }) {
                 <td>{row.label}</td>
                 <td className="right num">{row.format(b)}</td>
                 <td className="right num">{row.format(a)}</td>
-                <td className="right">{v ? <span className={`verdict ${v}`}>{v === "better" ? "Better" : v === "worse" ? "Worse" : "About the same"}</span> : <span className="muted">{b ? `${a >= b ? "+" : ""}${Math.round(((a - b) / b) * 100)}%` : "–"}</span>}</td>
+                <td className="right">{v ? <span className={`verdict ${v}`}>{v === "better" ? "Rose" : v === "worse" ? "Fell" : "Little change"}</span> : <span className="muted">{b ? `${a >= b ? "+" : ""}${Math.round(((a - b) / b) * 100)}%` : "–"}</span>}</td>
               </tr>
             );
           })}
@@ -57,10 +56,14 @@ function Comparison({ page, day }: { page: string; day: string }) {
       </table>
       {data.goal?.verdict === "unclear" && <p className="muted">The goal gets a verdict once 30 visits have reached it across both sides ({data.goal.reached} so far).</p>}
       <p className="muted">Scroll depth and clicks don't get a verdict because either direction can be good: shallower scrolling or fewer clicks can mean people find what they need sooner, or that they give up earlier.</p>
+      <p className="muted">Other measures show observed changes only; their labels don't include a statistical uncertainty test.</p>
       {!judged && <p className="muted">Fewer than {MIN_VISITS} visits on one side, so these differences could easily be chance. They get more reliable as visits come in.</p>}
       {judged && mixShift && <p className="muted">The share of visits on phones moved from {percent(before.phoneShare!)} to {percent(after.phoneShare!)}. Phone visitors tap and scroll differently, so that alone can move these numbers.</p>}
       <div className="compare-groups">
         <b>Visitor groups</b>
+        <p className="muted">Group snapshots use their own analysis periods and may overlap. They don't isolate visits before and after this change.</p>
+        {groups?.before && <p className="muted">Before snapshot: {comparisonGroupScope(groups.before_scope)}</p>}
+        {groups?.after && <p className="muted">After snapshot: {comparisonGroupScope(groups.after_scope)}</p>}
         {groups?.before && groups.after ? (
           <ul>{groups.after.map(g => {
             const was = groups.before!.find(x => x.group === g.group)?.share;

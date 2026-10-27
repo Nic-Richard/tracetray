@@ -1,5 +1,6 @@
-import { analysisAdvice, pagePath, type AnalysisResult } from "@tracetray/shared";
+import { analysisAdvice, groupCountNote, pagePath, type AnalysisResult } from "@tracetray/shared";
 import { useAskAbout } from "../lib/askLink";
+import AnalysisScope from "./AnalysisScope";
 
 export default function SummaryPanel({ result, page }: { result: AnalysisResult; page: string }) {
   const askAbout = useAskAbout();
@@ -14,6 +15,7 @@ export default function SummaryPanel({ result, page }: { result: AnalysisResult;
           <div key={item.action} className="advice-item">
             <p className="advice-action">{item.action}</p>
             <p className="advice-why">{item.evidence}</p>
+            {(item.devices || [item.device]).map(device => <div key={device}><AnalysisScope result={result} device={device} />{groupCountNote(result, device) && <p className="note">{groupCountNote(result, device)}</p>}</div>)}
           </div>
         ))}
         <p className="note">

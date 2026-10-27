@@ -575,3 +575,6 @@ td.strong { font-weight: 700; }
 .driver-panel .panel-body { display: grid; gap: 12px; }
 .driver-panel p { margin: 0; }
 .driver-list { margin: 0; padding-left: 18px; display: grid; gap: 8px; color: var(--ink-2); }
+.analysis-scope { margin: 12px 0; }
+.analysis-scope summary { cursor: pointer; overflow-wrap: anywhere; }
+.analysis-scope p { margin-top: 8px; }

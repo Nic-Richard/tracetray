@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useLocation } from "react-router";
-import { describeGoal, formLabel, pageLabel, percent, type Goal, type GoalType } from "@tracetray/shared";
+import { comparisonPeriods, describeGoal, formLabel, pageLabel, percent, type Goal, type GoalType } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
@@ -81,13 +81,15 @@ function Wins() {
   if (!wins.data?.length) return null;
   return (
     <div className="wins">
-      <h3>Wins</h3>
+      <h3>Goal-rate rises</h3>
+      <p className="muted">These rises exceed the comparison's sampling threshold. Other changes in traffic or timing could explain them; they don't establish that a page change caused the rise.</p>
       <ul className="rule-list">
         {wins.data.map(win => (
           <li key={win.id}>
             <span>
               <b>{pageLabel(win.page)}{win.note ? `: ${win.note}` : ""}</b>
               <small>{win.goal} went from {win.before === null ? "–" : asPercent(win.before)} to {win.after === null ? "–" : asPercent(win.after)} after {new Date(`${win.day}T00:00:00Z`).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })}</small>
+              {win.days != null && <small>{comparisonPeriods(win.day, win.days)} {win.before_visits?.toLocaleString()} visits before, {win.after_visits?.toLocaleString()} after.</small>}
             </span>
           </li>
         ))}

@@ -108,7 +108,8 @@ router.get("/api/wins", requireAuth(), async (req, res) => {
             if (!goal) continue;
             const result = await compareAroundChange(found.site.key, change.page, change.day, Date.now(), goal);
             if (result.goal?.verdict === "better") {
-                wins.push({ id: change.id, page: change.page, day: change.day, note: change.note, goal: goal.name, before: result.goal.before, after: result.goal.after });
+                wins.push({ id: change.id, page: change.page, day: change.day, note: change.note, goal: goal.name, before: result.goal.before, after: result.goal.after,
+                    days: result.days, before_visits: result.before.visits, after_visits: result.after.visits });
             }
         }
         res.json(wins);

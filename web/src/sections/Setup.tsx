@@ -49,7 +49,7 @@ function Snippet() {
         <p>Paste these lines just before the closing <code>&lt;/body&gt;</code> tag on every page you want to track.</p>
         <SnippetCode origin={window.location.origin} siteKey={site.key} />
         <p>Use this key on this website only. Add another website below to get a separate key.</p>
-        <p className="muted">TraceTray records cursor movement, clicks, taps, reading pauses and scrolling. It never records keystrokes or form contents.</p>
+        <p className="muted">TraceTray records cursor movement, clicks, taps, scrolling and pauses in scrolling. It never records keystrokes or form contents.</p>
       </div>
     </section>
   );

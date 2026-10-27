@@ -66,8 +66,9 @@ async function run() {
             { "summary.taps": { $gt: 0 } },
             { "summary.scrolls": { $gt: 0 } }
         ];
-        const since = Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000;
-        const visitFilter = { ...siteKeyFilter, ...pageFilter, end_time: { $ne: null }, detailed: { $ne: false }, start_time: { $gte: since } };
+        const until = Date.now();
+        const since = until - WINDOW_DAYS * 24 * 60 * 60 * 1000;
+        const visitFilter = { ...siteKeyFilter, ...pageFilter, end_time: { $ne: null }, detailed: { $ne: false }, start_time: { $gte: since, $lte: until } };
         const filter = { ...visitFilter, "events.0": { $exists: true }, $or: interacted };
         // Visits are read one at a time and only their feature rows kept, so memory stays flat at the cap.
         const recent = async (device, toRow) => {
@@ -115,20 +116,30 @@ async function run() {
         // Visits that never moved, scrolled or tapped can't be grouped, but they're counted (with the goals they
         // reached) over the same stretch of time as the grouped ones, so the groups can be read against every visit.
         const inactiveOf = async ({ rows: sessions, oldest }, device) => {
-            if (sessions.length === 0) return { visits: 0, inactive: 0, inactive_goal_hits: {} };
+            const from = oldest ?? since;
             const rows = await Session.aggregate([
-                { $match: { ...visitFilter, ...device, start_time: { $gte: oldest }, $nor: interacted } },
-                { $project: { hits: { $setUnion: [{ $ifNull: ["$goal_hits", []] }, []] } } },
+                { $match: { ...siteKeyFilter, ...pageFilter, ...device, end_time: { $ne: null }, start_time: { $gte: from, $lte: until } } },
                 { $facet: {
-                    count: [{ $count: "n" }],
-                    hits: [{ $unwind: "$hits" }, { $group: { _id: "$hits", n: { $sum: 1 } } }]
+                    count: [{ $match: { detailed: { $ne: false }, $nor: interacted } }, { $count: "n" }],
+                    hits: [{ $match: { detailed: { $ne: false }, $nor: interacted } },
+                        { $project: { hits: { $setUnion: [{ $ifNull: ["$goal_hits", []] }, []] } } },
+                        { $unwind: "$hits" }, { $group: { _id: "$hits", n: { $sum: 1 } } }],
+                    without_detail: [{ $match: { detailed: false } }, { $count: "n" }],
+                    without_events: [{ $match: { detailed: { $ne: false }, $or: interacted, "events.0": { $exists: false } } }, { $count: "n" }]
                 } }
             ]);
             const inactive = rows[0]?.count[0]?.n || 0;
             return {
                 visits: sessions.length + inactive,
                 inactive,
-                inactive_goal_hits: Object.fromEntries((rows[0]?.hits || []).map(h => [h._id, h.n]))
+                inactive_goal_hits: Object.fromEntries((rows[0]?.hits || []).map(h => [h._id, h.n])),
+                scope: {
+                    from: new Date(from).toISOString(), to: new Date(until).toISOString(),
+                    window_days: WINDOW_DAYS, limit: MAX_SESSIONS_PER_DEVICE,
+                    at_limit: sessions.length === MAX_SESSIONS_PER_DEVICE,
+                    excluded_detail: rows[0]?.without_detail?.[0]?.n || 0,
+                    excluded_events: rows[0]?.without_events?.[0]?.n || 0
+                }
             };
         };
         const meta = {

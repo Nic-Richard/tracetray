@@ -59,7 +59,7 @@ export default function PageScreen() {
         <View style={{ gap: 12 }}>
           <Text style={styles.muted}>
             {analysis
-              ? `Analysis updated ${timeAgo(analysis.ran_at)}. Traffic and goal figures update separately.`
+              ? `Analysis updated ${timeAgo(analysis.ran_at)}. It uses its own period, shown with the findings below. Traffic covers the last 30 days. After a page change, collect new visits before refreshing; a refresh also includes older visits.`
               : "No analysis yet. Refresh to find visitor groups and suggestions."}
           </Text>
           <View style={styles.row}>
@@ -94,11 +94,11 @@ export default function PageScreen() {
             </View>
             <View style={styles.stat}>
               <Text style={styles.number}>{visits.total_sessions ? percent(visits.engagement_rate) : "–"}</Text>
-              <Text style={styles.muted}>Engaged visits</Text>
+              <Text style={styles.muted}>Engaged visits, last 30 days</Text>
             </View>
             <View style={styles.stat}>
               <Text style={styles.number}>{inactiveShare === null ? "–" : percent(inactiveShare)}</Text>
-              <Text style={styles.muted}>Left without interacting</Text>
+              <Text style={styles.muted}>Without interaction, last analysis</Text>
             </View>
           </View>
         </View>
@@ -113,7 +113,7 @@ export default function PageScreen() {
           <ActionRow
             icon="attention"
             title="Attention"
-            detail="See where visitors look and interact"
+            detail="See recorded cursor, scroll and tap activity"
             onPress={() => router.push({ pathname: "/attention", params: { page, site: siteKey } })}
           />
           <View style={styles.divider} />

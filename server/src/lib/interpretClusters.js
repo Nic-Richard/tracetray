@@ -84,8 +84,8 @@ const TRAITS = {
     },
     attention_pause_rate: {
         kind: "rate",
-        up:   { adj: "Careful", noun: "readers", say: (c, b) => asMuch(c / b, "stop to read") },
-        down: { adj: "Restless", noun: "skimmers", say: (c, b) => asMuch(c / b, "stop to read") }
+        up:   { adj: "Careful", noun: "readers", say: (c, b) => asMuch(c / b, "pause scrolling") },
+        down: { adj: "Restless", noun: "skimmers", say: (c, b) => asMuch(c / b, "pause scrolling") }
     },
     avg_attention_pause_ms: {
         kind: "rate",
@@ -107,19 +107,19 @@ const ARCHETYPES = {
     desktop: [
         {
             key: "deep_readers", name: "Deep readers", traits: { pause_rate: 1, avg_cursor_velocity: -1 },
-            meaning: "They're reading closely, so the words on this page matter to them."
+            meaning: "They pause more and move the cursor slowly."
         },
         {
             key: "hesitant", name: "Hesitant browsers", traits: { dwell_before_click: 1, click_rate: -1 },
-            meaning: "They take a long time to decide and often don't click at all, which can mean the options aren't clear."
+            meaning: "They wait longer before clicking and click less often."
         },
         {
             key: "deliberate", name: "Deliberate clickers", traits: { dwell_before_click: 1, click_rate: 1 },
-            meaning: "They take their time, then act."
+            meaning: "They wait longer before the first click, then click more often."
         },
         {
             key: "explorers", name: "Active explorers", traits: { move_density: 1, click_rate: 1, spatial_entropy: 1 },
-            meaning: "They move around and click a lot, which usually means they're looking for something."
+            meaning: "They move the cursor across more of the page and click more often."
         },
         {
             key: "header_scanners", name: "Header scanners", traits: { top_zone_ratio: 1, scroll_depth_reached: -1 },
@@ -127,35 +127,35 @@ const ARCHETYPES = {
         },
         {
             key: "skimmers", name: "Content skimmers", traits: { pause_rate: -1, avg_cursor_velocity: 1 },
-            meaning: "They move fast and rarely stop, so they're skimming rather than reading."
+            meaning: "They move the cursor faster and pause less often."
         },
         {
             key: "passive", name: "Passive visitors", traits: { move_density: -1, click_rate: -1 },
-            meaning: "They barely interact. Some read without touching the mouse; others leave the page open in another tab."
+            meaning: "They move the cursor and click less often."
         },
         {
             key: "bottom_readers", name: "Bottom-of-page readers", traits: { bottom_zone_ratio: 1, scroll_depth_reached: 1 },
-            meaning: "They spend most of their time further down the page."
+            meaning: "They scroll further down and more of their cursor activity is in the bottom third."
         },
         {
             key: "quick_deciders", name: "Quick deciders", traits: { click_rate: 1, dwell_before_click: -1 },
-            meaning: "They know what they want and click fast."
+            meaning: "They click sooner and more often than average."
         },
         {
             key: "rechecking", name: "Re-checkers", traits: { direction_change_rate: 1 },
-            meaning: "They scroll back up to look again, often to compare options or find something they missed."
+            meaning: "They scroll back up more often than average."
         },
         {
             key: "window_shoppers", name: "Window shoppers", traits: { scroll_depth_reached: 1, click_rate: -1 },
-            meaning: "They look through the whole page but rarely click anything."
+            meaning: "They scroll further down the page but click less often."
         },
         {
             key: "searchers", name: "Searchers", traits: { move_density: 1, spatial_entropy: 1, click_rate: -1 },
-            meaning: "They move all over the page without clicking much, as if looking for something they can't find."
+            meaning: "They move the cursor across more of the page without clicking much."
         },
         {
             key: "methodical", name: "Methodical readers", traits: { pause_rate: 1, scroll_depth_reached: 1, avg_cursor_velocity: -1 },
-            meaning: "They work through the page slowly and read most of it."
+            meaning: "They scroll further down, pause more and move the cursor slowly."
         },
         {
             key: "speed_scrollers", name: "Speed scrollers", traits: { scroll_burst_rate: 1, pause_rate: -1 },
@@ -163,13 +163,13 @@ const ARCHETYPES = {
         },
         {
             key: "comparers", name: "Comparison shoppers", traits: { direction_change_rate: 1, click_rate: 1 },
-            meaning: "They go back and forth and click between options."
+            meaning: "They scroll back up and click more often than average."
         }
     ],
     mobile: [
         {
             key: "m_readers", name: "Mobile readers", traits: { attention_pause_rate: 1, scroll_velocity_rate: -1 },
-            meaning: "They stop scrolling often to read."
+            meaning: "They pause scrolling more often and scroll more slowly."
         },
         {
             key: "m_skimmers", name: "Thumb skimmers", traits: { scroll_velocity_rate: 1, attention_pause_rate: -1 },
@@ -177,11 +177,11 @@ const ARCHETYPES = {
         },
         {
             key: "m_tappers", name: "Active tappers", traits: { tap_rate: 1, scroll_depth_reached: 1 },
-            meaning: "They scroll far and tap a lot, so they're engaged and exploring."
+            meaning: "They scroll further down and tap more often."
         },
         {
             key: "m_quick_exits", name: "Quick exits", traits: { tap_rate: -1, scroll_depth_reached: -1 },
-            meaning: "They barely scroll or tap before leaving."
+            meaning: "They scroll less far and tap less often."
         },
         {
             key: "m_hesitant", name: "Hesitant tappers", traits: { dwell_before_tap: 1, tap_rate: -1 },
@@ -189,15 +189,15 @@ const ARCHETYPES = {
         },
         {
             key: "m_rechecking", name: "Re-checkers", traits: { direction_change_rate: 1 },
-            meaning: "They scroll back up to look again."
+            meaning: "They scroll back up more often than average."
         },
         {
             key: "m_deep", name: "Deep scrollers", traits: { scroll_depth_reached: 1 },
-            meaning: "They make it most of the way down the page."
+            meaning: "They scroll further down the page than average."
         },
         {
             key: "m_window_shoppers", name: "Window shoppers", traits: { scroll_depth_reached: 1, tap_rate: -1 },
-            meaning: "They scroll through the whole page but rarely tap anything."
+            meaning: "They scroll further down the page but tap less often."
         },
         {
             key: "m_speed", name: "Speed scrollers", traits: { scroll_burst_rate: 1, attention_pause_rate: -1 },
@@ -205,11 +205,11 @@ const ARCHETYPES = {
         },
         {
             key: "m_lingering", name: "Lingering readers", traits: { avg_attention_pause_ms: 1, attention_pause_rate: 1 },
-            meaning: "They stop often, and for a long time, to read."
+            meaning: "They pause scrolling more often and for longer."
         },
         {
             key: "m_first_screen", name: "First-screen readers", traits: { attention_pause_rate: 1, scroll_depth_reached: -1 },
-            meaning: "They read what's on the first screens and rarely go further."
+            meaning: "They pause scrolling more often and stay nearer the top."
         }
     ]
 };
@@ -351,7 +351,7 @@ function goalStanding(cluster, goal, average) {
 
 function goalSentence(standing, goal, deviceLabel) {
     const against = `against ${pct(standing.average)} of ${deviceLabel} visits`;
-    if (standing.standing === "above") return `${pct(standing.rate)} of them reach ${goal.name}, ${against}, so what they rely on is working.`;
+    if (standing.standing === "above") return `${pct(standing.rate)} of them reach ${goal.name}, ${against}.`;
     if (standing.standing === "below") return standing.reached === 0 ? `None of them reach ${goal.name}, ${against}.` : `Only ${pct(standing.rate)} of them reach ${goal.name}, ${against}.`;
     return "";
 }
@@ -414,15 +414,15 @@ function adviceFor(cluster, story, base, goal, deviceLabel, visits, pagePath) {
     const position = goal.position?.[deviceLabel === "mobile" ? "mobile" : "desktop"];
     if (typeof depth === "number" && typeof position === "number" && depth + 0.05 < position) {
         return {
-            action: `Move ${target} higher, or repeat it before ${pct(depth)} of the way down.`,
-            evidence: `${who} leave about ${pct(depth)} of the way down, but ${target} sits at about ${pct(position)}, so ${reach} (${vs}).`
+            action: `Try moving ${target} higher, or repeating it before ${pct(depth)} of the way down.`,
+            evidence: `${who} scroll about ${pct(depth)} of the way down on average, but ${target} sits at about ${pct(position)}; ${reach} (${vs}).`
         };
     }
     const rival = (cluster.top_clicks || []).find(t => t.share >= 0.25 && !isGoalTarget(goal, t) && leavesPage(t, pagePath));
     if (rival) {
         const exit = rival.text ? `${clickLabel(rival)} (${rival.href})` : `the link to ${rival.href}`;
         return {
-            action: `Look at ${exit}: ${group} leave this page through it.`,
+            action: `Try reviewing how ${exit} fits the path to ${goal.name}.`,
             evidence: `${pct(rival.share)} of ${group} (${pct((cluster.n || 0) / visits)} of ${deviceLabel} visits) follow ${exit}, and ${reach} (${vs}).`,
             rival: clickLabel(rival)
         };
@@ -431,7 +431,7 @@ function adviceFor(cluster, story, base, goal, deviceLabel, visits, pagePath) {
     const waitMs = cluster.feature_means?.[deviceLabel === "mobile" ? "dwell_before_tap" : "dwell_before_click"];
     if (goal.type !== "page" && wait !== null && wait >= 1.5 && waitMs >= 1000) {
         return {
-            action: `Make it clearer what ${target} leads to.`,
+            action: `Try clarifying what ${target} leads to.`,
             evidence: `${who} wait about ${secs(waitMs)} before ${deviceLabel === "mobile" ? "tapping" : "clicking"}, ${wait.toFixed(1)}× the page average, and ${reach} (${vs}).`
         };
     }
@@ -478,7 +478,7 @@ function describeDevice(result, archetypes, deviceLabel, goal = null, pagePath =
 function alikeNote(result, label, goal, goalAverage) {
     const depth = weightedMean(result, "scroll_depth_reached");
     const actions = weightedMean(result, label === "mobile" ? "tap_rate" : "click_rate");
-    const parts = [`No split into groups held up for ${label} visitors on this page, so they're treated as one.`];
+    const parts = [`No reliable groups found among these ${label} visits. The measures below describe them together; this doesn't establish that they all behave alike.`];
     if (depth != null && actions != null) parts.push(`On average they get ${pct(depth)} of the way down the page and ${label === "mobile" ? "tap" : "click"} about ${(actions * 60).toFixed(1)} times a minute.`);
     if (goal && goalAverage != null) parts.push(`${pct(goalAverage)} of ${label} visits reach ${goal.name}.`);
     return parts.join(" ");
@@ -486,26 +486,25 @@ function alikeNote(result, label, goal, goalAverage) {
 
 function dataNote(result) {
     const n = result?.session_count || 0;
-    const visits = `${n.toLocaleString("en-US")} desktop visit${n === 1 ? "" : "s"} with cursor movement`;
+    const visits = `${n.toLocaleString("en-US")} desktop visit${n === 1 ? "" : "s"} with recorded interaction`;
     if (result?.structure === "none") return `Based on ${visits}. Every split was checked against groupless data and on samples of the visits, and none held up.`;
     if (n < MIN_ADVICE_VISITS) return `Based on only ${visits}, too few to suggest changes. Treat these groups as early signs that may change as more visitors arrive.`;
     if (result?.structure === "some") return `Based on ${visits}. The groups overlap, so read the differences between them as tendencies rather than sharp lines.`;
     if (result?.structure === "clear") return `Based on ${visits}. The groups are well separated and held up when re-checked on samples of the data.`;
-    if (n < 200) return `Based on ${visits}. The patterns are meaningful and will sharpen with more traffic.`;
-    return `Based on ${visits}, which is enough to rely on these groups.`;
+    return `Based on ${visits}. Group reliability wasn't recorded in this analysis.`;
 }
 
 function firstImpressionNote(fi) {
     let note = null;
     const delta = fi?.velocity_delta_pct;
     if (delta != null) {
-        if (delta > 20) note = `In the first five seconds visitors move the cursor ${Math.round(delta)}% faster than later on, which usually means they're scanning for something specific before settling in.`;
-        else if (delta < -20) note = `Visitors move ${Math.round(-delta)}% slower in the first five seconds than later on, so they stop to take in the opening section.`;
-        else note = "Visitors move at about the same pace in the first five seconds as later on, so they settle in quickly.";
+        if (delta > 20) note = `In the first five seconds visitors move the cursor ${Math.round(delta)}% faster than later on.`;
+        else if (delta < -20) note = `Visitors move the cursor ${Math.round(-delta)}% more slowly in the first five seconds than later on.`;
+        else note = "Visitors move the cursor at about the same pace in the first five seconds as later on.";
     } else if (fi?.early_pauses_per_min != null && fi.rest_pauses_per_min > 0) {
         const ratio = fi.early_pauses_per_min / fi.rest_pauses_per_min;
-        if (ratio >= 1.5) note = "Visitors pause more often in the first five seconds than later on, so they stop to take in the opening section.";
-        else if (ratio <= 0.67) note = "Visitors pause less in the first five seconds than later on, so they get moving straight away.";
+        if (ratio >= 1.5) note = "Visitors pause cursor movement more often in the first five seconds than later on.";
+        else if (ratio <= 0.67) note = "Visitors pause cursor movement less often in the first five seconds than later on.";
         else note = "Visitors pause about as often in the first five seconds as later on.";
     }
     if (!note) return "There aren't enough longer desktop visits yet to compare the first five seconds with the rest of the visit.";
@@ -536,8 +535,7 @@ function deviceComparison(desktop, mobile) {
 
 function summarise(device, label) {
     if (!device) return "";
-    const Label = label.charAt(0).toUpperCase() + label.slice(1);
-    if (device.structure === "none") return `${Label} visitors behave much alike on this page, so they aren't split into groups.`;
+    if (device.structure === "none") return `No reliable groups found among ${label} visits on this page.`;
     const [first, second] = device.ordered;
     const share = c => pct((c.n || 0) / device.visits);
     const a = device.stories[first.id];
@@ -557,12 +555,15 @@ function interpretClusters({ desktop, mobile = null, pageUrl = null, firstImpres
     for (const item of m?.advice || []) {
         const same = advice.find(a => (a.rival && a.rival === item.rival) || a.action === item.action);
         if (!same) advice.push(item);
-        else if (same.device !== "mobile") same.evidence = `${same.evidence} On phones, ${item.evidence.charAt(0).toLowerCase()}${item.evidence.slice(1)}`;
+        else if (same.device !== "mobile") {
+            same.evidence = `${same.evidence} On phones, ${item.evidence.charAt(0).toLowerCase()}${item.evidence.slice(1)}`;
+            same.devices = ["desktop", "mobile"];
+        }
     }
     advice.splice(2);
 
     let siteSummary = summarise(d, "desktop");
-    if (d?.structure === "none" && m?.structure === "none") siteSummary = "Desktop and phone visitors behave much alike on this page, so they aren't split into groups.";
+    if (d?.structure === "none" && m?.structure === "none") siteSummary = "No reliable groups found among desktop or phone visits on this page.";
     else if (m) siteSummary = `${siteSummary} ${summarise(m, "mobile")}`.trim();
 
     return {

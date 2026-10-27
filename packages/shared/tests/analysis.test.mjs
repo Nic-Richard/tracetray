@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { alikeNote, analysisAdvice, deviceGoal, goalDrivers, inactiveVisits, traitRows, visitCount, visitorIntro, visitorTypes } from "../src/analysis.ts";
+import { alikeNote, analysisAdvice, analysisPeriod, analysisScope, deviceGoal, goalDrivers, groupCountNote, inactiveVisits, traitRows, visitCount, visitorIntro, visitorTypes } from "../src/analysis.ts";
 import { groupColorSlots } from "../src/palette.ts";
 
 function fixture() {
@@ -39,8 +39,8 @@ test("unreliable groups get the alike explanation and no stale suggestions", () 
   result.structure = "none";
   result.interpretation.alike = { desktop: "Visitors behave alike." };
   result.interpretation.advice = [{ action: "Move the button", evidence: "Measured clicks", device: "desktop", group: "Deciders" }];
-  assert.equal(alikeNote(result, "desktop"), "Visitors behave alike.");
-  assert.match(visitorIntro(result, "desktop", 2), /The rest behave much alike/);
+  assert.match(alikeNote(result, "desktop"), /^No reliable groups found/);
+  assert.match(visitorIntro(result, "desktop", 2), /No reliable groups found/);
   assert.deepEqual(analysisAdvice(result), []);
   result.structure = "some";
   result.session_count = 160;
@@ -113,10 +113,37 @@ test("the goal model reads as plain sentences only when it held up", () => {
     { feature: "avg_cursor_velocity", direction: "higher", split: 0.4, rate_above: 0.76, rate_below: 0.21 },
     { feature: "scroll_burst_rate", direction: "lower", split: 0, rate_above: 0.1, rate_below: 0.4 }
   ] };
-  assert.deepEqual(goalDrivers(result, "desktop"), { intro: "Among visits still on the page after 20 seconds:", lines: [
+  const drivers = goalDrivers(result, "desktop");
+  assert.match(drivers.intro, /800 desktop visits \(400 reached the goal, 400 didn't\)/);
+  assert.match(drivers.intro, /count of excluded conversion visits wasn't saved/);
+  assert.deepEqual(drivers.lines, [
     "Those that moved the cursor faster than most by then went on to reach Added to cart 76% of the time, against 21% for the others.",
     "Those that hadn't started scrolling by then went on to reach Added to cart 40% of the time, against 10% for the others."
-  ] });
+  ]);
+  result.goal_model.too_quick = 12;
+  assert.match(goalDrivers(result, "desktop").intro, /12 conversion visits left out/);
+  result.goal_model.window_s = null;
+  assert.match(goalDrivers(result, "desktop").intro, /aren't pre-goal predictors/);
   result.goal_model.status = "weak";
   assert.equal(goalDrivers(result, "desktop"), null);
+});
+
+test("scope keeps device periods and exclusions separate without inventing legacy dates", () => {
+  const result = fixture();
+  assert.match(analysisPeriod(result, "desktop"), /weren't saved/);
+  result.scope = { from: "2026-08-01T01:00:00Z", to: "2026-10-27T00:00:00Z", window_days: 90, limit: 20000, at_limit: true, excluded_detail: 12, excluded_events: 3 };
+  result.mobile = { session_count: 25, inactive_count: 5, clusters: [], scope: { ...result.scope, from: "2026-10-01T00:00:00Z", at_limit: false } };
+  assert.match(analysisScope(result, "desktop"), /80 desktop visits/);
+  assert.match(analysisScope(result, "desktop"), /Aug 1, 2026 to Oct 27, 2026 \(UTC\)/);
+  assert.match(analysisScope(result, "desktop"), /12 visits without full detail and 3 without recorded events excluded/);
+  assert.match(analysisScope(result, "desktop"), /earlier visits are excluded/);
+  assert.match(analysisScope(result, "mobile"), /25 mobile visits/);
+  assert.match(analysisScope(result, "mobile"), /Oct 1, 2026/);
+  assert.match(analysisScope(result, "mobile"), /90-day analysis window/);
+  result.k_rationale = { goal_informed: true };
+  assert.match(groupCountNote(result, "desktop"), /Goal outcomes helped choose/);
+  result.k_rationale.goal_informed = false;
+  assert.equal(groupCountNote(result, "desktop"), null);
+  delete result.k_rationale.goal_informed;
+  assert.match(groupCountNote(result, "desktop"), /doesn't record whether/);
 });

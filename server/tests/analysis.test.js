@@ -5,6 +5,30 @@ const path = require("node:path");
 const vm = require("node:vm");
 const { runProcess } = require("../src/lib/runProcess");
 
+test("saved rule-based analyses get current wording on read without rewriting stored results", async () => {
+    const saved = { site_key: "tt_test", page: "/products", session_count: 100, structure: "none", clusters: [{ id: 0, n: 100, feature_means: {} }],
+        interpretation: { source: "rules", site_summary: "Visitors behave alike", first_impression_note: "Numeric first-impression note" } };
+    let query;
+    const lib = { exports: {} };
+    vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, "../src/lib/siteData.js"), "utf8"), {
+        require(name) {
+            if (name === "../db/models") return { AnalysisResult: { findOne(filter) {
+                query = filter;
+                return { sort: () => ({ lean: async () => structuredClone(saved) }) };
+            } } };
+            if (name === "./interpretClusters") return require("../src/lib/interpretClusters");
+            return {};
+        },
+        module: lib,
+    });
+    const result = await lib.exports.latestAnalysis("tt_test", "/products");
+    assert.equal(query.site_key, "tt_test");
+    assert.equal(query.page, "/products");
+    assert.match(result.interpretation.site_summary, /^No reliable groups found/);
+    assert.equal(result.interpretation.first_impression_note, null);
+    assert.equal(saved.interpretation.site_summary, "Visitors behave alike");
+});
+
 test("process output is returned only on a successful exit", async () => {
     const result = await runProcess(process.execPath, ["-e", "console.log('done')"]);
     assert.equal(result.stdout.trim(), "done");
@@ -221,4 +245,12 @@ test("goal windows never include the goal itself and both sides use the same win
     assert.ok(Object.values(rows.buyer.windows).every(w => !w.clicks.includes("Add to cart")));
     assert.deepEqual(Object.keys(rows.browser.windows), ["5", "10", "20", "40"]);
     assert.equal(rows.browser.goal_after_ms, null);
+    const meta = JSON.parse(written["dataset_tt_test_meta.json"]);
+    assert.equal(meta.desktop.scope.from, new Date(start).toISOString());
+    assert.ok(Date.parse(meta.desktop.scope.to) > start);
+    assert.equal(meta.desktop.scope.window_days, 90);
+    assert.equal(meta.desktop.scope.limit, 20000);
+    assert.equal(meta.desktop.scope.at_limit, false);
+    assert.equal(meta.desktop.scope.excluded_detail, 0);
+    assert.equal(meta.desktop.scope.excluded_events, 0);
 });

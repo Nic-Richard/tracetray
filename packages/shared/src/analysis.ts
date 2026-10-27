@@ -69,7 +69,41 @@ export function inactiveVisits(result: AnalysisResult | null | undefined, device
 
 export function alikeNote(result: AnalysisResult | null | undefined, device: Device): string | null {
   if (deviceAnalysis(result, device)?.structure !== "none") return null;
-  return interpretationOf(result)?.alike?.[device] || "No split into groups held up for these visitors, so they're treated as one.";
+  return "No reliable groups found. These measures describe the visits together; this doesn't establish that everyone behaves alike.";
+}
+
+function scopeDate(value: string): string | null {
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }) : null;
+}
+
+export function analysisPeriod(result: AnalysisResult, device: Device): string {
+  const scope = deviceAnalysis(result, device)?.scope;
+  const from = scope && scopeDate(scope.from), to = scope && scopeDate(scope.to);
+  return from && to ? `${from} to ${to} (UTC)` : "Dates weren't saved for this analysis";
+}
+
+export function analysisScope(result: AnalysisResult, device: Device): string {
+  const source = deviceAnalysis(result, device);
+  const scope = source?.scope;
+  const parts = [`${(source?.session_count || 0).toLocaleString()} ${device} visits with recorded interaction. ${analysisPeriod(result, device)}.`];
+  parts.push(source?.inactive_count == null ? "Visits without recorded interaction are excluded from grouping; their count wasn't saved."
+    : `${source.inactive_count.toLocaleString()} visits without recorded interaction excluded from grouping, included in overall goal rates and group shares.`);
+  if (scope) {
+    parts.push(`${scope.excluded_detail.toLocaleString()} visits without full detail and ${scope.excluded_events.toLocaleString()} without recorded events excluded.`);
+    parts.push(scope.at_limit ? `Sample limited to the latest ${scope.limit.toLocaleString()} interacting visits; earlier visits are excluded.` : `Uses available visits within the ${scope.window_days}-day analysis window.`);
+  } else {
+    parts.push("Other exclusion counts weren't saved.");
+  }
+  return parts.join(" ");
+}
+
+export function groupCountNote(result: AnalysisResult, device: Device): string | null {
+  const source = deviceAnalysis(result, device);
+  if (!result.goal || !source?.clusters.length || source.structure === "none" || source.k_rationale?.goal_informed === false) return null;
+  return source.k_rationale?.goal_informed === true
+    ? "Goal outcomes helped choose the group count. Differences in goal rates are exploratory and haven't been confirmed on later visits."
+    : "This saved analysis doesn't record whether the goal helped choose the group count. Differences in goal rates haven't been confirmed on later visits.";
 }
 
 /** The page's goal rate across every visit on the device, including those that never interacted. */
@@ -104,7 +138,7 @@ export function visitorIntro(result: AnalysisResult, device: Device, groups: num
   const inactive = source.inactive_count || 0;
   const lead = `${visits.toLocaleString()} ${device} visits`;
   const left = inactive ? `${inactive.toLocaleString()} left without interacting. ` : "";
-  if (source.structure === "none") return `${lead}. ${left}${inactive ? "The rest" : "They"} behave much alike, so they're described as one.`;
+  if (source.structure === "none") return `${lead}. ${left}No reliable groups found among the visits with recorded interaction.`;
   const sorted = `${inactive ? `The other ${source.session_count.toLocaleString()}` : "They"} are sorted into ${groups} groups by how people ${device === "mobile" ? "scrolled, paused and tapped" : "moved, paused, clicked and scrolled"}.`;
   const caution = source.session_count < MIN_ADVICE_VISITS
     ? " That's too few visits to suggest changes, so read the groups as early signs."
@@ -140,8 +174,8 @@ const MEASURES: Record<string, { label: string; format: (value: number) => strin
   scroll_depth_reached: { label: "How far down", format: percentage },
   direction_change_rate: { label: "Scrolls back up a minute", format: perMinute },
   scroll_velocity_rate: { label: "Scroll speed", format: value => `${value.toFixed(2)} px/ms` },
-  attention_pause_rate: { label: "Reading stops a minute", format: perMinute },
-  avg_attention_pause_ms: { label: "Typical reading stop", format: seconds }
+  attention_pause_rate: { label: "Scroll pauses a minute", format: perMinute },
+  avg_attention_pause_ms: { label: "Typical scroll pause", format: seconds }
 };
 
 export function traitRows(traits: Trait[]) {
@@ -171,13 +205,13 @@ const DRIVER_WORDS: Record<string, { higher: string; lower: string; some?: strin
   dwell_before_click: { higher: "waited longer before clicking", lower: "clicked sooner than most" },
   dwell_before_tap: { higher: "waited longer before tapping", lower: "tapped sooner than most" },
   spatial_entropy: { higher: "moved around more of the page", lower: "kept to one part of the page" },
-  top_zone_ratio: { higher: "spent more of their time at the top", lower: "spent less of their time at the top" },
-  bottom_zone_ratio: { higher: "spent more of their time at the bottom", lower: "spent less of their time at the bottom" },
+  top_zone_ratio: { higher: "had more of their cursor activity at the top", lower: "had less of their cursor activity at the top" },
+  bottom_zone_ratio: { higher: "had more of their cursor activity at the bottom", lower: "had less of their cursor activity at the bottom" },
   direction_change_rate: { higher: "scrolled back up more than most", lower: "scrolled back up less than most", some: "scrolled back up", none: "hadn't scrolled back up" },
   scroll_burst_rate: { higher: "scrolled in more separate bursts", lower: "scrolled in fewer bursts", some: "had started scrolling", none: "hadn't started scrolling" },
   scroll_velocity_rate: { higher: "scrolled faster than most", lower: "scrolled more slowly than most" },
-  attention_pause_rate: { higher: "stopped to read more often", lower: "stopped to read less often" },
-  avg_attention_pause_ms: { higher: "stopped to read for longer", lower: "stopped to read more briefly" },
+  attention_pause_rate: { higher: "paused scrolling more often", lower: "paused scrolling less often" },
+  avg_attention_pause_ms: { higher: "paused scrolling for longer", lower: "paused scrolling more briefly" },
 };
 
 /** Plain sentences on what goes with reaching the page's goal, when the model held up; null otherwise. Windowed
@@ -196,5 +230,10 @@ export function goalDrivers(result: AnalysisResult | null | undefined, device: D
     return [`${who} ${goal} ${percentage(withIt)} of the time, against ${percentage(without)} for the others.`];
   });
   if (!lines.length) return null;
-  return { intro: model.window_s ? `Among visits still on the page after ${model.window_s} seconds:` : null, lines };
+  const count = model.reached + model.missed;
+  const scope = `${count.toLocaleString()} ${device} visits (${model.reached.toLocaleString()} reached the goal, ${model.missed.toLocaleString()} didn't). ${analysisPeriod(result!, device)}.`;
+  const quick = model.too_quick == null ? "The count of excluded conversion visits wasn't saved." : `${model.too_quick.toLocaleString()} conversion visits left out because the full pre-goal window wasn't available.`;
+  return { intro: model.window_s
+    ? `Among visits still on the page after ${model.window_s} seconds, with no goal reached yet: ${scope} ${quick} Shorter visits and visits without a full recorded window are excluded.`
+    : `${scope} Uses whole visits, so behaviour may include the goal action and what happened afterwards; these aren't pre-goal predictors.`, lines };
 }

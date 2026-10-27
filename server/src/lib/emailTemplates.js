@@ -78,7 +78,7 @@ function siteLines(site) {
         lines.push(line);
     }
     for (const win of site.wins || []) {
-        lines.push(`A win: after your change to ${pathOf(win.page)} on ${formatDay(win.day)}${win.note ? ` (${win.note})` : ""}, ${win.goal} went from ${rate(win.before)} to ${rate(win.after)}.`);
+        lines.push(`Around your change to ${pathOf(win.page)} on ${formatDay(win.day)}${win.note ? ` (${win.note})` : ""}, ${win.goal} rose from ${rate(win.before)} to ${rate(win.after)}. The difference exceeds the comparison's sampling threshold, but this doesn't establish that the change caused it.`);
     }
     return lines;
 }

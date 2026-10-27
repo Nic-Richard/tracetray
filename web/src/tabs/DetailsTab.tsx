@@ -1,6 +1,8 @@
 import type { AnalysisResult, DeviceAnalysis } from "@tracetray/shared";
 import { visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
+import AnalysisScope from "../components/AnalysisScope";
+import { groupCountNote } from "@tracetray/shared";
 
 const UNITS: Record<string, string> = {
   pause_rate: "per s", click_rate: "per s", move_density: "per s", direction_change_rate: "per s", scroll_burst_rate: "per s",
@@ -11,9 +13,9 @@ const UNITS: Record<string, string> = {
 
 const NAMES: Record<string, string> = {
   pause_rate: "Pauses", click_rate: "Clicks", move_density: "Cursor moves", direction_change_rate: "Scrolls back up",
-  scroll_burst_rate: "Scroll bursts", tap_rate: "Taps", attention_pause_rate: "Reading stops", distance_per_move: "Distance per cursor move",
+  scroll_burst_rate: "Scroll bursts", tap_rate: "Taps", attention_pause_rate: "Scroll pauses", distance_per_move: "Distance per cursor move",
   avg_cursor_velocity: "Cursor speed", scroll_velocity_rate: "Scroll speed", dwell_before_click: "Wait before clicking",
-  dwell_before_tap: "Wait before tapping", avg_attention_pause_ms: "Typical reading stop", spatial_entropy: "Cursor spread",
+  dwell_before_tap: "Wait before tapping", avg_attention_pause_ms: "Typical scroll pause", spatial_entropy: "Cursor spread",
   top_zone_ratio: "Cursor time in the top third", centre_zone_ratio: "Cursor time in the middle third",
   bottom_zone_ratio: "Cursor time in the bottom third", scroll_depth_reached: "How far down"
 };
@@ -58,6 +60,8 @@ function Model({ title, data, result, device }: { title: string; data: DeviceAna
         </span></div>
       </div>
       {verdict && <p className="panel-note">{verdict}</p>}
+      <AnalysisScope result={result} device={device} />
+      {groupCountNote(result, device) && <p className="panel-note">{groupCountNote(result, device)}</p>}
       <div className="table-scroll">
         <table className="details-table">
           <thead>

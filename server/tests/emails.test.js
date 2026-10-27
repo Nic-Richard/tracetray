@@ -117,7 +117,9 @@ test("the weekly email reports each goal, with best weeks, targets, milestones a
     assert.match(email.text, /Checkout: 4\.1% of visits reached it, against 3\.6% the week before\. Your best week yet\. That's at or above your 4\.0% target\. It has now been reached 1,000 times\./);
     assert.match(email.text, /<b>Signup<\/b>: 12% of visits reached it\./);
     assert.ok(!email.html.includes("<b>Signup</b>"));
-    assert.match(email.text, /A win: after your change to Home on October 5, 2026 \(New hero\), Checkout went from 3\.1% to 4\.6%\./);
+    assert.match(email.text, /Around your change to Home on October 5, 2026 \(New hero\), Checkout rose from 3\.1% to 4\.6%\./);
+    assert.match(email.text, /doesn't establish that the change caused it/);
+    assert.doesNotMatch(email.text, /A win/);
 });
 
 test("milestones count the biggest round number a goal passed", () => {

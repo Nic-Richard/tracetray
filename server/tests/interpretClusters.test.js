@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { interpretClusters, guessPageType } = require("../src/lib/interpretClusters");
+const { interpretClusters, guessPageType, ARCHETYPES } = require("../src/lib/interpretClusters");
 
 const cluster = (id, n, feature_means) => ({ id, n, feature_means });
 const significant = (...features) => features.map(feature => ({ feature, significant: "yes" }));
@@ -30,6 +30,13 @@ test("the same data always gets the same names", () => {
     assert.deepEqual(a, b);
 });
 
+test("group descriptions name recorded behaviour without inferring reading or intent", () => {
+    const descriptions = Object.values(ARCHETYPES).flat().map(a => a.meaning).join(" ");
+    assert.doesNotMatch(descriptions, /know what|reading closely|to read|they're looking|can't find|options aren't clear|engaged and exploring/i);
+    assert.equal(ARCHETYPES.desktop.find(a => a.key === "quick_deciders").meaning, "They click sooner and more often than average.");
+    assert.equal(ARCHETYPES.desktop.find(a => a.key === "deep_readers").meaning, "They pause more and move the cursor slowly.");
+});
+
 test("a group close to the page average is called typical", () => {
     const result = interpretClusters({ desktop: { session_count: 90, clusters: [
         cluster(0, 30, { pause_rate: 0.5, click_rate: 0.05, move_density: 1 }),
@@ -57,9 +64,9 @@ test("a group falling short gets a suggestion only when its numbers say why", ()
         { ...cluster(2, 100, { scroll_depth_reached: 0.95, click_rate: 0.12 }), goal_hits: { g1: 3 }, top_clicks: [{ text: null, href: "/cart", id: null, share: 0.6 }, { text: "Join the list", href: "/signup", id: null, share: 0.7 }] },
     ] }, pageUrl: "https://shop.example/products/boot", goal });
     const [early, busy] = result.advice;
-    assert.match(early.action, /^Move the link to \/cart higher, or repeat it before 45% of the way down\.$/);
-    assert.match(early.evidence, /leave about 45% of the way down, but the link to \/cart sits at about 80%/);
-    assert.match(busy.action, /^Look at “Join the list” \(\/signup\): .+ leave this page through it\.$/);
+    assert.match(early.action, /^Try moving the link to \/cart higher, or repeating it before 45% of the way down\.$/);
+    assert.match(early.evidence, /scroll about 45% of the way down on average, but the link to \/cart sits at about 80%/);
+    assert.match(busy.action, /^Try reviewing how “Join the list” \(\/signup\) fits the path to checkout\.$/);
     assert.match(busy.evidence, /^70% of .* follow “Join the list” \(\/signup\), and only 3% reach checkout/);
     assert.deepEqual(result.cluster_stories[0].suggestions, []);
 
@@ -88,7 +95,8 @@ test("the same suggestion on desktop and phones is given once, with both groups'
     const result = interpretClusters({ desktop: device(2700, "dwell_before_click"), mobile: device(4200, "dwell_before_tap"),
         pageUrl: "https://shop.example/products/boot", goal });
     assert.equal(result.advice.length, 1);
-    assert.equal(result.advice[0].action, "Make it clearer what “Add to cart” leads to.");
+    assert.equal(result.advice[0].action, "Try clarifying what “Add to cart” leads to.");
+    assert.deepEqual(result.advice[0].devices, ["desktop", "mobile"]);
     assert.match(result.advice[0].evidence, /of desktop visits\) wait about 2\.7 s before clicking.+ On phones, .+of mobile visits\) wait about 4\.2 s before tapping/);
 });
 
@@ -155,11 +163,11 @@ test("with a goal, groups that clearly reach it more are called working and the 
     const result = interpretClusters({ desktop: withGoal, pageUrl: "https://example.com/", goal: { id: "g1", name: "checkout", type: "click", match: { text: "Checkout" }, position: { desktop: 0.6 } } });
     const [readers, scanners] = [result.cluster_stories[0], result.cluster_stories[1]];
     assert.equal(readers.goal.standing, "above");
-    assert.match(readers.body, /^50% of them reach checkout, against 31% of desktop visits, so what they rely on is working\./);
+    assert.match(readers.body, /^50% of them reach checkout, against 31% of desktop visits\./);
     assert.deepEqual(readers.suggestions, []);
     assert.equal(scanners.goal.standing, "below");
     assert.match(scanners.body, /Only 4% of them reach checkout/);
-    assert.match(scanners.suggestions[0], /^Move “Checkout” higher/);
+    assert.match(scanners.suggestions[0], /^Try moving “Checkout” higher/);
     assert.equal(result.top_suggestions[0], scanners.suggestions[0]);
     assert.match(result.site_summary, /^58% of desktop visitors are methodical readers\./);
 });
@@ -176,7 +184,7 @@ test("visits that never interacted count toward the goal average, and a group th
 
 test("when no grouping holds up, visitors are described as alike and no group is acted on", () => {
     const result = interpretClusters({ desktop: { ...readerAndScanner, structure: "none" }, pageUrl: "https://example.com/" });
-    assert.match(result.site_summary, /^Desktop visitors behave much alike/);
+    assert.match(result.site_summary, /^No reliable groups found among desktop visits/);
     assert.match(result.data_note, /none held up/);
     assert.deepEqual(result.top_suggestions, []);
 });

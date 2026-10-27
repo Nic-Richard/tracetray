@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type React from "react";
-import { goalDrivers, pagePath, percent, visitCount, visitorIntro, type AnalysisResult, type Device } from "@tracetray/shared";
+import { goalDrivers, groupCountNote, pagePath, percent, visitCount, visitorIntro, type AnalysisResult, type Device } from "@tracetray/shared";
+import AnalysisScope from "../components/AnalysisScope";
 import { alikeNote, deviceAnalysis, inactiveVisits, INACTIVE_TEXT, visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
 import TraitBars from "../components/TraitBars";
@@ -29,6 +30,8 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
           <button type="button" className={device === "mobile" ? "on" : ""} onClick={() => setDevice("mobile")} disabled={!hasMobile}>Mobile</button>
         </div>
       </div>
+      <AnalysisScope result={result} device={device} />
+      {groupCountNote(result, device) && <p className="note">{groupCountNote(result, device)}</p>}
       {types.length === 0 ? (
         <section className="panel"><p className="empty">{source?.failure?.message || `Not enough ${device} visits yet to sort them into groups.`}</p></section>
       ) : (
@@ -36,7 +39,7 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
           {alike ? (
             <section className="panel type-card" style={{ "--type": "var(--d1)", "--fill": "var(--d1)" } as React.CSSProperties}>
               <div className="panel-head">
-                <h2>Visitors behave alike</h2>
+                <h2>No reliable groups found</h2>
                 <div className="end"><span className="share num">{Math.round((1 - (inactive?.share || 0)) * 100)}%</span></div>
               </div>
               <div className="panel-body type-body">
@@ -57,7 +60,7 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
               </div>
               <div className="panel-body type-body">
                 <div className="meter" aria-hidden="true"><i style={{ width: `${type.share * 100}%` }} /></div>
-                <p className="muted">{type.sessions.toLocaleString()} visits{type.age ? ` · ${type.age}` : ""}</p>
+                <p className="muted">{type.sessions.toLocaleString()} {device} visits{type.age ? ` · ${type.age}` : ""}</p>
                 {type.story?.goal && (
                   <p className="group-goal">
                     <span className={`verdict ${type.story.goal.standing === "above" ? "better" : type.story.goal.standing === "below" ? "worse" : ""}`}>{rate(type.story.goal.rate)} reached {type.story.goal.name}</span>

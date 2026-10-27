@@ -451,7 +451,7 @@ def main(device, site_key):
     print(f"\nTraceTray - behavioural clustering ({device})")
     df_raw = load_dataset(DATASET_DIR, site_key, device)
     n_sessions = len(df_raw)
-    what = "desktop visits with cursor movement" if device == "desktop" else "phone visits with scrolling or tapping"
+    what = "desktop visits with recorded interaction" if device == "desktop" else "phone visits with scrolling or tapping"
 
     if n_sessions == 0:
         return failure("no_sessions", 0, MIN_GROUP_SIZE * 2, f"No {what} have been recorded on this page yet.")
@@ -462,7 +462,7 @@ def main(device, site_key):
         needed = min_size * 2
         noun = "desktop visit" if device == "desktop" else "phone visit"
         return failure("insufficient_data", n_sessions, needed,
-            f"{n_sessions} {noun}{'' if n_sessions == 1 else 's'} on this page had enough {'cursor movement' if device == 'desktop' else 'scrolling or tapping'} to study. TraceTray needs at least {needed} to sort visitors into groups.")
+            f"{n_sessions} {noun}{'' if n_sessions == 1 else 's'} on this page had enough recorded interaction to study. TraceTray needs at least {needed} to sort visitors into groups.")
 
     if device == "desktop":
         df = engineer_desktop_features(df_raw)
@@ -473,7 +473,7 @@ def main(device, site_key):
 
     X, used, T = clustering_matrix(df, engineered)
     if X is None:
-        return failure("no_variation", n_sessions, n_sessions, f"Every {what.split(' with ')[0][:-1]} on this page behaved the same way, so there are no groups to find.")
+        return failure("no_variation", n_sessions, n_sessions, "No reliable groups found: the recorded measures don't vary across these visits.")
 
     goal = json.loads(os.environ.get("TRACETRAY_GOAL") or "null")
     reached = df_raw["goal_hits"].apply(lambda hits: isinstance(hits, list) and goal["id"] in hits).to_numpy()         if goal and "goal_hits" in df_raw.columns else None
@@ -510,7 +510,8 @@ def main(device, site_key):
         "spread": dict(zip(used, T.std(axis=0).round(4).tolist())),
         "centres": {int(c): dict(zip(used, T[km_labels == c].mean(axis=0).round(4).tolist())) for c in set(km_labels)},
         "snapshot": snapshot(df, km_labels),
-        "goal_model": model
+        "goal_model": model,
+        "goal_informed_k": reached is not None
     }
     return df_out, km_labels, cluster_means, k_metrics, quality
 
@@ -529,7 +530,7 @@ if __name__ == "__main__":
     df_out, km_labels, cluster_means, k_metrics, info = main(args.device, site_key)
 
     if args.json_summary:
-        visits = {"visit_count": meta.get("visits"), "inactive_count": meta.get("inactive"), "inactive_goal_hits": meta.get("inactive_goal_hits") or {}}
+        visits = {"visit_count": meta.get("visits"), "inactive_count": meta.get("inactive"), "inactive_goal_hits": meta.get("inactive_goal_hits") or {}, "scope": meta.get("scope")}
         if df_out is None:
             info = info or {"reason": "unknown", "message": "Clustering could not be completed."}
             print(f"TRACETRAY_RESULT: {json.dumps(json_safe({'session_count': info.get('have', 0), 'k': 0, 'silhouette_score': None, 'clusters': [], 'kruskal_wallis': [], 'k_rationale': {}, 'device': args.device, 'failure': info, **visits}), allow_nan=False)}")
@@ -576,6 +577,7 @@ if __name__ == "__main__":
                 "null_silhouette_max": info["null_silhouette_max"],
                 "small_groups":        info["small_groups"],
                 "features_used":       info["features_used"],
+                "goal_informed":       info["goal_informed_k"],
                 "selection_basis":     f"smallest k within {SILHOUETTE_TOLERANCE} of the best silhouette, at most {MAX_GROUPS} groups of at least {info['min_group_size']} visits"
             },
             **visits

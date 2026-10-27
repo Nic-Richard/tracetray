@@ -121,13 +121,20 @@ export interface ChangeMeasures {
   phoneShare: number | null;
 }
 
+export interface ComparisonGroupScope {
+  ran_at: string;
+  visits: number;
+  from: string | null;
+  to: string | null;
+}
+
 export interface ChangeComparison {
   /** False until a full day has passed since the change. */
   ready: boolean;
   days: number;
   before?: ChangeMeasures;
   after?: ChangeMeasures;
-  groups?: { before: { group: string; share: number }[] | null; after: { group: string; share: number }[] | null };
+  groups?: { before: { group: string; share: number }[] | null; after: { group: string; share: number }[] | null; before_scope?: ComparisonGroupScope | null; after_scope?: ComparisonGroupScope | null };
   /** The page's main goal; "unclear" until 30 visits have reached it across both sides. */
   goal?: { id: string; name: string; before: number | null; after: number | null; reached: number; verdict: "better" | "worse" | "same" | "unclear" } | null;
 }
@@ -156,6 +163,9 @@ export interface Win {
   goal: string;
   before: number | null;
   after: number | null;
+  days?: number;
+  before_visits?: number;
+  after_visits?: number;
 }
 
 export type EmailList = "weekly_summary" | "shift_alerts";
@@ -293,11 +303,11 @@ export interface Interpretation {
   mobile_cluster_stories?: Record<string, ClusterStory>;
   top_suggestions?: string[];
   /** Suggestions with the numbers behind them; only for groups that clearly fall short of the goal. */
-  advice?: { action: string; evidence: string; device: "desktop" | "mobile"; group: string }[];
+  advice?: { action: string; evidence: string; device: "desktop" | "mobile"; devices?: Device[]; group: string }[];
   /** Set for a device whose visitors didn't split into reliable groups: a description of them as one. */
   alike?: { desktop: string | null; mobile: string | null };
   data_note?: string;
-  first_impression_note?: string;
+  first_impression_note?: string | null;
   device_comparison?: string;
 }
 
@@ -327,10 +337,12 @@ export interface GoalModel {
   missed: number;
   /** Seconds from the start of each visit that were compared; null when whole visits were. */
   window_s: number | null;
+  too_quick?: number;
   drivers?: GoalDriver[];
 }
 
 export interface DeviceAnalysis {
+  scope?: { from: string; to: string; window_days: number; limit: number; at_limit: boolean; excluded_detail: number; excluded_events: number } | null;
   session_count: number;
   k: number;
   silhouette_score?: number;
@@ -438,6 +450,7 @@ export interface PageShotInfo {
 }
 
 export interface AttentionProfile {
+  samples?: Record<Device, { visits: number; from: string | null; to: string | null; limit: number }>;
   depth_profile: { band: number; depth: number; weight: number; share: number }[];
   total_moves: number;
   sessions: number;
@@ -447,6 +460,7 @@ export interface AttentionProfile {
   phone_reading?: { visits: number; bands: number[] } | null;
   shots?: Partial<Record<"desktop" | "mobile", PageShotInfo>>;
   first_impression: {
+    speed_visits?: number;
     window_ms: number;
     velocity_delta_pct: number | null;
     early_pauses_per_min: number | null;

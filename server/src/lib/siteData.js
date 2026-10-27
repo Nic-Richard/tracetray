@@ -1,6 +1,7 @@
 const { Session, AnalysisResult } = require("../db/models");
 const { ENGAGED } = require("./tracking");
 const { windowMeasures } = require("./compare");
+const { interpretClusters } = require("./interpretClusters");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -44,8 +45,13 @@ async function getVisitQuality(siteKey, page) {
     return { total, without_interaction: total - interactive, under_3_seconds: short };
 }
 
-function latestAnalysis(siteKey, page) {
-    return AnalysisResult.findOne({ site_key: siteKey, page: analysisPageFilter(page) }).sort({ ran_at: -1 }).lean();
+async function latestAnalysis(siteKey, page) {
+    const result = await AnalysisResult.findOne({ site_key: siteKey, page: analysisPageFilter(page) }).sort({ ran_at: -1 }).lean();
+    if (result?.interpretation?.source === "rules") {
+        result.interpretation = interpretClusters({ desktop: result, mobile: result.mobile, pageUrl: result.page, goal: result.goal });
+        result.interpretation.first_impression_note = null;
+    }
+    return result;
 }
 
 async function getTimeseries(siteKey, { days = 14, page = null } = {}) {

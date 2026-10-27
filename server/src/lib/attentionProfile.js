@@ -31,10 +31,10 @@ function attentionInsight({ top, middle, bottom }) {
     if (share >= 0.5 && share >= ranked[1][1] * 1.25) {
         if (lead === "top") return `Most cursor activity happens near the top: ${p(share)} of it is in the top third of the page.`;
         if (lead === "middle") return `Cursor activity gathers in the middle of the page, with ${p(share)} in the middle third.`;
-        return `Visitors spend much of their time low on the page: ${p(share)} of cursor activity is in the bottom third.`;
+        return `Cursor activity gathers low on the page: ${p(share)} is in the bottom third.`;
     }
     if (quietShare < 0.01) return `Almost no cursor activity reaches the ${quiet} third of the page.`;
-    if (quietShare < 0.12) return `The ${quiet} third of the page gets little attention: only ${p(quietShare)} of cursor activity happens there.`;
+    if (quietShare < 0.12) return `The ${quiet} third of the page gets little cursor activity: ${p(quietShare)} happens there.`;
     return "Cursor activity is spread fairly evenly from the top of the page to the bottom.";
 }
 
@@ -101,7 +101,7 @@ async function computeAttentionProfile(siteKey, page) {
         events_trimmed_at: { $exists: false },
         "events.0": { $exists: true },
         ...(page ? { page } : {})
-    }, { events: 1, _id: 0 }).sort({ start_time: -1 }).limit(RECENT_SESSION_LIMIT).lean();
+    }, { events: 1, start_time: 1, _id: 0 }).sort({ start_time: -1 }).limit(RECENT_SESSION_LIMIT).lean();
 
     const bands = new Array(BANDS).fill(0);
     const earlyBands = new Array(BANDS).fill(0);
@@ -148,13 +148,20 @@ async function computeAttentionProfile(siteKey, page) {
     const enoughSpeed = speedVisits >= 5;
     const enoughPauses = earlySeconds >= 25 && restSeconds > 0;
 
+    const sampleOf = rows => {
+        const starts = rows.map(s => Number(s.start_time)).filter(Number.isFinite);
+        return { visits: rows.length, from: starts.length ? new Date(Math.min(...starts)).toISOString() : null,
+            to: starts.length ? new Date(Math.max(...starts)).toISOString() : null, limit: RECENT_SESSION_LIMIT };
+    };
     return {
+        samples: { desktop: sampleOf(sessions), mobile: sampleOf(phoneSessions) },
         depth_profile: bands.map((weight, i) => ({ band: i, depth: i / BANDS, weight: weight / maxBand, share: visits ? weight / visits : 0 })),
         total_moves: totalMoves,
         sessions: visits,
         insight: visits ? attentionInsight(zones) : null,
         zone_breakdown: zones,
         first_impression: {
+            speed_visits: speedVisits,
             window_ms: FIRST_IMPRESSION_MS,
             velocity_delta_pct: enoughSpeed && restSpeedSum > 0 ? ((earlySpeedSum - restSpeedSum) / restSpeedSum) * 100 : null,
             early_pauses_per_min: enoughPauses ? (earlyPauses / earlySeconds) * 60 : null,

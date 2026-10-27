@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
-import { COMPARISON_ROWS, COMPARISON_MIN_VISITS, comparisonRate, comparisonVerdict, percent } from "@tracetray/shared";
+import { COMPARISON_ROWS, COMPARISON_MIN_VISITS, comparisonGoalSummary, comparisonGroupScope, comparisonPeriods, comparisonRate, comparisonVerdict, percent } from "@tracetray/shared";
 import { useApi } from "../lib/api";
 import { useLoad } from "../lib/useLoad";
 import { useTheme } from "../lib/theme";
@@ -56,12 +56,8 @@ export default function ChangeComparison({ site, page, day }: { site: string; pa
         {data.days} {data.days === 1 ? "day" : "days"} before {day} against the same number from it (UTC):{" "}
         {before.visits.toLocaleString()} visits before, {after.visits.toLocaleString()} after.
       </Text>
-      {goal?.verdict === "better" ? (
-        <Text style={[styles.text, { color: colors.good }]}>
-          A win. {goal.name} went from {comparisonRate(goal.before)} to {comparisonRate(goal.after)} of visits after
-          this change, more than chance would explain.
-        </Text>
-      ) : null}
+      <Text style={styles.muted}>{comparisonPeriods(day, data.days)}</Text>
+      {goal ? <Text style={styles.text}>{comparisonGoalSummary(goal)}</Text> : null}
       {goal ? (
         row(
           `Reached ${goal.name}`,
@@ -70,10 +66,10 @@ export default function ChangeComparison({ site, page, day }: { site: string; pa
           goal.verdict === "unclear"
             ? "Too early to tell"
             : goal.verdict === "same"
-              ? "About the same"
+              ? "No clear difference"
               : goal.verdict === "better"
-                ? "Better"
-                : "Worse",
+                ? "Higher rate"
+                : "Lower rate",
           goal.verdict,
         )
       ) : (
@@ -90,11 +86,11 @@ export default function ChangeComparison({ site, page, day }: { site: string; pa
           measure.format(b),
           measure.format(a),
           verdict === "same"
-            ? "About the same"
+            ? "Little change"
             : verdict === "better"
-              ? "Better"
+              ? "Rose"
               : verdict === "worse"
-                ? "Worse"
+                ? "Fell"
                 : delta,
           verdict,
         );
@@ -108,6 +104,7 @@ export default function ChangeComparison({ site, page, day }: { site: string; pa
         Scroll depth and clicks don't get a verdict because either direction can be good: shallower scrolling or fewer
         clicks can mean people find what they need sooner, or that they give up earlier.
       </Text>
+      <Text style={styles.muted}>Other measures show observed changes only; their labels don't include a statistical uncertainty test.</Text>
       {!judged ? (
         <Text style={styles.muted}>
           Fewer than {COMPARISON_MIN_VISITS} visits on one side, so these differences could easily be chance. They get
@@ -122,6 +119,9 @@ export default function ChangeComparison({ site, page, day }: { site: string; pa
       ) : null}
       <View style={styles.panel}>
         <Text style={styles.heading}>Visitor groups</Text>
+        <Text style={styles.muted}>Group snapshots use their own analysis periods and may overlap. They don't isolate visits before and after this change.</Text>
+        {groups?.before ? <Text style={styles.muted}>Before snapshot: {comparisonGroupScope(groups.before_scope)}</Text> : null}
+        {groups?.after ? <Text style={styles.muted}>After snapshot: {comparisonGroupScope(groups.after_scope)}</Text> : null}
         {groups?.before && groups.after ? (
           groups.after.map(group => {
             const previous = groups.before!.find(value => value.group === group.group)?.share;

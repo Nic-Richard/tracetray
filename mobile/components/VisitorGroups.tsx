@@ -7,6 +7,7 @@ import {
   deviceAverages,
   deviceGoal,
   goalDrivers,
+  groupCountNote,
   groupColorSlots,
   inactiveVisits,
   INACTIVE_TEXT,
@@ -19,6 +20,7 @@ import {
 } from "@tracetray/shared";
 import { useTheme } from "../lib/theme";
 import TraitBars from "./TraitBars";
+import AnalysisScope from "./AnalysisScope";
 
 const rate = (value: number) => percent(value, value > 0 && value < 0.01 ? 1 : 0);
 
@@ -33,6 +35,9 @@ export function Suggestions({ result }: { result: AnalysisResult }) {
         <View key={`${item.device}:${item.group}:${index}`} style={{ gap: 6, marginTop: 8 }}>
           <Text style={styles.text}>{item.action}</Text>
           <Text style={styles.muted}>{item.evidence}</Text>
+          {(item.devices || [item.device]).map(device => (
+            <View key={device}><AnalysisScope result={result} device={device} />{groupCountNote(result, device) ? <Text style={styles.muted}>{groupCountNote(result, device)}</Text> : null}</View>
+          ))}
         </View>
       ))}
     </View>
@@ -82,10 +87,12 @@ export default function VisitorGroups({ result }: { result: AnalysisResult }) {
         ))}
       </View>
       <Text style={styles.muted}>{visitorIntro(result, device, types.length)}</Text>
+      <AnalysisScope result={result} device={device} />
+      {groupCountNote(result, device) ? <Text style={styles.muted}>{groupCountNote(result, device)}</Text> : null}
       {alike ? (
         <View style={[styles.panel, { borderLeftWidth: 4, borderLeftColor: colors.groups[0] }]}>
           <View style={styles.row}>
-            <Text style={[styles.heading, { flex: 1 }]}>Visitors behave alike</Text>
+            <Text style={[styles.heading, { flex: 1 }]}>No reliable groups found</Text>
             <Text style={styles.number}>{percent(1 - (inactive?.share || 0))}</Text>
           </View>
           <Text style={styles.muted}>{source?.session_count.toLocaleString()} visits</Text>

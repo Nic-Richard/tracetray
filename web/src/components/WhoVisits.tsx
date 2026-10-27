@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { pagePath, percent, visitCount, type AnalysisResult, type Device } from "@tracetray/shared";
+import { groupCountNote, pagePath, percent, visitCount, type AnalysisResult, type Device } from "@tracetray/shared";
+import AnalysisScope from "./AnalysisScope";
 import { alikeNote, deviceAverages, deviceGoal, inactiveVisits, INACTIVE_TEXT, interpretationOf, visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
 import { useAskAbout } from "../lib/askLink";
@@ -39,8 +40,8 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
   if (alike) {
     const averages = deviceAverages(result, device);
     rows = [{
-      id: -1, headline: "Visitors behave alike", share: 1 - (inactive?.share || 0), color: "var(--d1)",
-      text: "No split into groups held up, so they're shown as one.",
+      id: -1, headline: "No reliable groups found", share: 1 - (inactive?.share || 0), color: "var(--d1)",
+      text: alike,
       goal: goal && { rate: goal.rate, average: goal.rate },
       figures: [
         averages.depth != null ? `${percent(averages.depth)} of the way down` : "",
@@ -75,6 +76,8 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
         </div>
       </div>
       <div className="panel-body">
+        <AnalysisScope result={result} device={device} />
+        {groupCountNote(result, device) && <p className="note">{groupCountNote(result, device)}</p>}
         {types.length === 0 ? (
           <p className="empty">{(device === "mobile" ? result.mobile?.failure?.message : result.failure?.message) || "Not enough visits yet to sort them into groups."}</p>
         ) : (

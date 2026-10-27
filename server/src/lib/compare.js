@@ -68,12 +68,15 @@ async function compareAroundChange(siteKey, page, changedOn, now = Date.now(), g
         AnalysisResult.findOne({ site_key: siteKey, page, k: { $gt: 0 }, ran_at: { $lt: new Date(changedAt) } }).sort({ ran_at: -1 }).lean(),
         AnalysisResult.findOne({ site_key: siteKey, page, k: { $gt: 0 }, ran_at: { $gte: new Date(changedAt) } }).sort({ ran_at: -1 }).lean()
     ]);
+    const scopeOf = analysis => analysis ? { ran_at: analysis.ran_at, visits: analysis.session_count,
+        from: analysis.scope?.from || null, to: analysis.scope?.to || null } : null;
     return {
         ready: true,
         days,
         before,
         after,
-        groups: { before: groupShares(analysisBefore), after: groupShares(analysisAfter) },
+        groups: { before: groupShares(analysisBefore), after: groupShares(analysisAfter),
+            before_scope: scopeOf(analysisBefore), after_scope: scopeOf(analysisAfter) },
         goal: goal ? {
             id: goal.id,
             name: goal.name,
