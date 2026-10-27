@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { alikeNote, analysisAdvice, deviceGoal, inactiveVisits, traitRows, visitCount, visitorIntro, visitorTypes } from "../src/analysis.ts";
+import { alikeNote, analysisAdvice, deviceGoal, goalDrivers, inactiveVisits, traitRows, visitCount, visitorIntro, visitorTypes } from "../src/analysis.ts";
 import { groupColorSlots } from "../src/palette.ts";
 
 function fixture() {
@@ -104,4 +104,19 @@ test("a group's age reads New, Since a date, or nothing on its first tracked ana
   assert.deepEqual(visitorTypes(result, "desktop").map(row => row.age), ["Since Oct 5", "New"]);
   result.clusters[0].track = { id: "a", since: "2026-10-26T06:00:00Z" };
   assert.equal(visitorTypes(result, "desktop")[1].age, null);
+});
+
+test("the goal model reads as plain sentences only when it held up", () => {
+  const result = fixture();
+  result.goal = { id: "buy", name: "Added to cart" };
+  result.goal_model = { status: "ok", reached: 400, missed: 400, window_s: 20, drivers: [
+    { feature: "avg_cursor_velocity", direction: "higher", split: 0.4, rate_above: 0.76, rate_below: 0.21 },
+    { feature: "scroll_burst_rate", direction: "lower", split: 0, rate_above: 0.1, rate_below: 0.4 }
+  ] };
+  assert.deepEqual(goalDrivers(result, "desktop"), { intro: "Among visits still on the page after 20 seconds:", lines: [
+    "Those that moved the cursor faster than most by then went on to reach Added to cart 76% of the time, against 21% for the others.",
+    "Those that hadn't started scrolling by then went on to reach Added to cart 40% of the time, against 10% for the others."
+  ] });
+  result.goal_model.status = "weak";
+  assert.equal(goalDrivers(result, "desktop"), null);
 });

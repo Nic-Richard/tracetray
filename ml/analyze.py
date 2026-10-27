@@ -10,6 +10,8 @@ import warnings
 import numpy as np
 import pandas as pd
 
+import goal_model
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.exceptions import ConvergenceWarning
@@ -31,6 +33,8 @@ MAX_GROUPS = 5
 MIN_GROUP_SIZE = 8
 # A smaller k wins unless a larger one separates visitors clearly better.
 SILHOUETTE_TOLERANCE = 0.02
+GOAL_SILHOUETTE_TOLERANCE = 0.06
+GOAL_SEPARATION_GAIN = 0.05
 NULL_REPS = 10
 STABILITY_REPS = 10
 SILHOUETTE_SAMPLE = 2000
@@ -217,12 +221,24 @@ def compute_k_range(n_sessions, min_size):
     return range(2, min(n_sessions // min_size, MAX_GROUPS) + 1)
 
 
-def select_k(X, k_range, min_size):
+def goal_separation(labels, reached):
+    """Cramér's V between the groups and reaching the goal: 0 when every group converts alike, 1 when the groups
+    split converters from the rest completely."""
+    table = pd.crosstab(labels, reached).to_numpy()
+    if table.shape[1] < 2:
+        return 0.0
+    expected = table.sum(axis=1, keepdims=True) * table.sum(axis=0, keepdims=True) / table.sum()
+    chi2 = float(((table - expected) ** 2 / expected).sum())
+    return float(np.sqrt(chi2 / (table.sum() * (min(table.shape) - 1))))
+
+
+def select_k(X, k_range, min_size, reached=None):
     rows = []
     for k in k_range:
         km = fit_kmeans(X, k)
         sizes = np.bincount(km.labels_, minlength=k)
         rows.append({
+            "goal_separation": goal_separation(km.labels_, reached) if reached is not None else None,
             "k": k,
             "silhouette": silhouette(X, km.labels_),
             "davies_bouldin": davies_bouldin_score(X, km.labels_),
@@ -237,6 +253,16 @@ def select_k(X, k_range, min_size):
         return metrics, None
     best = viable["silhouette"].max()
     chosen = int(viable[viable["silhouette"] >= best - SILHOUETTE_TOLERANCE]["k"].min())
+    if reached is None:
+        return metrics, chosen
+    # Silhouette favours fewer groups and can merge two that convert very differently. A larger k wins only if it
+    # still separates nearly as well, holds up on resampling and splits converters clearly better.
+    current = float(metrics.loc[metrics["k"] == chosen, "goal_separation"].values[0])
+    for row in viable[(viable["k"] > chosen) & (viable["silhouette"] >= best - GOAL_SILHOUETTE_TOLERANCE)].itertuples():
+        if row.goal_separation >= current + GOAL_SEPARATION_GAIN:
+            labels = fit_kmeans(X, row.k).labels_
+            if stability(X, row.k, labels) >= 0.75:
+                chosen, current = int(row.k), row.goal_separation
     return metrics, chosen
 
 
@@ -274,8 +300,8 @@ def structure_verdict(sil, null, stab):
     return "none"
 
 
-def cluster(X, k_range, min_size):
-    k_metrics, best_k = select_k(X, k_range, min_size)
+def cluster(X, k_range, min_size, reached=None):
+    k_metrics, best_k = select_k(X, k_range, min_size, reached)
     if best_k is None:
         # Every split leaves a group too small to describe: a few unusual visits, not real groups.
         labels = fit_kmeans(X, 2).labels_
@@ -449,7 +475,11 @@ def main(device, site_key):
     if X is None:
         return failure("no_variation", n_sessions, n_sessions, f"Every {what.split(' with ')[0][:-1]} on this page behaved the same way, so there are no groups to find.")
 
-    k_metrics, best_k, km_labels, sil, null, stab, verdict = cluster(X, k_range, min_size)
+    goal = json.loads(os.environ.get("TRACETRAY_GOAL") or "null")
+    reached = df_raw["goal_hits"].apply(lambda hits: isinstance(hits, list) and goal["id"] in hits).to_numpy()         if goal and "goal_hits" in df_raw.columns else None
+    if reached is not None and min(reached.sum(), (~reached).sum()) < goal_model.MIN_EACH_SIDE:
+        reached = None
+    k_metrics, best_k, km_labels, sil, null, stab, verdict = cluster(X, k_range, min_size, reached)
     print(k_metrics.to_string(index=False))
     small_groups = null is None
     print(f"\nk={best_k} silhouette={sil:.3f} null_max={max(null) if null else '-'} stability={stab} structure={verdict}")
@@ -464,6 +494,9 @@ def main(device, site_key):
         if column in df_raw.columns:
             df_out[column] = df_raw[column].values
 
+    model = goal_model.fit(df_raw, goal and goal.get("id"), engineer_desktop_features if device == "desktop" else engineer_mobile_features,
+                           engineered, clustering_matrix)
+
     quality = {
         "silhouette": sil,
         "null_silhouette": float(np.mean(null)) if null else None,
@@ -476,7 +509,8 @@ def main(device, site_key):
         "min_group_size": min_size,
         "spread": dict(zip(used, T.std(axis=0).round(4).tolist())),
         "centres": {int(c): dict(zip(used, T[km_labels == c].mean(axis=0).round(4).tolist())) for c in set(km_labels)},
-        "snapshot": snapshot(df, km_labels)
+        "snapshot": snapshot(df, km_labels),
+        "goal_model": model
     }
     return df_out, km_labels, cluster_means, k_metrics, quality
 
@@ -531,6 +565,7 @@ if __name__ == "__main__":
             "kruskal_wallis":      kw_df.to_dict(orient="records"),
             "spread":              info["spread"],
             "snapshot":            info["snapshot"],
+            "goal_model":          info["goal_model"],
             "k_rationale": {
                 "n_sessions":          int(len(df_out)),
                 "min_cluster_size":    info["min_group_size"],

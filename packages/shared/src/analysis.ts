@@ -157,3 +157,44 @@ export function traitRows(traits: Trait[]) {
     });
 }
 export const MIN_ANALYSIS_VISITS = 16;
+
+// How each measure reads in a sentence, for visits above and below the median. `none` and `some` replace them when
+// the median is zero, so the split is really "did it at all".
+const DRIVER_WORDS: Record<string, { higher: string; lower: string; some?: string; none?: string }> = {
+  scroll_depth_reached: { higher: "got further down the page than most", lower: "stayed nearer the top than most" },
+  avg_cursor_velocity: { higher: "moved the cursor faster than most", lower: "moved the cursor more slowly than most" },
+  move_density: { higher: "moved the cursor more than most", lower: "moved the cursor less than most" },
+  distance_per_move: { higher: "made longer cursor movements than most", lower: "made shorter cursor movements than most" },
+  pause_rate: { higher: "paused more than most", lower: "paused less than most", some: "paused", none: "hadn't paused" },
+  click_rate: { higher: "clicked more than most", lower: "clicked less than most", some: "had clicked something", none: "hadn't clicked anything" },
+  tap_rate: { higher: "tapped more than most", lower: "tapped less than most", some: "had tapped something", none: "hadn't tapped anything" },
+  dwell_before_click: { higher: "waited longer before clicking", lower: "clicked sooner than most" },
+  dwell_before_tap: { higher: "waited longer before tapping", lower: "tapped sooner than most" },
+  spatial_entropy: { higher: "moved around more of the page", lower: "kept to one part of the page" },
+  top_zone_ratio: { higher: "spent more of their time at the top", lower: "spent less of their time at the top" },
+  bottom_zone_ratio: { higher: "spent more of their time at the bottom", lower: "spent less of their time at the bottom" },
+  direction_change_rate: { higher: "scrolled back up more than most", lower: "scrolled back up less than most", some: "scrolled back up", none: "hadn't scrolled back up" },
+  scroll_burst_rate: { higher: "scrolled in more separate bursts", lower: "scrolled in fewer bursts", some: "had started scrolling", none: "hadn't started scrolling" },
+  scroll_velocity_rate: { higher: "scrolled faster than most", lower: "scrolled more slowly than most" },
+  attention_pause_rate: { higher: "stopped to read more often", lower: "stopped to read less often" },
+  avg_attention_pause_ms: { higher: "stopped to read for longer", lower: "stopped to read more briefly" },
+};
+
+/** Plain sentences on what goes with reaching the page's goal, when the model held up; null otherwise. Windowed
+ * results only cover visits still on the page when the window ended, and the intro says so. */
+export function goalDrivers(result: AnalysisResult | null | undefined, device: Device): { intro: string | null; lines: string[] } | null {
+  const model = deviceAnalysis(result, device)?.goal_model;
+  const goal = result?.goal?.name;
+  if (!goal || model?.status !== "ok" || !model.drivers?.length) return null;
+  const lines = model.drivers.flatMap(d => {
+    const words = DRIVER_WORDS[d.feature];
+    if (!words) return [];
+    const higher = d.direction === "higher";
+    const phrase = d.split === 0 && words.some && words.none ? (higher ? words.some : words.none) : words[d.direction];
+    const [withIt, without] = higher ? [d.rate_above, d.rate_below] : [d.rate_below, d.rate_above];
+    const who = model.window_s ? `Those that ${phrase} by then went on to reach` : `Visits that ${phrase} reached`;
+    return [`${who} ${goal} ${percentage(withIt)} of the time, against ${percentage(without)} for the others.`];
+  });
+  if (!lines.length) return null;
+  return { intro: model.window_s ? `Among visits still on the page after ${model.window_s} seconds:` : null, lines };
+}

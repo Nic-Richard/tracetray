@@ -572,3 +572,6 @@ td.strong { font-weight: 700; }
 .timelapse-table summary { cursor: pointer; color: var(--muted); }
 .timelapse-table table { margin-top: 8px; border-collapse: collapse; }
 .timelapse-table th, .timelapse-table td { padding: 4px 12px 4px 0; text-align: left; border-bottom: 1px solid var(--line); }
+.driver-panel .panel-body { display: grid; gap: 12px; }
+.driver-panel p { margin: 0; }
+.driver-list { margin: 0; padding-left: 18px; display: grid; gap: 8px; color: var(--ink-2); }

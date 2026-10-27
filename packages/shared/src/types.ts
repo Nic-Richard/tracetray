@@ -310,6 +310,26 @@ export interface ClickCount {
   id?: string | null;
 }
 
+export interface GoalDriver {
+  feature: string;
+  direction: "higher" | "lower";
+  /** The measure's median: visits above it reached the goal at rate_above, the rest at rate_below. */
+  split: number;
+  rate_above: number;
+  rate_below: number;
+}
+
+export interface GoalModel {
+  status: "ok" | "weak" | "too_few" | "no_variation";
+  /** Cross-validated area under the ROC curve. */
+  auc?: number;
+  reached: number;
+  missed: number;
+  /** Seconds from the start of each visit that were compared; null when whole visits were. */
+  window_s: number | null;
+  drivers?: GoalDriver[];
+}
+
 export interface DeviceAnalysis {
   session_count: number;
   k: number;
@@ -322,6 +342,8 @@ export interface DeviceAnalysis {
   visit_count?: number | null;
   inactive_count?: number | null;
   inactive_goal_hits?: Record<string, number>;
+  /** What separates visits that reached the main goal from those that didn't; only "ok" results are shown. */
+  goal_model?: GoalModel | null;
   clusters: Cluster[];
   kruskal_wallis?: KruskalWallis[];
   k_rationale?: Record<string, unknown>;

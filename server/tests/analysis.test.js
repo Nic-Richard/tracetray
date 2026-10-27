@@ -175,3 +175,50 @@ test("a closing account cannot start an analysis or recreate its results", async
     assert.equal(state.saves, 0);
     assert.equal(state.running.tt_test, false);
 });
+
+test("goal windows never include the goal itself and both sides use the same windows", async () => {
+    const start = 1_000_000;
+    const click = (t, text) => ({ type: "click", timestamp: start + t, target: { text } });
+    const sessions = [
+        { session_id: "buyer", device_type: "desktop", start_time: start, end_time: start + 60000, goal_hits: ["g"],
+          events: [click(3000, "Size guide"), click(25000, "Add to cart"), click(40000, "Reviews")] },
+        { session_id: "browser", device_type: "desktop", start_time: start, end_time: start + 60000, goal_hits: [],
+          events: [click(3000, "Size guide"), click(50000, "Reviews")] },
+    ];
+    const written = {};
+    let finished;
+    const done = new Promise(resolve => { finished = resolve; });
+    const mongoose = {
+        async connect() {},
+        Schema: class {},
+        model: () => ({
+            find(filter) {
+                const rows = filter.device_type === "mobile" ? [] : sessions;
+                const query = { sort: () => query, limit: () => query, lean: () => query, cursor: () => ({ async *[Symbol.asyncIterator]() { yield* rows; } }) };
+                return query;
+            },
+            async aggregate() { return []; }
+        }),
+        connection: { async close() { finished(); } },
+    };
+    const clicks = session => ({ clicks: (session.events || []).filter(e => e.type === "click").map(e => e.target.text) });
+    vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, "../../analysis/extractFeatures.js"), "utf8"), {
+        require(name) {
+            if (name === "mongoose") return mongoose;
+            if (name === "path") return path;
+            if (name === "fs") return { mkdirSync() {}, readdirSync() { return []; }, writeFileSync(file, body) { written[path.basename(file)] = body; } };
+            if (name === "../server/src/lib/goals") return require("../src/lib/goals");
+            return clicks;
+        },
+        __dirname: path.resolve(__dirname, "../../analysis"),
+        process: { env: { TRACETRAY_SITE_KEY: "tt_test", TRACETRAY_GOAL: JSON.stringify({ id: "g", type: "click", match: { text: "Add to cart" } }) } },
+        console: { log() {}, error() {} },
+    });
+    await done;
+    const rows = Object.fromEntries(JSON.parse(written["dataset_tt_test_desktop.json"]).map(r => [r.session_id, r]));
+    assert.equal(rows.buyer.goal_after_ms, 25000);
+    assert.deepEqual(Object.keys(rows.buyer.windows), ["5", "10", "20"]);
+    assert.ok(Object.values(rows.buyer.windows).every(w => !w.clicks.includes("Add to cart")));
+    assert.deepEqual(Object.keys(rows.browser.windows), ["5", "10", "20", "40"]);
+    assert.equal(rows.browser.goal_after_ms, null);
+});

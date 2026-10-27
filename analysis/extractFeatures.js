@@ -9,12 +9,32 @@ const movementFeatures = require("./featureModules/movementFeatures");
 const spatialFeatures = require("./featureModules/spatialFeatures");
 const mobileFeatures = require("./featureModules/mobileFeatures");
 const scrollFeatures = require("./featureModules/scrollFeatures");
+const { clickMatches, formMatches } = require("../server/src/lib/goals");
 
 const SessionSchema = new mongoose.Schema({}, { strict: false });
 const Session = mongoose.model("Session", SessionSchema, "sessions");
 
 const MAX_SESSIONS_PER_DEVICE = 20000;
 const WINDOW_DAYS = 90;
+
+const WINDOWS_S = [5, 10, 20, 40, 80, 160];
+
+// For a click or form goal: the visit's measures over each of its first seconds that end before the goal (or before
+// the visit ends). The goal model compares every visit over one of these, so it never sees the goal click itself.
+function goalWindows(session, goal, measure) {
+    if (!goal || (goal.type !== "click" && goal.type !== "form")) return {};
+    const events = session.events || [];
+    const reached = (session.goal_hits || []).includes(goal.id);
+    const at = reached ? events.findIndex(e => clickMatches(goal, e) || formMatches(goal, e)) : -1;
+    const stop = at >= 0 ? events[at].timestamp : session.end_time;
+    const windows = {};
+    for (const seconds of WINDOWS_S) {
+        const end = session.start_time + seconds * 1000;
+        if (!(end < stop)) break;
+        windows[seconds] = measure({ ...session, events: events.filter(e => e.timestamp < end), end_time: end });
+    }
+    return { goal_after_ms: at >= 0 ? stop - session.start_time : null, windows };
+}
 
 // The links and buttons a visit clicked or tapped, once each, so each group's most clicked targets can be named.
 function clickTargets(session) {
@@ -37,6 +57,7 @@ async function run() {
         const pageFilter = process.env.TRACETRAY_PAGE_FILTER
             ? { page: process.env.TRACETRAY_PAGE_FILTER }
             : {};
+        const goal = process.env.TRACETRAY_GOAL ? JSON.parse(process.env.TRACETRAY_GOAL) : null;
 
         // Mobile sessions use touch and scroll events instead of cursor movement. Visits without full detail
         // (trimmed, left out of the sample, or over the plan's allowance) have nothing to measure.
@@ -61,25 +82,33 @@ async function run() {
 
         // goal_hits and click_targets aren't features; they ride along so each group's goal rate and most
         // clicked targets can be counted.
-        const desktop = await recent({ device_type: { $ne: "mobile" } }, session => ({
-            session_id: session.session_id,
-            goal_hits: session.goal_hits || [],
-            click_targets: clickTargets(session),
+        const desktopFeatures = session => ({
             ...basicFeatures(session),
             ...movementFeatures(session),
             ...spatialFeatures(session),
             ...scrollFeatures(session)
-        }));
-
-        const mobile = await recent({ device_type: "mobile" }, session => ({
+        });
+        const desktop = await recent({ device_type: { $ne: "mobile" } }, session => ({
             session_id: session.session_id,
             goal_hits: session.goal_hits || [],
             click_targets: clickTargets(session),
+            ...desktopFeatures(session),
+            ...goalWindows(session, goal, desktopFeatures)
+        }));
+
+        const mobileMeasures = session => ({
             duration_ms: session.end_time ? session.end_time - session.start_time : 0,
             active_ms: basicFeatures.activeMs(session),
             total_events: (session.events || []).length,
             ...mobileFeatures(session),
             ...scrollFeatures(session)
+        });
+        const mobile = await recent({ device_type: "mobile" }, session => ({
+            session_id: session.session_id,
+            goal_hits: session.goal_hits || [],
+            click_targets: clickTargets(session),
+            ...mobileMeasures(session),
+            ...goalWindows(session, goal, mobileMeasures)
         }));
         const desktopDataset = desktop.rows, mobileDataset = mobile.rows;
 

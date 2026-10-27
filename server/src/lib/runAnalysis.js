@@ -36,7 +36,9 @@ async function runAnalysis(siteKey, pageFilter = null) {
         if (!await Account.exists({ deletion_requested_at: null, $or: [{ site_key: siteKey }, { "sites.key": siteKey }] })) {
             throw new Error("website is unavailable for analysis");
         }
-        const env = { ...process.env, TRACETRAY_SITE_KEY: siteKey, TRACETRAY_PAGE_FILTER: pageFilter || "" };
+        const main = pageFilter ? await mainGoalFor(siteKey, pageFilter).catch(err => { logger.error("main goal lookup failed:", err); return null; }) : null;
+        const env = { ...process.env, TRACETRAY_SITE_KEY: siteKey, TRACETRAY_PAGE_FILTER: pageFilter || "",
+            TRACETRAY_GOAL: main ? JSON.stringify({ id: main.id, type: main.type, match: main.match }) : "" };
         await runProcess(process.execPath, [path.join(ROOT, "analysis", "extractFeatures.js")], { cwd: ROOT, env });
         logger.debug("extraction done");
 
@@ -76,7 +78,6 @@ async function runAnalysis(siteKey, pageFilter = null) {
                 pageUrl = recentSess?.page || null;
             }
             const attentionResult = await computeAttentionProfile(siteKey, pageFilter || null);
-            const main = pageFilter ? await mainGoalFor(siteKey, pageFilter) : null;
             const goal = main && { id: main.id, name: main.name, type: main.type, match: main.match, position: await goalPosition(siteKey, pageFilter, main) };
             if (goal) clusterResult.goal = goal;
             clusterResult.interpretation = interpretClusters({

@@ -6,6 +6,7 @@ import {
   deviceAnalysis,
   deviceAverages,
   deviceGoal,
+  goalDrivers,
   groupColorSlots,
   inactiveVisits,
   INACTIVE_TEXT,
@@ -46,6 +47,7 @@ export default function VisitorGroups({ result }: { result: AnalysisResult }) {
   const slots = groupColorSlots(types.map(type => type.key));
   const alike = alikeNote(result, device);
   const inactive = inactiveVisits(result, device);
+  const drivers = goalDrivers(result, device);
   const goal = deviceGoal(result, device);
   const averages = deviceAverages(result, device);
   return (
@@ -174,6 +176,16 @@ export default function VisitorGroups({ result }: { result: AnalysisResult }) {
           <Text style={styles.muted}>
             {INACTIVE_TEXT[device]} Some read without touching anything; others left straight away.
           </Text>
+        </View>
+      ) : null}
+      {drivers ? (
+        <View style={[styles.panel, { gap: 10 }]}>
+          <Text style={styles.heading}>What goes with reaching {result.goal?.name}</Text>
+          {drivers.intro ? <Text style={styles.muted}>{drivers.intro}</Text> : null}
+          {drivers.lines.map(line => (
+            <Text key={line} style={styles.text}>{line}</Text>
+          ))}
+          <Text style={styles.muted}>These go together with reaching the goal. They don't show that one causes the other.</Text>
         </View>
       ) : null}
     </View>

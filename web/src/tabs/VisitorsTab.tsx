@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type React from "react";
-import { pagePath, percent, visitCount, visitorIntro, type AnalysisResult, type Device } from "@tracetray/shared";
+import { goalDrivers, pagePath, percent, visitCount, visitorIntro, type AnalysisResult, type Device } from "@tracetray/shared";
 import { alikeNote, deviceAnalysis, inactiveVisits, INACTIVE_TEXT, visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
 import TraitBars from "../components/TraitBars";
@@ -18,6 +18,7 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
   const hasMobile = visitCount(result, "mobile") > 0;
   const alike = alikeNote(result, device);
   const inactive = inactiveVisits(result, device);
+  const drivers = goalDrivers(result, device);
 
   return (
     <div className="content">
@@ -98,6 +99,16 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
             </section>
           )}
         </div>
+      )}
+      {drivers && (
+        <section className="panel driver-panel">
+          <div className="panel-head"><h2>What goes with reaching {result.goal?.name}</h2></div>
+          <div className="panel-body">
+            {drivers.intro && <p className="muted">{drivers.intro}</p>}
+            <ul className="driver-list">{drivers.lines.map(line => <li key={line}>{line}</li>)}</ul>
+            <p className="muted">These go together with reaching the goal. They don't show that one causes the other.</p>
+          </div>
+        </section>
       )}
     </div>
   );

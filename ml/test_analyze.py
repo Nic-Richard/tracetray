@@ -5,6 +5,7 @@ import pandas as pd
 from sklearn.metrics import adjusted_rand_score
 
 import analyze
+import goal_model
 
 
 def desktop_visits(rng, n, types, scroll_only=0.0):
@@ -70,6 +71,38 @@ class ClusteringTest(unittest.TestCase):
         self.assertEqual(len(shot["points"]), analyze.SNAPSHOT_POINTS)
         self.assertTrue(all(0 <= x <= 1 and 0 <= y <= np.log10(3600) for x, y, _ in shot["points"]))
         self.assertEqual(set(shot["centres"]), {0, 1})
+
+
+def windowed_visits(rng, n, depth_effect):
+    """Visits measured over a 10 s window; reaching the goal depends on scroll depth by depth_effect."""
+    df, _ = desktop_visits(rng, n, [(1, 0.03, 60, 0.5, 0.5)])
+    rows = df.to_dict("records")
+    for row in rows:
+        chance = 1 / (1 + np.exp(-depth_effect * (row["scroll_depth_reached"] - 0.5) * 10))
+        row["goal_hits"] = ["g"] if rng.random() < chance else []
+        row["windows"] = {"10": {k: v for k, v in row.items() if k not in ("session_id", "goal_hits")}}
+    return pd.DataFrame(rows)
+
+
+class GoalModelTest(unittest.TestCase):
+    def fit(self, df):
+        return goal_model.fit(df, "g", analyze.engineer_desktop_features, analyze.DESKTOP_ENGINEERED_FEATURES, analyze.clustering_matrix)
+
+    def test_a_real_link_is_found_with_its_direction(self):
+        result = self.fit(windowed_visits(np.random.default_rng(5), 800, depth_effect=1.0))
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["drivers"][0]["feature"], "scroll_depth_reached")
+        self.assertEqual(result["drivers"][0]["direction"], "higher")
+        self.assertGreater(result["drivers"][0]["rate_above"], result["drivers"][0]["rate_below"])
+
+    def test_noise_names_nothing(self):
+        result = self.fit(windowed_visits(np.random.default_rng(6), 800, depth_effect=0.0))
+        self.assertNotEqual(result["status"], "ok")
+
+    def test_too_few_visits_on_one_side_are_reported(self):
+        df = windowed_visits(np.random.default_rng(7), 800, depth_effect=1.0)
+        df["goal_hits"] = [["g"] if i < 10 else [] for i in range(len(df))]
+        self.assertEqual(self.fit(df)["status"], "too_few")
 
 
 if __name__ == "__main__":
