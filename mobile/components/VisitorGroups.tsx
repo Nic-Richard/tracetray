@@ -113,6 +113,7 @@ export default function VisitorGroups({ result }: { result: AnalysisResult }) {
               </View>
               <Text style={styles.muted}>
                 {type.sessions.toLocaleString()} visits · of {device} visits
+                {type.age ? ` · ${type.age}` : ""}
               </Text>
               {story?.goal ? (
                 <View style={{ gap: 4 }}>

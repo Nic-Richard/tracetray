@@ -56,7 +56,7 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
               </div>
               <div className="panel-body type-body">
                 <div className="meter" aria-hidden="true"><i style={{ width: `${type.share * 100}%` }} /></div>
-                <p className="muted">{type.sessions.toLocaleString()} visits</p>
+                <p className="muted">{type.sessions.toLocaleString()} visits{type.age ? ` · ${type.age}` : ""}</p>
                 {type.story?.goal && (
                   <p className="group-goal">
                     <span className={`verdict ${type.story.goal.standing === "above" ? "better" : type.story.goal.standing === "below" ? "worse" : ""}`}>{rate(type.story.goal.rate)} reached {type.story.goal.name}</span>

@@ -271,22 +271,32 @@ function clusterTraits(cluster, base, significance) {
     return traits.sort((a, b) => b.score - a.score);
 }
 
-function matchArchetype(traits, archetypes, taken) {
+function archetypeFit(archetype, byFeature) {
+    const wanted = Object.entries(archetype.traits);
+    let score = 0;
+    for (const [feature, sign] of wanted) {
+        const t = byFeature[feature];
+        const agreement = t ? sign * t.z : 0;
+        if (agreement < 0.25) return 0;
+        score += Math.min(agreement, 1.5) * t.weight;
+    }
+    // Matching more traits is stronger evidence than one extreme trait.
+    return (score / wanted.length) * (0.85 + 0.15 * wanted.length);
+}
+
+// A group tracked from the last analysis keeps its name while it still roughly fits, so a small drift doesn't
+// rename it.
+const KEEP_NAME = 0.3;
+
+function matchArchetype(traits, archetypes, taken, previousKey = null) {
     const byFeature = Object.fromEntries(traits.map(t => [t.feature, t]));
+    const previous = previousKey && !taken.has(previousKey) && archetypes.find(a => a.key === previousKey);
+    if (previous && archetypeFit(previous, byFeature) >= KEEP_NAME) return previous;
     let best = null;
     for (const archetype of archetypes) {
         if (taken.has(archetype.key)) continue;
-        const wanted = Object.entries(archetype.traits);
-        let score = 0, ok = true;
-        for (const [feature, sign] of wanted) {
-            const t = byFeature[feature];
-            const agreement = t ? sign * t.z : 0;
-            if (agreement < 0.25) { ok = false; break; }
-            score += Math.min(agreement, 1.5) * t.weight;
-        }
-        // Matching more traits is stronger evidence than one extreme trait.
-        score = (score / wanted.length) * (0.85 + 0.15 * wanted.length);
-        if (ok && score >= 0.5 && (!best || score > best.score)) best = { archetype, score };
+        const score = archetypeFit(archetype, byFeature);
+        if (score >= 0.5 && (!best || score > best.score)) best = { archetype, score };
     }
     return best?.archetype || null;
 }
@@ -315,7 +325,7 @@ function describeCluster(cluster, base, significance, archetypes, taken, used) {
         return { key: "typical", headline: "Typical visitors", traits: traitData, body, summary: body, suggestions: [] };
     }
 
-    const archetype = matchArchetype(traits, archetypes, taken);
+    const archetype = matchArchetype(traits, archetypes, taken, cluster.track?.previous_key);
     let headline = archetype ? archetype.name : composedName(strong, used.features);
     if (used.names.has(headline)) headline = composedName(strong.slice(1).length ? strong.slice(1) : strong, used.features);
     if (used.names.has(headline)) headline = `${headline} (group ${cluster.id + 1})`;
@@ -437,7 +447,8 @@ function describeDevice(result, archetypes, deviceLabel, goal = null, pagePath =
     // Largest groups claim archetypes first.
     const ordered = [...clusters].sort((a, b) => (b.n || 0) - (a.n || 0));
     const stories = {};
-    for (const c of ordered) stories[c.id] = describeCluster(c, base, significance, archetypes, taken, used);
+    const naming = [...ordered].sort((a, b) => Number(!!b.track?.previous_key) - Number(!!a.track?.previous_key));
+    for (const c of naming) stories[c.id] = describeCluster(c, base, significance, archetypes, taken, used);
 
     // With a goal and enough visits reaching it, groups are judged by it, and suggestions start with the
     // groups falling furthest short. The average counts every visit on the device, including those that

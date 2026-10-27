@@ -169,7 +169,8 @@ def fill_from_observed(values, rng):
 
 def clustering_matrix(df, features):
     """Fills unknown values from visits where they were measured, log-scales skewed features, standardizes, clips
-    outliers and drops features that don't vary. Returns the matrix and the features it kept."""
+    outliers and drops features that don't vary. Returns the matrix, the features it kept and the values before
+    standardizing, which describe each group in units that stay comparable from one analysis to the next."""
     cols, kept = [], []
     rng = np.random.default_rng(RANDOM_SEED)
     for feat in features:
@@ -186,9 +187,10 @@ def clustering_matrix(df, features):
         cols.append(values.to_numpy())
         kept.append(feat)
     if not cols:
-        return None, []
-    X = StandardScaler().fit_transform(np.column_stack(cols))
-    return np.clip(X, -4, 4), kept
+        return None, [], None
+    T = np.column_stack(cols)
+    X = StandardScaler().fit_transform(T)
+    return np.clip(X, -4, 4), kept, T
 
 
 
@@ -430,7 +432,7 @@ def main(device, site_key):
         df = engineer_mobile_features(df_raw)
         engineered = MOBILE_ENGINEERED_FEATURES
 
-    X, used = clustering_matrix(df, engineered)
+    X, used, T = clustering_matrix(df, engineered)
     if X is None:
         return failure("no_variation", n_sessions, n_sessions, f"Every {what.split(' with ')[0][:-1]} on this page behaved the same way, so there are no groups to find.")
 
@@ -458,7 +460,9 @@ def main(device, site_key):
         "structure": verdict,
         "agreement": hierarchical_agreement(X, km_labels, best_k),
         "features_used": used,
-        "min_group_size": min_size
+        "min_group_size": min_size,
+        "spread": dict(zip(used, T.std(axis=0).round(4).tolist())),
+        "centres": {int(c): dict(zip(used, T[km_labels == c].mean(axis=0).round(4).tolist())) for c in set(km_labels)}
     }
     return df_out, km_labels, cluster_means, k_metrics, quality
 
@@ -494,7 +498,8 @@ if __name__ == "__main__":
                 "n":             int(members.sum()),
                 "feature_means": cluster_means.loc[cl_id].round(4).to_dict(),
                 "goal_hits":     goal_counts(df_out.loc[members, "goal_hits"]) if "goal_hits" in df_out.columns else {},
-                "top_clicks":    top_clicks(df_out.loc[members, "click_targets"]) if "click_targets" in df_out.columns else []
+                "top_clicks":    top_clicks(df_out.loc[members, "click_targets"]) if "click_targets" in df_out.columns else [],
+                "centre":        info["centres"].get(int(cl_id), {})
             })
 
         best_k = int(df_out["cluster_km"].nunique())
@@ -510,6 +515,7 @@ if __name__ == "__main__":
             "stability":           info["stability"],
             "clusters":            clusters_out,
             "kruskal_wallis":      kw_df.to_dict(orient="records"),
+            "spread":              info["spread"],
             "k_rationale": {
                 "n_sessions":          int(len(df_out)),
                 "min_cluster_size":    info["min_group_size"],

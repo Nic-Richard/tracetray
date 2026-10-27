@@ -95,3 +95,13 @@ test("group colours stay stable and conflicting preferences get separate slots",
   assert.deepEqual(groupColorSlots(["quick_deciders"]), [1]);
   assert.deepEqual(groupColorSlots(["constructor", "__proto__"]), [0, 1]);
 });
+
+test("a group's age reads New, Since a date, or nothing on its first tracked analysis", () => {
+  const result = fixture();
+  result.ran_at = "2026-10-26T06:00:00Z";
+  result.clusters[0].track = { id: "a", since: "2026-10-26T06:00:00Z", new: true };
+  result.clusters[1].track = { id: "b", since: "2026-10-05T06:00:00Z" };
+  assert.deepEqual(visitorTypes(result, "desktop").map(row => row.age), ["Since Oct 5", "New"]);
+  result.clusters[0].track = { id: "a", since: "2026-10-26T06:00:00Z" };
+  assert.equal(visitorTypes(result, "desktop")[1].age, null);
+});

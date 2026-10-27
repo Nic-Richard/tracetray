@@ -31,7 +31,7 @@ def desktop_visits(rng, n, types, scroll_only=0.0):
 
 def groups(df):
     features = analyze.engineer_desktop_features(df)
-    X, _ = analyze.clustering_matrix(features, analyze.DESKTOP_ENGINEERED_FEATURES)
+    X, _, _ = analyze.clustering_matrix(features, analyze.DESKTOP_ENGINEERED_FEATURES)
     min_size = analyze.min_group_size(len(df))
     _, k, labels, _, _, _, verdict = analyze.cluster(X, analyze.compute_k_range(len(df), min_size), min_size)
     return k, labels, verdict

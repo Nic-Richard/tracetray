@@ -1,4 +1,4 @@
-import type { AnalysisResult, ClusterStory, Device, DeviceAnalysis, Interpretation, Trait } from "./types";
+import type { AnalysisResult, Cluster, ClusterStory, Device, DeviceAnalysis, Interpretation, Trait } from "./types";
 
 export function interpretationOf(result: AnalysisResult | null | undefined): Interpretation | null {
   return result?.interpretation || result?.ai_interpretation || null;
@@ -11,6 +11,8 @@ export interface VisitorType {
   sessions: number;
   story: ClusterStory | null;
   headline: string;
+  /** "New" or "Since Oct 5"; empty on a page's first tracked analysis. */
+  age: string | null;
 }
 
 export function deviceAnalysis(result: AnalysisResult | null | undefined, device: Device): DeviceAnalysis | null {
@@ -34,7 +36,15 @@ export function visitorTypes(result: AnalysisResult | null | undefined, device: 
   const stories = (device === "mobile" ? interpretation?.mobile_cluster_stories : interpretation?.cluster_stories) || {};
   return [...(source?.clusters || [])]
     .sort((a, b) => b.n - a.n)
-    .map(c => ({ id: c.id, key: stories[c.id]?.key, share: c.n / total, sessions: c.n, story: stories[c.id] || null, headline: stories[c.id]?.headline || c.label }));
+    .map(c => ({ id: c.id, key: stories[c.id]?.key, share: c.n / total, sessions: c.n, story: stories[c.id] || null, headline: stories[c.id]?.headline || c.label, age: groupAge(c.track, result?.ran_at) }));
+}
+
+function groupAge(track: Cluster["track"], ranAt: string | undefined): string | null {
+  if (!track) return null;
+  if (track.new) return "New";
+  const since = Date.parse(track.since);
+  if (!Number.isFinite(since) || !ranAt || since >= Date.parse(ranAt) - 86400000) return null;
+  return `Since ${new Date(since).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }
 
 export interface InactiveVisits {

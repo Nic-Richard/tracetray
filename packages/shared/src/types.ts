@@ -233,6 +233,8 @@ export interface Cluster {
   feature_means: ClusterMeans;
   /** Visits in the group that reached each goal, by goal ID. */
   goal_hits?: Record<string, number>;
+  /** The same group across analyses of the page; `new` when the last analysis didn't have it. */
+  track?: { id: string; since: string; new?: boolean };
 }
 
 export interface KruskalWallis {

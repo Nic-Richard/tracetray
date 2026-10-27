@@ -7,6 +7,7 @@ const { mainGoalFor } = require("./goalHits");
 const { getClickSummary } = require("./clickSummary");
 const { computeAttentionProfile } = require("./attentionProfile");
 const { interpretClusters } = require("./interpretClusters");
+const { trackGroups } = require("./groupTracking");
 const { goalPosition } = require("./goalPosition");
 const { analysisRunning } = require("./analysisState");
 const logger = require("./logger");
@@ -60,6 +61,13 @@ async function runAnalysis(siteKey, pageFilter = null) {
         }
 
         clusterResult.click_summary = await getClickSummary(siteKey, pageFilter, 15);
+
+        try {
+            const previous = await AnalysisResult.findOne({ site_key: siteKey, page: clusterResult.page }).sort({ ran_at: -1 }).lean();
+            trackGroups(previous, clusterResult);
+        } catch (err) {
+            logger.error("group tracking failed:", err);
+        }
 
         try {
             let pageUrl = pageFilter;
