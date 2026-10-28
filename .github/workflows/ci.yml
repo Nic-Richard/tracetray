@@ -35,6 +35,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Deployment backup and rollback tests
+        run: python3 scripts/test-deploy-api.py
       - name: Python syntax and clustering tests
         run: python -m compileall -q ml && python -m pip install -q -r ml/requirements.txt && (cd ml && python -m unittest -q)
       - name: ML benchmarks

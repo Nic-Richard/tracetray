@@ -51,7 +51,7 @@ jobs:
           trap 'rm -f "$key" "$hosts" "$archive"' EXIT
           printf '%s\n' "$DEPLOY_KEY" > "$key"
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$hosts"
-          git archive --format=tar HEAD client server/server.js server/src server/public server/scripts server/package.json server/package-lock.json > "$archive"
+          git archive --format=tar HEAD client server/server.js server/src server/public server/scripts server/package.json server/package-lock.json analysis ml > "$archive"
           tar -rf "$archive" server/public/app
           gzip -c "$archive" |
             ssh -T -i "$key" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$hosts" root@5.78.178.181 "deploy $GITHUB_SHA"
