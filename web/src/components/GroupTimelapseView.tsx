@@ -62,7 +62,7 @@ export default function GroupTimelapseView({ history }: { history: GroupHistoryF
   const from = frames[index]?.[device] || null, to = frames[Math.min(index + 1, frames.length - 1)]?.[device] || null;
   const groups = blendFrames(from, to, t).filter(g => g.opacity > 0.02).map(g => {
     const r = 6 + 22 * Math.sqrt(g.share);
-    return { ...g, cx: sx(g.x), cy: sy(g.y), r, labelY: sy(g.y) - r - 6 };
+    return { ...g, cx: sx(g.x), cy: sy(g.y), r, labelX: sx(g.x), labelY: sy(g.y) - r - 6 };
   });
   // A label that would overlap one already placed goes under its circle instead.
   const placed: { x: number; y: number; w: number }[] = [];
@@ -70,6 +70,7 @@ export default function GroupTimelapseView({ history }: { history: GroupHistoryF
     const w = g.headline.length * 7.2;
     if (placed.some(p => Math.abs(p.y - g.labelY) < 16 && Math.abs(p.x - g.cx) < (p.w + w) / 2)) g.labelY = g.cy + g.r + 16;
     placed.push({ x: g.cx, y: g.labelY, w });
+    g.labelX = Math.min(Math.max(g.cx, w / 2 + 2), W - w / 2 - 2);
   }
 
   const play = () => { if (position >= frames.length - 1) setPosition(0); setPlaying(p => !p); };
@@ -110,7 +111,7 @@ export default function GroupTimelapseView({ history }: { history: GroupHistoryF
                   <circle cx={g.cx} cy={g.cy} r={g.r} fill={colours.get(g.id)} fillOpacity={0.2} stroke={colours.get(g.id)} strokeWidth={2}>
                     <title>{`${g.headline}: ${Math.round(g.share * 100)}% of visits`}</title>
                   </circle>
-                  <text x={g.cx} y={g.labelY} textAnchor="middle" className="label">{g.headline}</text>
+                  <text x={g.labelX} y={g.labelY} textAnchor="middle" className="label">{g.headline}</text>
                 </g>
               ))}
             </svg>

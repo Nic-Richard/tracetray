@@ -572,6 +572,8 @@ td.strong { font-weight: 700; }
 .timelapse-controls input { flex: 1; min-width: 0; accent-color: var(--d1); }
 .timelapse-table { margin-top: 12px; font-size: 13.5px; }
 .timelapse-table summary { cursor: pointer; color: var(--muted); }
+.timelapse-table table { display: block; overflow-x: auto; max-width: 100%; }
+@media (max-width: 520px) { .timelapse-table { font-size: 12.5px; } .timelapse-table th, .timelapse-table td { padding-inline: 6px; } }
 .timelapse-table table { margin-top: 8px; border-collapse: collapse; }
 .timelapse-table th, .timelapse-table td { padding: 4px 12px 4px 0; text-align: left; border-bottom: 1px solid var(--line); }
 .driver-panel .panel-body { display: grid; gap: 12px; }

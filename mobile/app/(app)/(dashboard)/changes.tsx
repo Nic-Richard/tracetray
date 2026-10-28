@@ -160,7 +160,7 @@ export default function ChangesScreen() {
           >
             <Text style={styles.buttonText}>{adding ? "Cancel new change" : "Mark a change"}</Text>
           </Pressable>
-          {error ? (
+          {error && !adding ? (
             <Text style={styles.error} accessibilityRole="alert">
               {error}
             </Text>
@@ -194,6 +194,7 @@ export default function ChangesScreen() {
                 editable={!busy}
                 style={styles.input}
               />
+              {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
               <Pressable
                 accessibilityRole="button"
                 disabled={busy || !!params.finding && (draft.loading || !!draft.error || !draft.data || !source)}
