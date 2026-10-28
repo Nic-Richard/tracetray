@@ -36,6 +36,7 @@
       "expo-web-browser",
       "expo-status-bar",
       "./plugins/retain-intent.cjs",
+      "./plugins/font-scale.cjs",
       [
         "expo-splash-screen",
         {
