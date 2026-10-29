@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { Alert, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { ignoreLinks } from "@tracetray/shared";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Failure } from "../../../components/Status";
 import { installationSnippet } from "../../../lib/installation";
@@ -13,6 +14,7 @@ export default function InstallationScreen() {
   const site = account.sites.find(value => value.key === params.site);
   if (!site) return <Failure message="Choose one of your websites." retry={() => router.replace("/websites")} />;
   const snippet = installationSnippet(account.dashboard, site.key);
+  const links = ignoreLinks(site);
   return (
     <SafeAreaView style={styles.screen} edges={["left", "right", "bottom"]}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -45,6 +47,20 @@ export default function InstallationScreen() {
         <Text style={styles.muted}>
           Visits appear in the dashboard after the code is installed and someone visits your site.
         </Text>
+        <Text style={styles.heading}>Ignore your own visits</Text>
+        {links ? (<>
+          <Text style={styles.text}>
+            Open this link once in each browser you use. Visits from that browser stop counting on {site.name}.
+          </Text>
+          <Pressable accessibilityRole="link" onPress={() => Linking.openURL(links.ignore).catch(() => Alert.alert("Couldn't open the link", "Try again."))}>
+            <Text selectable style={styles.link}>{links.ignore}</Text>
+          </Pressable>
+          <Text selectable style={styles.muted}>To count them again, open {links.count}.</Text>
+        </>) : (
+          <Text style={styles.muted}>
+            Once TraceTray sees a visit, open your website with ?tt_ignore=1 at the end of the address in each browser you use. ?tt_ignore=0 undoes it.
+          </Text>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

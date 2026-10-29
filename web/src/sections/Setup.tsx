@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { EMAILS, PLAN_NAMES, usageMeter, pageLabel, type EmailList, type PageGroups, type Site } from "@tracetray/shared";
+import { EMAILS, PLAN_NAMES, ignoreLinks, usageMeter, pageLabel, type EmailList, type PageGroups, type Site } from "@tracetray/shared";
 import type React from "react";
 import { useLoad } from "../lib/useLoad";
 import { useApi } from "../api";
@@ -50,6 +50,22 @@ function Snippet() {
         <SnippetCode origin={window.location.origin} siteKey={site.key} />
         <p>Use this key on this website only. Add another website below to get a separate key.</p>
         <p className="muted">TraceTray records cursor movement, clicks, taps, scrolling and pauses in scrolling. It never records keystrokes or form contents.</p>
+      </div>
+    </section>
+  );
+}
+
+function IgnoreVisits() {
+  const { site } = useSite();
+  const links = ignoreLinks(site);
+  return (
+    <section className="panel">
+      <div className="panel-head"><h2>Ignore your own visits</h2></div>
+      <div className="panel-body setup-copy">
+        {links ? <>
+          <p>Open <a href={links.ignore} target="_blank" rel="noopener">{links.ignore}</a> once in each browser you use, including on your phone. Visits from that browser stop counting on {site.name}.</p>
+          <p className="muted">To count them again, open <a href={links.count} target="_blank" rel="noopener">{links.count}</a>. Clearing that browser's site data also undoes it.</p>
+        </> : <p className="muted">Once TraceTray sees a visit, open your website with <code>?tt_ignore=1</code> at the end of the address in each browser you use. Visits from that browser stop counting; <code>?tt_ignore=0</code> undoes it.</p>}
       </div>
     </section>
   );
@@ -416,6 +432,7 @@ export default function Setup() {
         <p className="tab-intro">Add TraceTray to your site, set goals, group similar pages, and manage your websites and plan.</p>
       </div>
       <Snippet />
+      <IgnoreVisits />
       <GoalsPanel />
       <PageGroupRules />
       <Websites />

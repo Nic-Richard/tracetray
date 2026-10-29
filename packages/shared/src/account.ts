@@ -34,6 +34,14 @@ export function reportPageUrl(page: string): string {
   } catch { return ""; }
 }
 
+export function ignoreLinks(site: { url: string | null; domain: string | null }): { ignore: string; count: string } | null {
+  try {
+    const home = new URL(site.url || `https://${site.domain}`);
+    if (!["http:", "https:"].includes(home.protocol) || !home.hostname || home.hostname === "null") return null;
+    return { ignore: `${home.origin}/?tt_ignore=1`, count: `${home.origin}/?tt_ignore=0` };
+  } catch { return null; }
+}
+
 export function usageMeter(used: number, limit: number | null): { share: number | null; over: boolean } {
   return {
     share: limit === null ? null : limit <= 0 ? (used > 0 ? 1 : 0) : Math.min(1, Math.max(0, used / limit)),

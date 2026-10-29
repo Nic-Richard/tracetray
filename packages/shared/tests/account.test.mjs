@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { reportError, reportPageUrl, usageMeter } from "../src/account.ts";
+import { ignoreLinks, reportError, reportPageUrl, usageMeter } from "../src/account.ts";
 
 test("report validation trims descriptions and enforces both API boundaries", () => {
   assert(reportError("  short  "));
@@ -20,4 +20,10 @@ test("usage distinguishes unlimited, zero and exceeded allowances without invali
   assert.deepEqual(usageMeter(1, 0), { share: 1, over: true });
   assert.deepEqual(usageMeter(4, 10), { share: 0.4, over: false });
   assert.deepEqual(usageMeter(12, 10), { share: 1, over: true });
+});
+
+test("opt-out links point at the site's home page and skip unknown or unsafe addresses", () => {
+  assert.deepEqual(ignoreLinks({ url: "https://shop.example.com/products?x=1", domain: null }), { ignore: "https://shop.example.com/?tt_ignore=1", count: "https://shop.example.com/?tt_ignore=0" });
+  assert.equal(ignoreLinks({ url: null, domain: "example.com" })?.ignore, "https://example.com/?tt_ignore=1");
+  for (const site of [{ url: null, domain: null }, { url: "javascript:alert(1)", domain: null }]) assert.equal(ignoreLinks(site), null);
 });

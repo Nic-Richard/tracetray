@@ -7,6 +7,14 @@ if (window.__traceTrayLoaded) return;
 window.__traceTrayLoaded = true;
 // Browsers driven by automation (test scripts, scrapers, headless tools) aren't visitors.
 if (navigator.webdriver) return;
+// Site owners opt their own browser out by opening the site once with ?tt_ignore=1 (?tt_ignore=0 undoes it).
+// This flag is the only thing the tracker ever stores, and only in browsers that asked for it.
+try {
+    const ignore = new URLSearchParams(window.location.search).get("tt_ignore");
+    if (ignore === "1") localStorage.setItem("tt_ignore", "1");
+    if (ignore === "0") localStorage.removeItem("tt_ignore");
+    if (localStorage.getItem("tt_ignore") === "1") return;
+} catch(e) {}
 
 function generateId() {
     if (crypto && crypto.randomUUID) {
