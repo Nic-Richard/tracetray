@@ -59,6 +59,15 @@ export interface GoalList {
 }
 
 /** A form sent on the site recently, for picking a form goal. */
+export interface ClickSeen {
+  tag: string | null;
+  id: string | null;
+  text: string | null;
+  href: string | null;
+  clicked: number;
+  page: string;
+}
+
 export interface FormSeen {
   id: string | null;
   name: string | null;

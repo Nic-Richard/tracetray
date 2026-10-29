@@ -1,7 +1,19 @@
-import type { FormSeen, Goal } from "./types";
+import type { ClickSeen, FormSeen, Goal } from "./types";
 
 export function formLabel(form?: Pick<FormSeen, "id" | "name" | "action">): string {
   return !form ? "Form" : form.id ? `Form #${form.id}` : form.name ? `Form “${form.name}”` : `Form to ${form.action}`;
+}
+
+export function clickLabel(click: Pick<ClickSeen, "tag" | "id" | "text" | "href">): string {
+  const what = click.text ? `“${click.text}”` : click.id ? `#${click.id}` : "A link";
+  return click.href ? `${what}, link to ${click.href}` : `${what} ${click.tag === "A" ? "link" : "button"}`;
+}
+
+// Same rule as "Make this a goal" on the Clicks tab: a link's address survives rewording, otherwise the text.
+export function clickMatch(click: Pick<ClickSeen, "tag" | "id" | "text" | "href">): { id?: string; href?: string; text?: string; tag?: string } {
+  if (click.href) return { href: click.href };
+  if (!click.text && click.id) return { id: click.id };
+  return { text: click.text || "", ...(click.tag ? { tag: click.tag } : {}) };
 }
 
 export function describeGoal(goal: Pick<Goal, "type" | "match">): string {

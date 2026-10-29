@@ -3,11 +3,14 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  clickLabel,
+  clickMatch,
   describeGoal,
   formLabel,
   pageLabel,
   pagePath,
   parseGoalTarget,
+  type ClickSeen,
   type FormSeen,
   type Goal,
   type GoalList,
@@ -21,14 +24,16 @@ import { useLoad } from "../../../lib/useLoad";
 import { useTheme } from "../../../lib/theme";
 
 const formKey = (form: FormSeen) => JSON.stringify([form.id, form.name, form.action, form.page]);
+const clickKey = (click: ClickSeen) => JSON.stringify([click.tag, click.id, click.text, click.href]);
 
 function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string; goal?: Goal; list: GoalList }) {
   const api = useApi();
   const { styles, colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const [type, setType] = useState<GoalType>(goal?.type || "click");
+  const [type, setType] = useState<GoalType>(goal?.type || "page");
   const [name, setName] = useState(goal?.name || "");
   const [text, setText] = useState("");
+  const [click, setClick] = useState("");
   const [destination, setDestination] = useState("");
   const [form, setForm] = useState("");
   const initialTarget = goal?.target != null ? String(goal.target * 100) : "";
@@ -52,6 +57,12 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
     () => (!goal && type === "form" ? api.forms(siteKey) : Promise.resolve([])),
     [api, siteKey, type, goal?.id],
   );
+  const clicks = useLoad(
+    () => (!goal && type === "click" ? api.clicks(siteKey) : Promise.resolve([])),
+    [api, siteKey, type, goal?.id],
+  );
+  const typed = click === "typed";
+  const picked = typed ? undefined : clicks.data?.find(value => clickKey(value) === click);
   async function save() {
     if (pending.current) return;
     const aim = goal && target === initialTarget ? { target: goal.target ?? null } : parseGoalTarget(target);
@@ -67,7 +78,7 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
     if (
       !goal &&
       (type === "click"
-        ? !text.trim()
+        ? !(picked || (typed && text.trim()))
         : type === "page"
           ? !pages.data?.some(value => value.page === destination)
           : !list.form_goals || !chosen)
@@ -84,7 +95,7 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
       else {
         const match =
           type === "click"
-            ? { text: text.trim() }
+            ? picked ? clickMatch(picked) : { text: text.trim() }
             : type === "page"
               ? { page: destination }
               : chosen?.id
@@ -92,7 +103,7 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
                 : chosen?.name
                   ? { name: chosen.name }
                   : { action: chosen?.action };
-        const fallback = type === "click" ? text.trim() : type === "page" ? pageLabel(destination) : formLabel(chosen);
+        const fallback = type === "click" ? (picked ? picked.text || clickLabel(picked) : text.trim()) : type === "page" ? pageLabel(destination) : formLabel(chosen);
         await api.addGoal(siteKey, {
           type,
           name: (name.trim() || fallback).slice(0, 60),
@@ -132,8 +143,8 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
             <Text style={styles.heading}>What should visitors do?</Text>
             {(
               [
-                { type: "click", label: "Click a button or link" },
                 { type: "page", label: "Go on to a page" },
+                { type: "click", label: "Click a button or link" },
                 { type: "form", label: `Send a form${list.form_goals ? "" : " (Ultra)"}` },
               ] as const
             ).map(choice => (
@@ -160,18 +171,44 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
             ))}
             {type === "click" ? (
               <>
-                <Text style={styles.text}>Button or link text</Text>
-                <TextInput
-                  accessibilityLabel="Button or link text"
-                  value={text}
-                  onChangeText={setText}
-                  editable={!busy}
-                  maxLength={80}
-                  style={styles.input}
-                  placeholder="Start free trial"
-                  placeholderTextColor={colors.muted}
-                />
-                <Text style={styles.muted}>Matches this text exactly, ignoring case and extra spaces.</Text>
+                <Text style={styles.text}>Button or link clicked in the last 30 days</Text>
+                {clicks.error ? (
+                  <InlineFailure message={clicks.error} retry={clicks.reload} />
+                ) : clicks.loading ? (
+                  <Text style={styles.muted}>Loading buttons and links…</Text>
+                ) : (
+                  <ChoicePicker
+                    label="Button or link"
+                    value={click}
+                    disabled={busy}
+                    choices={[
+                      ...(clicks.data || []).map(value => ({
+                        key: clickKey(value),
+                        label: clickLabel(value),
+                        detail: `Clicked ${value.clicked.toLocaleString()} times · ${pagePath(value.page)}`,
+                      })),
+                      { key: "typed", label: "Not listed: type its text", detail: "For a button nobody has clicked yet" },
+                    ]}
+                    onChange={setClick}
+                  />
+                )}
+                {typed ? (
+                  <>
+                    <TextInput
+                      accessibilityLabel="Button or link text"
+                      value={text}
+                      onChangeText={setText}
+                      editable={!busy}
+                      maxLength={80}
+                      style={styles.input}
+                      placeholder="Exact button or link text"
+                      placeholderTextColor={colors.muted}
+                    />
+                    <Text style={styles.muted}>
+                      Type it exactly as it appears; capitals and extra spaces don't matter. Different wording won't match.
+                    </Text>
+                  </>
+                ) : null}
               </>
             ) : type === "page" ? (
               <>

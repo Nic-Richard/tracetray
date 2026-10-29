@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { describeGoal, formLabel, goalAppliesToPage, parseGoalTarget } from "../src/goals.ts";
+import { clickLabel, clickMatch, describeGoal, formLabel, goalAppliesToPage, parseGoalTarget } from "../src/goals.ts";
 
 test("goal targets convert percentages, accept decimal commas and distinguish blank from invalid zero", () => {
   assert.deepEqual(parseGoalTarget(""), { target: null });
@@ -24,4 +24,12 @@ test("main goals apply to their scope and exclude their own destination page", (
   assert.equal(goalAppliesToPage(goal, "https://example.com/other"), false);
   assert.equal(goalAppliesToPage({ ...goal, pages: [] }, goal.match.page), false);
   assert.equal(goalAppliesToPage({ type: "click", match: { text: "Buy" }, pages: [] }, "https://example.com/"), true);
+});
+
+test("picked clicks match like the Clicks tab: link address first, then text, then ID", () => {
+  assert.deepEqual(clickMatch({ tag: "A", id: "cta", text: "Start trial", href: "/pricing" }), { href: "/pricing" });
+  assert.deepEqual(clickMatch({ tag: "BUTTON", id: "go", text: "Open pack", href: null }), { text: "Open pack", tag: "BUTTON" });
+  assert.deepEqual(clickMatch({ tag: "BUTTON", id: "menu", text: null, href: null }), { id: "menu" });
+  assert.equal(clickLabel({ tag: "A", id: null, text: "Pricing", href: "/pricing" }), "“Pricing”, link to /pricing");
+  assert.equal(clickLabel({ tag: "BUTTON", id: null, text: "Open pack", href: null }), "“Open pack” button");
 });

@@ -135,6 +135,27 @@ router.get("/api/forms", requireAuth(), async (req, res) => {
     }
 });
 
+// Buttons and links people actually clicked, so click goals are picked rather than typed.
+router.get("/api/clicks", requireAuth(), async (req, res) => {
+    try {
+        const found = await loadSite(req, res);
+        if (!found) return;
+        const clicks = await Session.aggregate([
+            { $match: { site_key: found.site.key, start_time: { $gte: Date.now() - 30 * DAY_MS }, "events.target": { $type: "object" } } },
+            { $unwind: "$events" },
+            { $match: { "events.type": { $in: ["click", "tap"] }, "events.target": { $type: "object" } } },
+            { $group: { _id: { tag: "$events.target.tag", id: "$events.target.id", text: "$events.target.text", href: "$events.target.href" }, clicked: { $sum: 1 }, page: { $first: "$page" } } },
+            { $match: { $or: [{ "_id.id": { $nin: [null, ""] } }, { "_id.text": { $nin: [null, ""] } }, { "_id.href": { $nin: [null, ""] } }] } },
+            { $sort: { clicked: -1 } },
+            { $limit: 40 }
+        ]);
+        res.json(clicks.map(c => ({ tag: c._id.tag || null, id: c._id.id || null, text: c._id.text || null, href: c._id.href || null, clicked: c.clicked, page: c.page })));
+    } catch (err) {
+        logger.error("clicks error:", err);
+        res.status(500).json({ error: "couldn't load your buttons and links" });
+    }
+});
+
 // The goal a page's header and before-and-after use; null clears it.
 router.put("/api/main-goal", requireAuth(), async (req, res) => {
     try {
