@@ -55,16 +55,58 @@ function Snippet() {
   );
 }
 
+const ignoreKey = (siteKey: string) => `tt-ignore:${siteKey}`;
+
 function IgnoreVisits() {
   const { site } = useSite();
   const links = ignoreLinks(site);
+  const [ignored, setIgnored] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    try { setIgnored(localStorage.getItem(ignoreKey(site.key)) === "1"); } catch { setIgnored(false); }
+    setBusy(false); setError("");
+  }, [site.key]);
+
+  // The flag has to be saved by the site itself in a real window: browsers keep a hidden frame's storage
+  // separate from the site's own. The tracker reports back and closes the window.
+  function toggle() {
+    if (!links || busy) return;
+    const want = !ignored;
+    const origin = new URL(links.ignore).origin;
+    const popup = window.open(want ? links.ignore : links.count, "tt-ignore", "popup,width=420,height=360");
+    if (!popup) { setError("Your browser blocked the window. Allow pop-ups for TraceTray, or open the link below yourself."); return; }
+    setBusy(true); setError("");
+    const done = (message: string) => {
+      window.removeEventListener("message", listen);
+      clearTimeout(timer);
+      setBusy(false);
+      setError(message);
+    };
+    const listen = (event: MessageEvent) => {
+      if (event.origin !== origin || typeof event.data?.traceTrayIgnore !== "boolean") return;
+      try { event.data.traceTrayIgnore ? localStorage.setItem(ignoreKey(site.key), "1") : localStorage.removeItem(ignoreKey(site.key)); } catch {}
+      setIgnored(event.data.traceTrayIgnore);
+      done("");
+    };
+    const timer = setTimeout(() => {
+      try { popup.close(); } catch {}
+      done(`${site.name} didn't answer. Check the TraceTray code is installed there, or open the link below yourself.`);
+    }, 15000);
+    window.addEventListener("message", listen);
+  }
+
   return (
     <section className="panel">
       <div className="panel-head"><h2>Ignore your own visits</h2></div>
-      <div className="panel-body setup-copy">
+      <div className="panel-body setup-copy emails">
         {links ? <>
-          <p>Open <a href={links.ignore} target="_blank" rel="noopener">{links.ignore}</a> once in each browser you use, including on your phone. Visits from that browser stop counting on {site.name}.</p>
-          <p className="muted">To count them again, open <a href={links.count} target="_blank" rel="noopener">{links.count}</a>. Clearing that browser's site data also undoes it.</p>
+          <label className="toggle-row">
+            <input type="checkbox" checked={ignored} onChange={toggle} disabled={busy} />
+            <span><b>{busy ? "Checking with your site…" : "Ignore my visits in this browser"}</b><small>{site.name} opens for a moment, saves the setting and closes. Do this in each browser you use, including on your phone.</small></span>
+          </label>
+          {error && <p className="page-status error" style={{ padding: 0 }}>{error}</p>}
+          <p className="muted">For a browser where you don't use the dashboard, open <a href={links.ignore} target="_blank" rel="noopener">{links.ignore}</a> there. <a href={links.count} target="_blank" rel="noopener">{links.count}</a> undoes it.</p>
         </> : <p className="muted">Once TraceTray sees a visit, open your website with <code>?tt_ignore=1</code> at the end of the address in each browser you use. Visits from that browser stop counting; <code>?tt_ignore=0</code> undoes it.</p>}
       </div>
     </section>

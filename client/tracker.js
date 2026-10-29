@@ -13,6 +13,12 @@ try {
     const ignore = new URLSearchParams(window.location.search).get("tt_ignore");
     if (ignore === "1") localStorage.setItem("tt_ignore", "1");
     if (ignore === "0") localStorage.removeItem("tt_ignore");
+    // Opened by the dashboard's toggle: confirm what was saved and close.
+    if ((ignore === "1" || ignore === "0") && window.opener) {
+        window.opener.postMessage({ traceTrayIgnore: localStorage.getItem("tt_ignore") === "1" }, "*");
+        window.close();
+        return;
+    }
     if (localStorage.getItem("tt_ignore") === "1") return;
 } catch(e) {}
 
