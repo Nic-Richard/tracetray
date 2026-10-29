@@ -84,10 +84,12 @@ test("CSV cells are quoted when needed and can't start a spreadsheet formula", (
     assert.equal(toCsv(["a", "b"], [[1, "x"]]), "a,b\r\n1,x\r\n");
 });
 
-test("the tracker never stores anything on the visitor's device", () => {
+test("the tracker stores nothing on the visitor's device except the opt-in ignore flag", () => {
     const fs = require("node:fs");
     const tracker = fs.readFileSync(require("node:path").resolve(__dirname, "../../client/tracker.js"), "utf8");
-    assert.doesNotMatch(tracker, /localStorage\.setItem|sessionStorage|document\.cookie|indexedDB/);
+    assert.deepEqual(tracker.match(/localStorage\.setItem\([^)]*\)/g), ['localStorage.setItem("tt_ignore", "1")']);
+    assert.match(tracker, /if \(ignore === "1"\) localStorage\.setItem/);
+    assert.doesNotMatch(tracker, /sessionStorage|document\.cookie|indexedDB/);
     assert.doesNotMatch(tracker, /visitor_id/, "visitor IDs come from the server");
 });
 
