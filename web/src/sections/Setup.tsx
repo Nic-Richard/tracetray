@@ -12,14 +12,14 @@ function SnippetCode({ origin, siteKey }: { origin: string; siteKey: string }) {
   return (
     <pre className="code" id="snippet-code">
       {tag("script")}<span className="punct">&gt;</span>{"\n  window."}<span className="prop">TraceTray</span>{" = { "}<span className="prop">endpoint</span>{": "}<span className="str">"{origin}/collect"</span>{", "}<span className="prop">key</span>{": "}<span className="str">"{siteKey}"</span>{" };\n"}{tag("script", true)}{"\n"}
-      {tag("script")}{" "}<span className="prop">src</span><span className="punct">=</span><span className="str">"{origin}/client/tracker.js"</span><span className="punct">&gt;</span>{tag("script", true)}
+      {tag("script")}{" "}<span className="prop">src</span><span className="punct">=</span><span className="str">"{origin}/client/tracker.js"</span>{" "}<span className="prop">defer</span><span className="punct">&gt;</span>{tag("script", true)}
     </pre>
   );
 }
 
 function snippetFor(siteKey: string): string {
   const origin = window.location.origin;
-  return `<script>\n  window.TraceTray = { endpoint: "${origin}/collect", key: "${siteKey}" };\n</script>\n<script src="${origin}/client/tracker.js"></script>`;
+  return `<script>\n  window.TraceTray = { endpoint: "${origin}/collect", key: "${siteKey}" };\n</script>\n<script src="${origin}/client/tracker.js" defer></script>`;
 }
 
 function Snippet() {

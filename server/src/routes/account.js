@@ -58,7 +58,7 @@ router.post("/api/account", requireAuth(), async (req, res) => {
             site_limit: getSiteLimit(account),
             plan:      account.plan,
             dashboard: `${host}/app/`,
-            snippet:   `<script>\n  window.TraceTray = { endpoint: "${host}/collect", key: "${sites[0].key}" };\n</script>\n<script src="${host}/client/tracker.js"></script>`
+            snippet:   `<script>\n  window.TraceTray = { endpoint: "${host}/collect", key: "${sites[0].key}" };\n</script>\n<script src="${host}/client/tracker.js" defer></script>`
         });
     } catch (err) {
         logger.error("account error:", err);
