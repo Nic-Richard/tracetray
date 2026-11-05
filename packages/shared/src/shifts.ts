@@ -15,7 +15,10 @@ export interface GroupShift {
   to: number;
   /** When the change happened: a group's first sighting, last sighting, or where its share changed; epoch ms. */
   since?: number;
-  drift: { feature: string; before: number; after: number; change: number }[];
+  /** When the share changed more than once, its level in each stretch, oldest first. */
+  steps?: { since: number; share: number }[];
+  /** Measured across the group's change (from `since`) when it has one, otherwise early against recent visits. */
+  drift: { feature: string; before: number; after: number; change: number; since?: number }[];
   /** For a group that changed: how much came from where visitors come from changing (traffic) and how much from
    * the group growing or shrinking within sources; a driver is named only when the traffic part held up. */
   sources?: { change: number; traffic: Band; within: Band; drivers: { source: string; part: number; traffic_before: number; traffic_after: number }[] };
@@ -182,11 +185,15 @@ export function shiftSentences(shifts: DeviceShifts | null, device: Device, cont
     const near = g.since ? note(g.since) : "";
     if (g.event === "appeared") out.push(`New: ${g.headline}, first seen around ${day(g.since!)}${near}, now ${pct(g.to)} of ${device} visits${cause(g)}.`);
     if (g.event === "faded") out.push(`${g.headline} faded out after ${day(g.since!)}${near}: ${pct(g.from)} of ${device} visits early on, ${pct(g.to)} lately.`);
-    if (g.event === "grew" || g.event === "shrank") out.push(`${g.headline} have averaged ${pct(g.to)} of ${device} visits since around ${day(g.since!)}${near}, ${g.event === "grew" ? "up" : "down"} from ${pct(g.from)} before${cause(g)}.`);
+    if (g.steps && g.steps.length > 2) {
+      const [first, ...rest] = g.steps;
+      const path = rest.map((s, i) => `${i ? ", then " : ""}${i && Math.abs(s.share - first.share) < 0.03 ? "back " : ""}to ${pct(s.share)} around ${day(s.since)}${i ? "" : near}`).join("");
+      out.push(`${g.headline} went from ${pct(first.share)} of ${device} visits ${path}${cause(g)}.`);
+    } else if (g.event === "grew" || g.event === "shrank") out.push(`${g.headline} have averaged ${pct(g.to)} of ${device} visits since around ${day(g.since!)}${near}, ${g.event === "grew" ? "up" : "down"} from ${pct(g.from)} before${cause(g)}.`);
   }
   for (const g of shifts.groups) for (const d of g.drift) {
     const what = MEASURES[d.feature];
-    if (what) out.push(`${g.headline} now ${what} ${amount(d.change)} they did around ${firstWeek}.`);
+    if (what) out.push(`${g.headline} now ${what} ${amount(d.change)} they did ${d.since ? `before ${day(d.since)}` : `around ${firstWeek}`}.`);
   }
   return out;
 }

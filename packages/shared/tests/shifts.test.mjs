@@ -18,6 +18,17 @@ test("shift sentences name what changed and stay quiet otherwise", () => {
   ]);
 });
 
+test("a share that changed more than once reads as steps, and drift is timed from the change", () => {
+  const steps = [{ since: bins[0].from, share: 0.25 }, { since: bins[1].from, share: 0.45 }, { since: bins[3].from, share: 0.26 }];
+  assert.deepEqual(shiftSentences({ structure: "some", bin_weeks: 1, bins, groups: [
+    group("Header scanners", { event: "grew", since: bins[1].from, from: 0.25, to: 0.38, steps,
+      drift: [{ feature: "click_rate", before: 0.1, after: 0.05, change: -0.5, since: bins[1].from }] })
+  ] }, "desktop"), [
+    "Header scanners went from 25% of desktop visits to 45% around Aug 24, then back to 26% around Sep 7.",
+    "Header scanners now click about a half less than they did before Aug 24."
+  ]);
+});
+
 test("map directions are named only after measures that move strongly with them", () => {
   const map = { explained: 0.6, frames: [], loadings: { click_rate: [0.8, 0.1], dwell_before_click: [-0.7, 0.2], direction_change_rate: [0.1, 0.65], pause_rate: [0.2, -0.3] } };
   assert.deepEqual(mapDirections(map), { right: "more clicking", left: "more waiting before clicking", up: "more scrolling back up", down: null });

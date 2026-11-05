@@ -89,6 +89,31 @@ class ClusteringTest(unittest.TestCase):
         self.assertAlmostEqual(group["to"], 0.45, delta=0.05)
         self.assertGreater(group["since"], now - 4 * group_shifts.WEEK_MS)
 
+    def test_a_rise_that_falls_back_is_reported_as_steps(self):
+        rng = np.random.default_rng(11)
+        now = 100 * group_shifts.WEEK_MS
+        start = now - rng.integers(0, 12 * group_shifts.WEEK_MS, size=4000)
+        age = (now - start) // group_shifts.WEEK_MS
+        labels = (rng.random(4000) < np.where((age >= 4) & (age < 8), 0.45, 0.25)).astype(int)
+        group = group_shifts.shifts(start, labels, rng.normal(size=(4000, 1)), ["click_rate"], now)["groups"]["1"]
+        self.assertEqual(len(group["steps"]), 3)
+        for step, share in zip(group["steps"], [0.25, 0.45, 0.25]):
+            self.assertAlmostEqual(step["share"], share, delta=0.04)
+
+    def test_a_shift_made_of_borderline_visits_is_dropped(self):
+        rng = np.random.default_rng(12)
+        now = 100 * group_shifts.WEEK_MS
+        n = 3000
+        start = now - rng.integers(0, 12 * group_shifts.WEEK_MS, size=n)
+        recent = start > now - 4 * group_shifts.WEEK_MS
+        labels = rng.integers(0, 2, size=n)
+        X = np.column_stack([np.where(labels == 1, 2.0, -2.0) + rng.normal(0, 0.4, n), rng.normal(0, 0.4, n)])
+        # Recent visits that only just fall on group 1's side.
+        edge = recent & (rng.random(n) < 0.3)
+        labels[edge], X[edge, 0] = 1, rng.uniform(0.05, 0.3, edge.sum())
+        result = group_shifts.shifts(start, labels, X, ["a", "b"], now, X)
+        self.assertIsNone(result["groups"]["1"]["event"])
+
     def test_map_moves_only_groups_whose_behaviour_really_changed(self):
         rng = np.random.default_rng(8)
         now = 100 * group_shifts.WEEK_MS

@@ -1,8 +1,10 @@
 """How a page's groups changed over the analysis window, read from the one fit rather than re-clustering per week,
 which would make groups "change" whenever k-means landed differently.
 
-Shares use Wilson intervals; share changes a two-proportion test at every split (Bonferroni over splits); drift
-Mann-Whitney U; each family is corrected with Benjamini-Hochberg. The map projects the standardized clustering
+Shares use Wilson intervals; share changes a two-proportion test at every split (Bonferroni over splits), with
+further changes found by binary segmentation and a shift kept only if it also holds among each group's clearer half
+of visits; drift Mann-Whitney U, across the group's change when it has one; each family is
+corrected with Benjamini-Hochberg. The map projects the standardized clustering
 matrix onto two principal components with one scale for both axes; a group's centre moves only when its drift held.
 """
 import math
@@ -28,6 +30,8 @@ RANDOM_SEED = 42
 BOOTSTRAP = 400
 MIN_PERIOD_VISITS = 40
 MIN_PERIOD_HITS = 5
+# A further change inside one side of a split must reach this (Bonferroni over that side's splits).
+SEGMENT_P = 0.05
 # A source is named as the driver when its traffic change accounts for at least this much of the group's change.
 DRIVER_SHARE = 0.4
 
@@ -59,6 +63,50 @@ def change_point(counts, totals):
         if p < best[0]:
             best = (p, split, k1 / n1, k2 / n2)
     return best
+
+
+def segments(counts, totals, lo=0, hi=None, depth=2):
+    """Splits found by binary segmentation: the best split of a stretch, then of each side, while they hold."""
+    hi = len(counts) if hi is None else hi
+    if depth == 0 or hi - lo < 4:
+        return []
+    p, split, _, _ = change_point(counts[lo:hi], totals[lo:hi])
+    if split is None or p >= SEGMENT_P:
+        return []
+    split += lo
+    return segments(counts, totals, lo, split, depth - 1) + [split] + segments(counts, totals, split, hi, depth - 1)
+
+
+def holds_in_core(core, labels, index, split, cid, rising):
+    """Whether a share change at a split also shows among each group's clearer half of visits, in the same
+    direction, so it isn't just borderline visits switching sides."""
+    after = index >= split
+    k1, n1 = int((core & (labels == cid) & ~after).sum()), int((~after).sum())
+    k2, n2 = int((core & (labels == cid) & after).sum()), int(after.sum())
+    if not n1 or not n2:
+        return False
+    pooled = (k1 + k2) / (n1 + n2)
+    if not 0 < pooled < 1:
+        return False
+    se = math.sqrt(pooled * (1 - pooled) * (1 / n1 + 1 / n2))
+    diff = k2 / n2 - k1 / n1
+    return diff * (1 if rising else -1) > 0 and float(2 * norm.sf(abs(diff) / se)) < 0.05
+
+
+def core_visits(X, labels):
+    """Each group's clearer half: the visits whose distance to their own centre, relative to the next nearest, is at
+    or below the group's median. Relative to the group because distances crowd together in many dimensions."""
+    ids = sorted(set(int(l) for l in labels))
+    centres = np.array([X[labels == cid].mean(axis=0) for cid in ids])
+    dist = np.linalg.norm(X[:, None, :] - centres[None, :, :], axis=2)
+    own = dist[np.arange(len(X)), [ids.index(int(l)) for l in labels]]
+    dist[np.arange(len(X)), [ids.index(int(l)) for l in labels]] = np.inf
+    ratio = own / dist.min(axis=1)
+    core = np.zeros(len(X), dtype=bool)
+    for cid in ids:
+        mine = labels == cid
+        core[mine] = ratio[mine] <= np.median(ratio[mine])
+    return core
 
 
 def bh(pvalues):
@@ -235,10 +283,11 @@ def shifts(start_ms, labels, values, features, now_ms, X=None, reached=None, sou
     index, bins, weeks = time_bins(start_ms, now_ms)
     if index is None:
         return None
-    groups, trend_p = {}, []
+    groups, trend_p, counts_of = {}, [], {}
     ids = sorted(set(int(l) for l in labels))
+    core = core_visits(X, labels) if X is not None and len(ids) > 1 else None
     for cid in ids:
-        counts = [int(((labels == cid) & (index == b)).sum()) for b in range(len(bins))]
+        counts = counts_of[cid] = [int(((labels == cid) & (index == b)).sum()) for b in range(len(bins))]
         totals = [b["visits"] for b in bins]
         shares = [c / t if t else 0.0 for c, t in zip(counts, totals)]
         lo_hi = [wilson(c, t) for c, t in zip(counts, totals)]
@@ -280,13 +329,27 @@ def shifts(start_ms, labels, values, features, now_ms, X=None, reached=None, sou
             splits[cid] = min(last + 1, len(bins) - 1)
             g["since"] = bins[splits[cid]]["from"]
         del g["lo_hi"]
+        if core is not None and cid in splits and not holds_in_core(core, labels, index, splits[cid], cid, g["to"] > g["from"]):
+            g["event"] = None
+            g.pop("since", None)
+            del splits[cid]
+        if g["event"] in ("grew", "shrank"):
+            cuts = segments(counts_of[cid], [b["visits"] for b in bins])
+            if len(cuts) > 1:
+                edges = [0, *cuts, len(bins)]
+                g["steps"] = [{"since": bins[a]["from"], "share": round(sum(counts_of[cid][a:b]) / max(1, sum(bin_["visits"] for bin_ in bins[a:b])), 4)}
+                              for a, b in zip(edges, edges[1:])]
 
     early_cut = index < len(bins) // 2
     recent_cut = index >= len(bins) - third
     drift_rows = []
     for cid in ids:
         mine = labels == cid
-        for row in drift(values, mine & early_cut, mine & recent_cut, features):
+        # Across the group's change when it has one, so a shift and a change in behaviour line up in time.
+        early, recent = (index < splits[cid], index >= splits[cid]) if cid in splits else (early_cut, recent_cut)
+        for row in drift(values, mine & early, mine & recent, features):
+            if cid in splits:
+                row["since"] = bins[splits[cid]]["from"]
             drift_rows.append((cid, row))
     passed = bh([row["p"] for _, row in drift_rows]) if drift_rows else set()
     for cid in ids:
