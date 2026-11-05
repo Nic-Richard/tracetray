@@ -102,13 +102,14 @@ def drift(values, early, recent, features):
     return rows
 
 
-def group_map(X, labels, index, bins, drifting):
+def group_map(X, labels, index, bins, drifting, features):
     """Sampled visits per frame and each group's centre per frame, in [-1, 1] on both axes."""
     pca = PCA(n_components=2, random_state=RANDOM_SEED).fit(X)
     P = pca.transform(X)
     low, high = np.percentile(P, 2, axis=0), np.percentile(P, 98, axis=0)
     half = float(max(high - low)) / 2 or 1.0
     Q = np.clip((P - (low + high) / 2) / half, -1.15, 1.15)
+    origin = -(low + high) / 2 / half
     rng = np.random.default_rng(RANDOM_SEED)
     ids = sorted(set(int(l) for l in labels))
     overall = {cid: Q[labels == cid].mean(axis=0) for cid in ids}
@@ -128,7 +129,11 @@ def group_map(X, labels, index, bins, drifting):
         frames.append({"points": [[round(float(Q[i, 0]), 3), round(float(Q[i, 1]), 3), int(labels[i])] for i in picked], "centres": centres})
     # Where most visits fall on each axis, so a view can fill its space without changing the scale between axes.
     extent = [round(float(v), 3) for v in (*np.percentile(Q[:, 0], [2, 98]), *np.percentile(Q[:, 1], [2, 98]))]
-    return {"explained": round(float(pca.explained_variance_ratio_.sum()), 3), "extent": extent, "frames": frames}
+    # Loadings as correlations between each standardized measure and each component (components x sqrt(variance)).
+    loadings = pca.components_.T * np.sqrt(pca.explained_variance_)
+    return {"explained": round(float(pca.explained_variance_ratio_.sum()), 3), "components": [round(float(v), 3) for v in pca.explained_variance_ratio_],
+            "loadings": {feat: [round(float(a), 3), round(float(b), 3)] for feat, (a, b) in zip(features, loadings)},
+            "origin": [round(float(origin[0]), 3), round(float(origin[1]), 3)], "extent": extent, "frames": frames}
 
 
 def shifts(start_ms, labels, values, features, now_ms, X=None):
@@ -197,5 +202,5 @@ def shifts(start_ms, labels, values, features, now_ms, X=None):
         groups[cid]["p"] = round(groups[cid]["p"], 6)
     out = {"bin_weeks": weeks, "bins": bins, "groups": {str(cid): g for cid, g in groups.items()}}
     if X is not None and X.shape[1] >= 2:
-        out["map"] = group_map(X, labels, index, len(bins), {cid for cid in ids if groups[cid]["drift"]})
+        out["map"] = group_map(X, labels, index, len(bins), {cid for cid in ids if groups[cid]["drift"]}, features)
     return out

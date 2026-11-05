@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { shiftSentences } from "../src/shifts.ts";
+import { mapDirections, shiftSentences } from "../src/shifts.ts";
 
 const bins = [0, 1, 2, 3].map(i => ({ from: Date.UTC(2026, 7, 17 + 7 * i), to: Date.UTC(2026, 7, 24 + 7 * i), visits: 200 }));
 const group = (headline, extra) => ({ id: 0, key: null, headline, shares: [], low: [], high: [], event: null, from: 0.2, to: 0.2, drift: [], ...extra });
@@ -16,4 +16,9 @@ test("shift sentences name what changed and stay quiet otherwise", () => {
     "New: Quick leavers, first seen around Sep 7, now 12% of desktop visits.",
     "Re-checkers now wait before clicking about a third less than they did around Aug 17."
   ]);
+});
+
+test("map directions are named only after measures that move strongly with them", () => {
+  const map = { explained: 0.6, frames: [], loadings: { click_rate: [0.8, 0.1], dwell_before_click: [-0.7, 0.2], direction_change_rate: [0.1, 0.65], pause_rate: [0.2, -0.3] } };
+  assert.deepEqual(mapDirections(map), { right: "more clicking", left: "more waiting before clicking", up: "more scrolling back up", down: null });
 });

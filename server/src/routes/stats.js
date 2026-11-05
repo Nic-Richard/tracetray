@@ -19,6 +19,13 @@ function deviceShifts(source, stories = {}) {
     const { bin_weeks, bins, groups, map } = source.shifts;
     return {
         structure: source.structure, bin_weeks, bins, map: map || null,
+        method: {
+            k: source.k, silhouette: source.silhouette_score ?? null, stability: source.stability ?? null, agreement: source.algorithm_agreement ?? null,
+            null_silhouette: source.k_rationale?.null_silhouette ?? null, null_silhouette_max: source.k_rationale?.null_silhouette_max ?? null,
+            k_range: source.k_rationale?.k_range_evaluated || [], silhouettes: source.k_rationale?.silhouettes || [],
+            goal_informed: source.k_rationale?.goal_informed ?? null, visits: source.k_rationale?.n_sessions ?? null,
+            effects: (source.kruskal_wallis || []).filter(r => typeof r.effect_size === "number").map(r => ({ feature: r.feature, effect: r.effect_size, p: r.p_value }))
+        },
         groups: (source.clusters || []).filter(c => groups[c.id]).map(c => ({
             id: c.id, key: stories?.[c.id]?.key || null, headline: stories?.[c.id]?.headline || c.label, ...groups[c.id]
         }))
@@ -185,7 +192,9 @@ router.get("/api/group-shifts", requireAuth(), async (req, res) => {
             return res.status(403).json({ error: "this page is past your plan's page limit for this month", limit_reached: "pages" });
         }
         const latest = await AnalysisResult.findOne({ site_key: siteKey, page }, {
-            ran_at: 1, structure: 1, clusters: 1, shifts: 1, "mobile.structure": 1, "mobile.clusters": 1, "mobile.shifts": 1,
+            ran_at: 1, structure: 1, clusters: 1, shifts: 1, k: 1, silhouette_score: 1, stability: 1, algorithm_agreement: 1, k_rationale: 1, kruskal_wallis: 1,
+            "mobile.structure": 1, "mobile.clusters": 1, "mobile.shifts": 1, "mobile.k": 1, "mobile.silhouette_score": 1, "mobile.stability": 1,
+            "mobile.algorithm_agreement": 1, "mobile.k_rationale": 1, "mobile.kruskal_wallis": 1,
             "interpretation.cluster_stories": 1, "interpretation.mobile_cluster_stories": 1
         }).sort({ ran_at: -1 }).lean();
         if (!latest) return res.json({ ran_at: null, desktop: null, mobile: null });

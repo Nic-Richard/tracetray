@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { percent, type DeviceShifts, type GroupMap as GroupMapData } from "@tracetray/shared";
+import { mapDirections, measureName, percent, type DeviceShifts, type GroupMap as GroupMapData } from "@tracetray/shared";
 
 const STEP_MS = 1100;
 // Below this share a group has no bubble in that frame; growing from here is how a new group arrives.
@@ -27,9 +27,9 @@ function reducedMotion() {
   return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
 
-interface Props { shifts: DeviceShifts; map: GroupMapData; hues: string[]; device: string }
+interface Props { shifts: DeviceShifts; map: GroupMapData; hues: string[]; device: string; arrows?: boolean }
 
-export default function GroupMap({ shifts, map, hues, device }: Props) {
+export default function GroupMap({ shifts, map, hues, device, arrows = false }: Props) {
   const last = map.frames.length - 1;
   const [t, setT] = useState(last);
   const [playing, setPlaying] = useState(false);
@@ -100,6 +100,37 @@ export default function GroupMap({ shifts, map, hues, device }: Props) {
   const marked = groups.length === 2 && changed.length === 2 && changed.every(g => g.event === "grew" || g.event === "shrank") ? changed.filter(g => g.event === "grew") : changed;
   const events = marked.map(g => ({ g, at: shifts.bins.findIndex(bin => g.since! < bin.to) }));
   const bin = shifts.bins[Math.round(t)];
+  const ends = mapDirections(map);
+  // Biplot: each measure's correlation with the two directions, drawn from the average visit.
+  const origin = map.origin || [0, 0];
+  const reach = 0.9;
+  // Measures pointing within 12 degrees of each other move together, so they share one arrow and one label.
+  const measures: { names: string[]; a: number; b: number }[] = [];
+  for (const [feature, [a, b]] of Object.entries(map.loadings || {}).sort((p, q) => Math.hypot(...q[1]) - Math.hypot(...p[1])).slice(0, 6)) {
+    const same = measures.find(m => Math.abs(Math.atan2(m.b, m.a) - Math.atan2(b, a)) < Math.PI / 15);
+    if (same) same.names.push(measureName(feature));
+    else measures.push({ names: [measureName(feature)], a, b });
+  }
+  // Arrow labels wrap to fit about half the map and stay inside it; on narrow maps the tips are numbered instead,
+  // with the names listed underneath, since inline names would cover the groups.
+  const numbered = W < 520;
+  const perLine = Math.max(14, Math.floor((W * 0.45) / 6.4));
+  const arrowLabels: { x: number; y: number }[] = [];
+  const drawn = measures.map(m => {
+    const x1 = sx(origin[0]), y1 = sy(origin[1]), x2 = sx(origin[0] + m.a * reach), y2 = sy(origin[1] + m.b * reach);
+    const right = x2 >= x1, down = y2 >= y1;
+    const lines = m.names.join(", ").split(" ").reduce<string[]>((out, word) => {
+      if (out.length && (out[out.length - 1] + " " + word).length <= perLine) out[out.length - 1] += " " + word;
+      else out.push(word);
+      return out;
+    }, []);
+    const width = Math.max(...lines.map(l => l.length)) * 6.4;
+    let y = down ? y2 + 13 : y2 - 5 - (lines.length - 1) * 13;
+    while (arrowLabels.some(l => Math.abs(l.y - y) < 13 * lines.length && Math.abs(l.x - x2) < 120)) y += down ? 13 : -13;
+    arrowLabels.push({ x: x2, y });
+    const tx = right ? Math.min(x2 + 4, W - 4 - width) : Math.max(x2 - 4, 4 + width);
+    return { key: m.names.join(), x1, y1, x2, y2, lines, tx, ty: y, anchor: (right ? "start" : "end") as "start" | "end" };
+  });
   const dots = (frame: number, opacity: number, key: string) => opacity > 0.02 && map.frames[frame].points.map(([x, y, id], n) => (
     <circle key={`${key}${n}`} cx={sx(x)} cy={sy(y)} r={3.2} style={{ fill: `var(${hueOf.get(id) || "--d-neutral"})`, opacity: 0.55 * opacity }} />
   ));
@@ -117,7 +148,20 @@ export default function GroupMap({ shifts, map, hues, device }: Props) {
           </g>
         ))}
         {labels.map(l => <text key={l.key} x={l.x} y={l.y} className="label" textAnchor="middle">{l.text}</text>)}
+        {arrows && drawn.map(m => (
+          <g key={m.key} className="loading">
+            <line x1={m.x1} y1={m.y1} x2={m.x2} y2={m.y2} markerEnd="url(#loading-head)" />
+            {numbered
+              ? <text x={m.x2 + (m.x2 >= m.x1 ? 6 : -6)} y={m.y2 + 4} textAnchor={m.anchor} className="tip">{drawn.indexOf(m) + 1}</text>
+              : <text x={m.tx} y={m.ty} textAnchor={m.anchor}>{m.lines.map((line, n) => <tspan key={n} x={m.tx} dy={n ? 13 : 0}>{line}</tspan>)}</text>}
+          </g>
+        ))}
+        <defs><marker id="loading-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10Z" /></marker></defs>
+        {arrows && ends.up && <text x={W / 2} y={16} className="edge" textAnchor="middle">↑ {ends.up}</text>}
+        {arrows && ends.down && <text x={W / 2} y={H - 8} className="edge" textAnchor="middle">↓ {ends.down}</text>}
       </svg>
+      {arrows && numbered && <ol className="map-arrow-key">{drawn.map(m => <li key={m.key}>{m.lines.join(" ")}</li>)}</ol>}
+      {arrows && (ends.left || ends.right) && <div className="map-ends"><span>{ends.left && `← ${ends.left}`}</span><span>{ends.right && `${ends.right} →`}</span></div>}
       <div className="map-controls">
         <button type="button" className="btn" onClick={() => setPlaying(p => !p)} aria-pressed={playing}>{playing ? "Pause" : t >= last ? "Replay" : "Play"}</button>
         <div className="map-scrub">
@@ -127,10 +171,6 @@ export default function GroupMap({ shifts, map, hues, device }: Props) {
         </div>
         <span className="map-date">{day(bin.from)}–{day(bin.to)}</span>
       </div>
-      <p className="map-key">Dots are visits from that {shifts.bin_weeks === 1 ? "week" : "stretch"}. Bubbles are groups, sized by their share. Closer together means behaving more alike.</p>
-      <details className="map-about"><summary>About this map</summary>
-        <p>Every visit is placed by all the measures its group was built from, flattened to two dimensions; there are no axes, only distance. This flat view keeps {percent(map.explained)} of the differences between visits{map.explained < 0.5 ? ", so some groups can look closer here than they are" : ""}. The dashed ring around a bubble shows how large the group could plausibly be that {shifts.bin_weeks === 1 ? "week" : "stretch"}. A bubble only moves when its group's behaviour changed by more than chance; otherwise it stays put.</p>
-      </details>
     </div>
   );
 }

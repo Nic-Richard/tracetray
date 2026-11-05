@@ -23,6 +23,12 @@ export interface GroupShift {
 export interface GroupMap {
   /** Share of the differences between visits that the two dimensions keep. */
   explained: number;
+  /** Share of the differences each of the two directions keeps. */
+  components?: [number, number];
+  /** Correlation of each measure with the two directions. */
+  loadings?: Record<string, [number, number]>;
+  /** Where the average visit sits on the map. */
+  origin?: [number, number];
   /** Where most visits fall: [x low, x high, y low, y high]. */
   extent?: [number, number, number, number];
   frames: { points: [number, number, number][]; centres: Record<string, [number, number]> }[];
@@ -34,6 +40,12 @@ export interface DeviceShifts {
   bins: { from: number; to: number; visits: number }[];
   groups: GroupShift[];
   map?: GroupMap | null;
+  /** How the groups were chosen and checked, from the same analysis. */
+  method?: {
+    k: number; silhouette: number | null; stability: number | null; agreement: number | null;
+    null_silhouette: number | null; null_silhouette_max: number | null; k_range: number[]; silhouettes: number[];
+    goal_informed: boolean | null; visits: number | null; effects: { feature: string; effect: number; p: number | null }[];
+  };
 }
 
 export interface GroupShifts {
@@ -90,4 +102,40 @@ export function shiftSentences(shifts: DeviceShifts | null, device: Device): str
     if (what) out.push(`${g.headline} now ${what} ${amount(d.change)} they did around ${firstWeek}.`);
   }
   return out;
+}
+
+const NOUNS: Record<string, string> = {
+  pause_rate: "pausing",
+  click_rate: "clicking",
+  move_density: "cursor movement",
+  distance_per_move: "long cursor sweeps",
+  avg_cursor_velocity: "fast cursor movement",
+  dwell_before_click: "waiting before clicking",
+  spatial_entropy: "moving around the page",
+  top_zone_ratio: "time near the top",
+  bottom_zone_ratio: "time near the bottom",
+  centre_zone_ratio: "time in the middle",
+  scroll_depth_reached: "scrolling further down",
+  direction_change_rate: "scrolling back up",
+  scroll_burst_rate: "scrolling in bursts",
+  tap_rate: "tapping",
+  scroll_velocity_rate: "fast scrolling",
+  attention_pause_rate: "stopping to read",
+  avg_attention_pause_ms: "long stops to read",
+  dwell_before_tap: "waiting before tapping"
+};
+
+export const measureName = (feature: string) => NOUNS[feature] || feature.replace(/_/g, " ");
+
+// A direction is only named after a measure that moves with it fairly strongly (a correlation of 0.4 or more).
+const NAMED = 0.4;
+
+/** What each end of the map's two directions means, in words: the measure that leans most that way, or null. */
+export function mapDirections(map: GroupMap): { right: string | null; left: string | null; up: string | null; down: string | null } {
+  const rows = Object.entries(map.loadings || {});
+  const end = (axis: 0 | 1, sign: 1 | -1) => {
+    const best = rows.filter(([, l]) => sign * l[axis] >= NAMED).sort((a, b) => sign * b[1][axis] - sign * a[1][axis])[0];
+    return best ? `more ${measureName(best[0])}` : null;
+  };
+  return { right: end(0, 1), left: end(0, -1), up: end(1, 1), down: end(1, -1) };
 }

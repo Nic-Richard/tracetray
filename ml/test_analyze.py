@@ -103,6 +103,9 @@ class ClusteringTest(unittest.TestCase):
         frames = result["map"]["frames"]
         self.assertEqual(len(frames), len(result["bins"]))
         self.assertTrue(0 < result["map"]["explained"] <= 1)
+        self.assertAlmostEqual(sum(result["map"]["components"]), result["map"]["explained"], places=2)
+        self.assertEqual(set(result["map"]["loadings"]), {"a", "b", "c"})
+        self.assertTrue(all(abs(v) <= 1.01 for pair in result["map"]["loadings"].values() for v in pair))
         self.assertTrue(all(abs(c) <= 1.15 for f in frames for x, y, _ in f["points"] for c in (x, y)))
         self.assertEqual(len({tuple(f["centres"]["0"]) for f in frames}), 1)
         first, last = np.array(frames[0]["centres"]["1"]), np.array(frames[-1]["centres"]["1"])
