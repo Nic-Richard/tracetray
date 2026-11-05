@@ -8,4 +8,4 @@ export * from "./account";
 export * from "./goals";
 export * from "./compare";
 export * from "./paths";
-export * from "./timelapse";
+export * from "./shifts";

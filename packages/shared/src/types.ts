@@ -281,19 +281,6 @@ export interface Cluster {
   track?: { id: string; since: string; new?: boolean };
 }
 
-/** One analysis on fixed axes: x is how far down the page (0-1), y is time on the page in log10 seconds. */
-export interface GroupSnapshot {
-  /** Sampled visits as [x, y, group id]. */
-  points: [number, number, number][];
-  groups: { id: number; track: string | null; key: string | null; headline: string; share: number; centre: [number, number] | null }[];
-}
-
-export interface GroupHistoryFrame {
-  ran_at: string;
-  desktop: GroupSnapshot | null;
-  mobile: GroupSnapshot | null;
-}
-
 export interface KruskalWallis {
   feature: string;
   /** Empty when every value of the feature was the same, so the test couldn't run. */
@@ -405,6 +392,7 @@ export interface DeviceAnalysis {
   inactive_goal_hits?: Record<string, number>;
   /** What separates visits that reached the main goal from those that didn't; only "ok" results are shown. */
   goal_model?: GoalModel | null;
+  goal_patterns?: GoalPatterns | null;
   clusters: Cluster[];
   kruskal_wallis?: KruskalWallis[];
   k_rationale?: Record<string, unknown>;
@@ -498,7 +486,26 @@ export interface PageShotInfo {
   taken_at: string;
 }
 
+export interface GoalPatterns {
+  goal: string;
+  visits: number;
+  reached: number;
+  tried?: number;
+  patterns: { fact: string; with: { visits: number; reached: number }; without: { visits: number; reached: number }; holds: boolean }[];
+}
+
+export interface SectionAttention {
+  visits: number;
+  height?: number;
+  goal?: { name: string; reached: number } | null;
+  sections: { name: string; top: number; bottom: number; reach: number; seconds: number | null; returned: number; goal: { reached: number; missed: number } | null }[];
+  elements: { tag: string; id: string | null; text: string | null; href: string | null; top: number; left: number; width: number; height: number; visits: number; share: number }[];
+  dead: { picture: boolean; name: string | null; top: number; left: number; visits: number; share: number; rage_share: number }[];
+  callouts: string[];
+}
+
 export interface AttentionProfile {
+  sections?: Partial<Record<Device, SectionAttention | null>> | null;
   samples?: Record<Device, { visits: number; from: string | null; to: string | null; limit: number }>;
   depth_profile: { band: number; depth: number; weight: number; share: number }[];
   total_moves: number;

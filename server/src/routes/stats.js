@@ -10,21 +10,19 @@ const { lockedPages, isPageLocked, limitsFor } = require("../lib/limits");
 const { getClickSummary } = require("../lib/clickSummary");
 const { refuseDemo } = require("../lib/demo");
 const { computeAttentionProfile } = require("../lib/attentionProfile");
+const { sectionAttention } = require("../lib/sectionAttention");
 const { refreshShots, shotInfo, shotFile } = require("../lib/pageShots");
 const logger = require("../lib/logger");
 
-// About half a year of weekly analyses.
-const GROUP_HISTORY_FRAMES = 26;
-
-function historyFrame(source, stories = {}) {
-    if (!source?.snapshot) return null;
-    const total = (source.clusters || []).reduce((sum, c) => sum + (c.n || 0), 0) || 1;
-    // Groups that didn't hold up aren't drawn; their visits still are.
-    const groups = source.structure === "none" ? [] : (source.clusters || []).map(c => ({
-        id: c.id, track: c.track?.id || null, key: stories?.[c.id]?.key || null, headline: stories?.[c.id]?.headline || c.label,
-        share: (c.n || 0) / total, centre: source.snapshot.centres?.[c.id] || null
-    }));
-    return { points: source.snapshot.points || [], groups };
+function deviceShifts(source, stories = {}) {
+    if (!source?.shifts || source.structure === "none") return null;
+    const { bin_weeks, bins, groups, map } = source.shifts;
+    return {
+        structure: source.structure, bin_weeks, bins, map: map || null,
+        groups: (source.clusters || []).filter(c => groups[c.id]).map(c => ({
+            id: c.id, key: stories?.[c.id]?.key || null, headline: stories?.[c.id]?.headline || c.label, ...groups[c.id]
+        }))
+    };
 }
 
 router.get("/api/stats", requireAuth(), async (req, res) => {
@@ -174,7 +172,7 @@ router.get("/api/journey", requireAuth(), async (req, res) => {
     }
 });
 
-router.get("/api/group-history", requireAuth(), async (req, res) => {
+router.get("/api/group-shifts", requireAuth(), async (req, res) => {
     try {
         const account = await Account.findOne({ clerk_user_id: getAuth(req).userId }).lean();
         if (!account) return res.status(404).json({ error: "account not found" });
@@ -186,18 +184,19 @@ router.get("/api/group-history", requireAuth(), async (req, res) => {
         if (await isPageLocked(account, siteKey, page)) {
             return res.status(403).json({ error: "this page is past your plan's page limit for this month", limit_reached: "pages" });
         }
-        const results = await AnalysisResult.find({ site_key: siteKey, page, snapshot: { $exists: true } },
-            { ran_at: 1, structure: 1, clusters: 1, snapshot: 1, "mobile.structure": 1, "mobile.clusters": 1, "mobile.snapshot": 1,
-              "interpretation.cluster_stories": 1, "interpretation.mobile_cluster_stories": 1 })
-            .sort({ ran_at: -1 }).limit(GROUP_HISTORY_FRAMES).lean();
-        res.json(results.reverse().map(r => ({
-            ran_at: r.ran_at,
-            desktop: historyFrame(r, r.interpretation?.cluster_stories),
-            mobile: historyFrame(r.mobile, r.interpretation?.mobile_cluster_stories)
-        })));
+        const latest = await AnalysisResult.findOne({ site_key: siteKey, page }, {
+            ran_at: 1, structure: 1, clusters: 1, shifts: 1, "mobile.structure": 1, "mobile.clusters": 1, "mobile.shifts": 1,
+            "interpretation.cluster_stories": 1, "interpretation.mobile_cluster_stories": 1
+        }).sort({ ran_at: -1 }).lean();
+        if (!latest) return res.json({ ran_at: null, desktop: null, mobile: null });
+        res.json({
+            ran_at: latest.ran_at,
+            desktop: deviceShifts(latest, latest.interpretation?.cluster_stories),
+            mobile: deviceShifts(latest.mobile, latest.interpretation?.mobile_cluster_stories)
+        });
     } catch (err) {
-        logger.error("group history error:", err);
-        res.status(500).json({ error: "failed to fetch group history" });
+        logger.error("group shifts error:", err);
+        res.status(500).json({ error: "failed to fetch group shifts" });
     }
 });
 
@@ -213,7 +212,7 @@ router.get("/api/attention-profile", requireAuth(), async (req, res) => {
         const result = await computeAttentionProfile(siteKey, page);
         if (page) refreshShots(siteKey, page).catch(err => logger.error("page shot refresh failed:", err));
 
-        res.json({ ...result, shots: page ? await shotInfo(siteKey, page) : {} });
+        res.json({ ...result, shots: page ? await shotInfo(siteKey, page) : {}, sections: await sectionAttention(siteKey, page) });
     } catch (err) {
         logger.error("attention profile error:", err);
         res.status(500).json({ error: "failed to generate attention profile" });

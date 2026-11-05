@@ -116,25 +116,20 @@ test("a group's age reads New, Since a date, or nothing on its first tracked ana
   assert.equal(visitorTypes(result, "desktop")[1].age, null);
 });
 
-test("the goal model reads as plain sentences only when it held up", () => {
+test("goal patterns read as plain sentences, and say when visit length explains them", () => {
   const result = fixture();
-  result.goal = { id: "buy", name: "Added to cart" };
-  result.goal_model = { status: "ok", reached: 400, missed: 400, window_s: 20, drivers: [
-    { feature: "avg_cursor_velocity", direction: "higher", split: 0.4, rate_above: 0.76, rate_below: 0.21 },
-    { feature: "scroll_burst_rate", direction: "lower", split: 0, rate_above: 0.1, rate_below: 0.4 }
+  result.goal_patterns = { goal: "Added to cart", visits: 900, reached: 200, tried: 14, patterns: [
+    { fact: "Clicked “Size guide”", with: { visits: 300, reached: 120 }, without: { visits: 600, reached: 80 }, holds: true },
+    { fact: "Came back to “What hikers say”", with: { visits: 100, reached: 40 }, without: { visits: 800, reached: 160 }, holds: false }
   ] };
   const drivers = goalDrivers(result, "desktop");
-  assert.match(drivers.intro, /800 desktop visits \(400 reached the goal, 400 didn't\)/);
-  assert.match(drivers.intro, /count of excluded conversion visits wasn't saved/);
+  assert.match(drivers.intro, /900 desktop visits, 200 reached Added to cart/);
+  assert.match(drivers.intro, /14 patterns were checked/);
   assert.deepEqual(drivers.lines, [
-    "Those that moved the cursor faster than most by then went on to reach Added to cart 76% of the time, against 21% for the others.",
-    "Those that hadn't started scrolling by then went on to reach Added to cart 40% of the time, against 10% for the others."
+    "Clicked “Size guide”: 40% reached Added to cart (300 visits), against 13% for the rest.",
+    "Came back to “What hikers say”: 40% reached Added to cart (100 visits), against 20% for the rest. Mostly explained by those visits being longer."
   ]);
-  result.goal_model.too_quick = 12;
-  assert.match(goalDrivers(result, "desktop").intro, /12 conversion visits left out/);
-  result.goal_model.window_s = null;
-  assert.match(goalDrivers(result, "desktop").intro, /aren't pre-goal predictors/);
-  result.goal_model.status = "weak";
+  result.goal_patterns.patterns = [];
   assert.equal(goalDrivers(result, "desktop"), null);
 });
 

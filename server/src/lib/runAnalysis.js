@@ -8,6 +8,7 @@ const { getClickSummary } = require("./clickSummary");
 const { computeAttentionProfile } = require("./attentionProfile");
 const { interpretClusters } = require("./interpretClusters");
 const { trackGroups } = require("./groupTracking");
+const { goalPatterns } = require("./goalPatterns");
 const { goalPosition } = require("./goalPosition");
 const { analysisRunning } = require("./analysisState");
 const logger = require("./logger");
@@ -89,6 +90,16 @@ async function runAnalysis(siteKey, pageFilter = null) {
             });
         } catch (err) {
             logger.error("interpretation failed:", err);
+        }
+
+        if (main && pageFilter) {
+            try {
+                const patterns = await goalPatterns(siteKey, pageFilter, main, new URL(pageFilter).origin);
+                clusterResult.goal_patterns = patterns?.desktop || null;
+                if (clusterResult.mobile) clusterResult.mobile.goal_patterns = patterns?.mobile || null;
+            } catch (err) {
+                logger.error("goal patterns failed:", err);
+            }
         }
 
         await AnalysisResult.create(clusterResult);

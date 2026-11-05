@@ -1,8 +1,8 @@
 import type {
-  Account, AccountDeletionStatus, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, ChangeComparison, Config, EmailList, EmailPrefs, GroupHistoryFrame,
-  ClickSeen, FormSeen, Goal, GoalInput, GoalList, PathFunnel, GoalRates, GoalTrend, GroupMembers, Journey, MemberSort, PageChange, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
+  Account, AccountDeletionStatus, AnalysisPermit, AnalysisRun, AskAnswer, AskTurn, AttentionProfile, BugCategory, ChangeComparison, Config, EmailList, EmailPrefs, ClickSeen, FormSeen, Goal, GoalInput, GoalList, PathFunnel, GoalRates, GoalTrend, GroupMembers, Journey, MemberSort, PageChange, PageGroups, PageSummary, RecentSession, Site, SiteDeleted,
   SitesResponse, Stats, Timeseries, UsageResponse, UxTrends, Win, FindingReference, ChangeFinding
 } from "./types";
+import type { GroupShifts } from "./shifts";
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number, readonly body: Record<string, unknown> = {}) {
@@ -90,7 +90,7 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     recentSessions: (siteKey: string, limit = 50) => request<RecentSession[]>("GET", "/api/sessions/recent", { siteKey, query: { limit } }),
     journey: (siteKey: string) => request<Journey>("GET", "/api/journey", { siteKey }),
     attention: (siteKey: string, page?: string | null) => request<AttentionProfile>("GET", "/api/attention-profile", { siteKey, query: { page } }),
-    groupHistory: (siteKey: string, page: string) => request<GroupHistoryFrame[]>("GET", "/api/group-history", { siteKey, query: { page } }),
+    groupShifts: (siteKey: string, page: string) => request<GroupShifts>("GET", "/api/group-shifts", { siteKey, query: { page } }),
     pageShot: (siteKey: string, page: string, device: "desktop" | "mobile", takenAt: string) => request<{ blob: Blob }>("GET", "/api/page-shot", { siteKey, query: { page, device, v: takenAt }, raw: true }),
 
     pageGroups: (siteKey: string) => request<PageGroups>("GET", "/api/page-groups", { siteKey }),

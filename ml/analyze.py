@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 
 import goal_model
+import group_shifts
+import time
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans, AgglomerativeClustering
@@ -39,7 +41,6 @@ NULL_REPS = 10
 STABILITY_REPS = 10
 SILHOUETTE_SAMPLE = 2000
 WARD_SAMPLE = 3000
-SNAPSHOT_POINTS = 300
 # Kruskal-Wallis epsilon squared; around 0.08 is a medium effect.
 MEDIUM_EFFECT = 0.08
 
@@ -317,18 +318,6 @@ def cluster(X, k_range, min_size, reached=None):
     return k_metrics, best_k, labels, sil, null, stab, structure_verdict(sil, null, stab)
 
 
-def snapshot(df, labels):
-    """Sample visits on two axes that mean the same thing in every analysis (how far down the page, and time on
-    the page in log10 seconds), so snapshots from different weeks can be drawn on one chart."""
-    depth = df["scroll_depth_reached"].fillna(0).clip(0, 1).to_numpy()
-    seconds = np.log10(df["duration_s"].fillna(1).clip(1, 3600).to_numpy())
-    rng = np.random.default_rng(RANDOM_SEED)
-    idx = rng.choice(len(df), size=min(len(df), SNAPSHOT_POINTS), replace=False)
-    points = [[round(float(depth[i]), 3), round(float(seconds[i]), 3), int(labels[i])] for i in sorted(idx)]
-    centres = {int(c): [round(float(np.median(depth[labels == c])), 3), round(float(np.median(seconds[labels == c])), 3)] for c in set(labels)}
-    return {"points": points, "centres": centres}
-
-
 def hierarchical_agreement(X, km_labels, k):
     # Ward needs memory that grows with the square of the visits, so busy pages are checked on a sample.
     if len(X) > WARD_SAMPLE:
@@ -498,9 +487,6 @@ def main(device, site_key):
         if column in df_raw.columns:
             df_out[column] = df_raw[column].values
 
-    model = goal_model.fit(df_raw, goal and goal.get("id"), engineer_desktop_features if device == "desktop" else engineer_mobile_features,
-                           engineered, fill_features=FILL_TYPICAL, unskewed=UNSKEWED, excluded=CLUSTER_EXCLUDED)
-
     quality = {
         "silhouette": sil,
         "null_silhouette": float(np.mean(null)) if null else None,
@@ -513,8 +499,8 @@ def main(device, site_key):
         "min_group_size": min_size,
         "spread": dict(zip(used, T.std(axis=0).round(4).tolist())),
         "centres": {int(c): dict(zip(used, T[km_labels == c].mean(axis=0).round(4).tolist())) for c in set(km_labels)},
-        "snapshot": snapshot(df, km_labels),
-        "goal_model": model,
+        "shifts": group_shifts.shifts(df_raw["start_time"].to_numpy(), km_labels, df[used].to_numpy(dtype=float), used, int(time.time() * 1000), X)
+            if "start_time" in df_raw.columns else None,
         "goal_informed_k": reached is not None
     }
     return df_out, km_labels, cluster_means, k_metrics, quality
@@ -569,8 +555,7 @@ if __name__ == "__main__":
             "clusters":            clusters_out,
             "kruskal_wallis":      kw_df.to_dict(orient="records"),
             "spread":              info["spread"],
-            "snapshot":            info["snapshot"],
-            "goal_model":          info["goal_model"],
+            "shifts":              info["shifts"],
             "k_rationale": {
                 "n_sessions":          int(len(df_out)),
                 "min_cluster_size":    info["min_group_size"],

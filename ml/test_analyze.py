@@ -6,6 +6,7 @@ from sklearn.metrics import adjusted_rand_score
 
 import analyze
 import goal_model
+import group_shifts
 
 
 def desktop_visits(rng, n, types, scroll_only=0.0):
@@ -63,15 +64,60 @@ class ClusteringTest(unittest.TestCase):
         self.assertEqual(groups(df)[1].tolist(), groups(df.copy())[1].tolist())
 
 
-    def test_snapshot_uses_fixed_axes_and_a_bounded_sample(self):
-        df, _ = desktop_visits(np.random.default_rng(4), 600, [(1, 0.03, 40, 0.5, 0.5)])
-        features = analyze.engineer_desktop_features(df)
-        labels = np.arange(len(df)) % 2
-        shot = analyze.snapshot(features, labels)
-        self.assertEqual(len(shot["points"]), analyze.SNAPSHOT_POINTS)
-        self.assertTrue(all(0 <= x <= 1 and 0 <= y <= np.log10(3600) for x, y, _ in shot["points"]))
-        self.assertEqual(set(shot["centres"]), {0, 1})
+    def test_shifts_find_a_group_that_appears_and_stay_quiet_otherwise(self):
+        rng = np.random.default_rng(5)
+        now = 100 * group_shifts.WEEK_MS
+        start = now - rng.integers(0, 12 * group_shifts.WEEK_MS, size=3000)
+        values = rng.normal(1, 0.2, size=(3000, 1))
+        quiet = rng.integers(0, 2, size=3000)
+        steady = group_shifts.shifts(start, quiet, values, ["click_rate"], now)
+        self.assertTrue(all(g["event"] is None for g in steady["groups"].values()))
+        recent = start > now - 4 * group_shifts.WEEK_MS
+        labels = np.where(recent & (rng.random(3000) < 0.3), 2, quiet)
+        shifted = group_shifts.shifts(start, labels, values, ["click_rate"], now)
+        self.assertEqual(shifted["groups"]["2"]["event"], "appeared")
+        self.assertGreater(shifted["groups"]["2"]["since"], now - 5 * group_shifts.WEEK_MS)
 
+    def test_shifts_date_a_step_change_in_a_groups_share(self):
+        rng = np.random.default_rng(7)
+        now = 100 * group_shifts.WEEK_MS
+        start = now - rng.integers(0, 12 * group_shifts.WEEK_MS, size=3000)
+        recent = start > now - 3 * group_shifts.WEEK_MS
+        labels = (rng.random(3000) < np.where(recent, 0.45, 0.3)).astype(int)
+        group = group_shifts.shifts(start, labels, rng.normal(size=(3000, 1)), ["click_rate"], now)["groups"]["1"]
+        self.assertEqual(group["event"], "grew")
+        self.assertAlmostEqual(group["to"], 0.45, delta=0.05)
+        self.assertGreater(group["since"], now - 4 * group_shifts.WEEK_MS)
+
+    def test_map_moves_only_groups_whose_behaviour_really_changed(self):
+        rng = np.random.default_rng(8)
+        now = 100 * group_shifts.WEEK_MS
+        n = 2400
+        start = now - rng.integers(0, 12 * group_shifts.WEEK_MS, size=n)
+        labels = rng.integers(0, 2, size=n)
+        values = rng.normal(1, 0.15, size=(n, 3))
+        values[labels == 1] += 1.5
+        values[(labels == 1) & (start > now - 4 * group_shifts.WEEK_MS), 0] *= 0.5
+        X = (values - values.mean(axis=0)) / values.std(axis=0)
+        result = group_shifts.shifts(start, labels, values, ["a", "b", "c"], now, X)
+        frames = result["map"]["frames"]
+        self.assertEqual(len(frames), len(result["bins"]))
+        self.assertTrue(0 < result["map"]["explained"] <= 1)
+        self.assertTrue(all(abs(c) <= 1.15 for f in frames for x, y, _ in f["points"] for c in (x, y)))
+        self.assertEqual(len({tuple(f["centres"]["0"]) for f in frames}), 1)
+        first, last = np.array(frames[0]["centres"]["1"]), np.array(frames[-1]["centres"]["1"])
+        self.assertGreater(np.linalg.norm(last - first), 0.1)
+
+    def test_shifts_report_drift_inside_a_group(self):
+        rng = np.random.default_rng(6)
+        now = 100 * group_shifts.WEEK_MS
+        start = now - rng.integers(0, 12 * group_shifts.WEEK_MS, size=2000)
+        labels = np.zeros(2000, dtype=int)
+        values = rng.normal(2, 0.3, size=(2000, 1))
+        values[start > now - 4 * group_shifts.WEEK_MS] *= 0.6
+        drift = group_shifts.shifts(start, labels, values, ["dwell_before_click"], now)["groups"]["0"]["drift"]
+        self.assertEqual(drift[0]["feature"], "dwell_before_click")
+        self.assertLess(drift[0]["change"], -0.3)
 
 def windowed_visits(rng, n, depth_effect):
     """Visits measured over a 10 s window; reaching the goal depends on scroll depth by depth_effect."""
