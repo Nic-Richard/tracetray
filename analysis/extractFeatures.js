@@ -10,6 +10,7 @@ const spatialFeatures = require("./featureModules/spatialFeatures");
 const mobileFeatures = require("./featureModules/mobileFeatures");
 const scrollFeatures = require("./featureModules/scrollFeatures");
 const { clickMatches, formMatches } = require("../server/src/lib/goals");
+const { sourceName } = require("../server/src/lib/sources");
 
 const SessionSchema = new mongoose.Schema({}, { strict: false });
 const Session = mongoose.model("Session", SessionSchema, "sessions");
@@ -18,6 +19,10 @@ const MAX_SESSIONS_PER_DEVICE = 20000;
 const WINDOW_DAYS = 90;
 
 const WINDOWS_S = [5, 10, 20, 40, 80, 160];
+
+function sourceOf(session) {
+    try { return sourceName(session.referrer, new URL(session.page).origin) || "unknown"; } catch { return "unknown"; }
+}
 
 // For a click or form goal: the visit's measures over each of its first seconds that end before the goal (or before
 // the visit ends). The goal model compares every visit over one of these, so it never sees the goal click itself.
@@ -93,6 +98,7 @@ async function run() {
             session_id: session.session_id,
             start_time: session.start_time,
             goal_hits: session.goal_hits || [],
+            source: sourceOf(session),
             click_targets: clickTargets(session),
             ...desktopFeatures(session),
             ...goalWindows(session, goal, desktopFeatures)
@@ -109,6 +115,7 @@ async function run() {
             session_id: session.session_id,
             start_time: session.start_time,
             goal_hits: session.goal_hits || [],
+            source: sourceOf(session),
             click_targets: clickTargets(session),
             ...mobileMeasures(session),
             ...goalWindows(session, goal, mobileMeasures)

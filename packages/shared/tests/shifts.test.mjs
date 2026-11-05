@@ -22,3 +22,24 @@ test("map directions are named only after measures that move strongly with them"
   const map = { explained: 0.6, frames: [], loadings: { click_rate: [0.8, 0.1], dwell_before_click: [-0.7, 0.2], direction_change_rate: [0.1, 0.65], pause_rate: [0.2, -0.3] } };
   assert.deepEqual(mapDirections(map), { right: "more clicking", left: "more waiting before clicking", up: "more scrolling back up", down: null });
 });
+
+test("the goal's change is explained by who's visiting or how they behave, only where it holds up", () => {
+  const since = Date.UTC(2026, 9, 8);
+  const changes = [{ day: "2026-10-16", note: "Clearer size guide" }];
+  const shifts = (impact, groups = []) => ({ structure: "some", bin_weeks: 1, bins, groups, impact: { since, rate_before: 0.24, rate_after: 0.21, groups: [], ...impact } });
+  const mixGroups = { groups: [{ id: 0, share_before: 0.3, share_after: 0.45, rate_before: 0.1, rate_after: 0.1 }, { id: 1, share_before: 0.7, share_after: 0.55, rate_before: 0.3, rate_after: 0.29 }] };
+  const leavers = [group("Quick leavers", { id: 0 }), group("Readers", { id: 1 })];
+  assert.deepEqual(shiftSentences(shifts({ total: [-0.03, -0.05, -0.01], mix: [-0.028, -0.04, -0.015], behaviour: [-0.002, -0.02, 0.015], ...mixGroups }, leavers), "desktop", { goal: "Added to cart", changes: [{ day: "2026-10-12", note: "Clearer size guide" }] }), [
+    "Added to cart went from 24% to 21% of desktop visits around Oct 8, close to your change “Clearer size guide” on Oct 12.",
+    "That's who's visiting, not how they behave: more Quick leavers, who reach it less often than others, worth about 2.8 points; each group reaches it about as often as before."
+  ]);
+  assert.deepEqual(shiftSentences(shifts({ total: [0.04, -0.01, 0.09], mix: [0.012, 0.003, 0.024], behaviour: [0.03, -0.03, 0.08], ...mixGroups }, leavers), "desktop", { goal: "Added to cart", changes }), [
+    "Added to cart went from 24% to 21% of desktop visits around Oct 8, within normal variation. The part that holds up: more Quick leavers, who reach it less often than others, worth about 1.2 points."
+  ]);
+  assert.match(shiftSentences(shifts({ total: [0.001, -0.02, 0.02], mix: [-0.03, -0.045, -0.015], behaviour: [0.031, 0.012, 0.05] }), "desktop", { goal: "Added to cart" })[0],
+    /held at about 21% of desktop visits around Oct 8, but only because two changes cancelled out: who's visiting moved it 3.0 points down/);
+  const grew = group("Header scanners", { event: "grew", since, from: 0.29, to: 0.39, sources: { change: 0.1, traffic: [0.07, 0.03, 0.11], within: [0.03, -0.01, 0.07], drivers: [{ source: "Instagram", part: 0.7, traffic_before: 0.06, traffic_after: 0.18 }] } });
+  assert.deepEqual(shiftSentences({ structure: "some", bin_weeks: 1, bins, groups: [grew] }, "desktop"), [
+    "Header scanners have averaged 39% of desktop visits since around Oct 8, up from 29% before, mostly because more visits came from Instagram (6% → 18% of visits)."
+  ]);
+});

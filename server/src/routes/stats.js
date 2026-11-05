@@ -16,9 +16,9 @@ const logger = require("../lib/logger");
 
 function deviceShifts(source, stories = {}) {
     if (!source?.shifts || source.structure === "none") return null;
-    const { bin_weeks, bins, groups, map } = source.shifts;
+    const { bin_weeks, bins, groups, map, impact } = source.shifts;
     return {
-        structure: source.structure, bin_weeks, bins, map: map || null,
+        structure: source.structure, bin_weeks, bins, map: map || null, impact: impact || null,
         method: {
             k: source.k, silhouette: source.silhouette_score ?? null, stability: source.stability ?? null, agreement: source.algorithm_agreement ?? null,
             null_silhouette: source.k_rationale?.null_silhouette ?? null, null_silhouette_max: source.k_rationale?.null_silhouette_max ?? null,
@@ -195,11 +195,15 @@ router.get("/api/group-shifts", requireAuth(), async (req, res) => {
             ran_at: 1, structure: 1, clusters: 1, shifts: 1, k: 1, silhouette_score: 1, stability: 1, algorithm_agreement: 1, k_rationale: 1, kruskal_wallis: 1,
             "mobile.structure": 1, "mobile.clusters": 1, "mobile.shifts": 1, "mobile.k": 1, "mobile.silhouette_score": 1, "mobile.stability": 1,
             "mobile.algorithm_agreement": 1, "mobile.k_rationale": 1, "mobile.kruskal_wallis": 1,
-            "interpretation.cluster_stories": 1, "interpretation.mobile_cluster_stories": 1
+            "interpretation.cluster_stories": 1, "interpretation.mobile_cluster_stories": 1, "goal.name": 1
         }).sort({ ran_at: -1 }).lean();
-        if (!latest) return res.json({ ran_at: null, desktop: null, mobile: null });
+        if (!latest) return res.json({ ran_at: null, goal: null, changes: [], desktop: null, mobile: null });
+        const site = account.sites?.find(s => s.key === siteKey);
+        const changes = (site?.page_changes || []).filter(c => c.page === page).map(c => ({ day: c.day, note: c.note || null }));
         res.json({
             ran_at: latest.ran_at,
+            goal: latest.goal?.name || null,
+            changes,
             desktop: deviceShifts(latest, latest.interpretation?.cluster_stories),
             mobile: deviceShifts(latest.mobile, latest.interpretation?.mobile_cluster_stories)
         });

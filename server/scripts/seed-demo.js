@@ -295,6 +295,10 @@ function isLocal(uri) {
 
     await Session.deleteMany({ site_key: site.key, session_id: /^demo-/ });
     for (let i = 0; i < docs.length; i += 500) await Session.insertMany(docs.slice(i, i + 500));
+    // Recorded the way an owner would in Before and after, so the dashboard can line shifts up with it.
+    site.page_changes = [...(site.page_changes || []).filter(c => c.id !== "demo-size-guide"),
+        { id: "demo-size-guide", page: `${origin}/products/:product`, day: new Date(now - CHANGE_DAYS_AGO * DAY_MS).toISOString().slice(0, 10), note: "Clearer size guide", created_at: new Date() }];
+    await account.save();
     await regroupSite(site.key, site.page_groups || []);
     console.log(`Added ${docs.length} demo visits from ${VISITORS} shoppers to ${site.name} (${site.key}).`);
     await mongoose.disconnect();

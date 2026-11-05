@@ -3,6 +3,7 @@
 const { Session, PageShot } = require("../db/models");
 const { clickMatches, formMatches } = require("./goals");
 const { sectionTimes } = require("./sectionAttention");
+const { sourceName } = require("./sources");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WINDOW_DAYS = 90;
@@ -15,19 +16,10 @@ const MAX_PATTERNS = 8;
 // Parts nearly every visit reaches tell the owner nothing.
 const MAX_REACH = 0.9;
 
-const SOURCES = [[/google\./, "Google"], [/bing\.|duckduckgo\./, "a search engine"], [/instagram\./, "Instagram"], [/facebook\.|fb\./, "Facebook"],
-    [/reddit\./, "Reddit"], [/mail\.|outlook\./, "an email"], [/t\.co$|twitter\.|x\.com$/, "X"], [/youtube\./, "YouTube"], [/pinterest\./, "Pinterest"]];
-
 function sourceOf(referrer, origin) {
-    if (!referrer) return "Came straight to the page, with no referrer";
-    let url;
-    try { url = new URL(referrer); } catch { return null; }
-    if (url.origin === origin) {
-        const first = url.pathname.split("/").filter(Boolean)[0];
-        return `Came from ${!first ? "the home page" : `a ${first.replace(/s$/, "").replace(/-/g, " ")} page`}`;
-    }
-    const named = SOURCES.find(([pattern]) => pattern.test(url.hostname));
-    return `Came from ${named ? named[1] : url.hostname.replace(/^www\./, "")}`;
+    const name = sourceName(referrer, origin);
+    if (!name) return null;
+    return name === "no referrer" ? "Came straight to the page, with no referrer" : `Came from ${name}`;
 }
 
 // The visit up to the goal: for click and form goals, everything before the final scroll that brought the goal's

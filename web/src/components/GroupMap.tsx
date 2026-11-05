@@ -27,9 +27,9 @@ function reducedMotion() {
   return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
 
-interface Props { shifts: DeviceShifts; map: GroupMapData; hues: string[]; device: string; arrows?: boolean }
+interface Props { shifts: DeviceShifts; map: GroupMapData; hues: string[]; device: string; arrows?: boolean; changes?: { day: string; note: string | null }[] }
 
-export default function GroupMap({ shifts, map, hues, device, arrows = false }: Props) {
+export default function GroupMap({ shifts, map, hues, device, arrows = false, changes = [] }: Props) {
   const last = map.frames.length - 1;
   const [t, setT] = useState(last);
   const [playing, setPlaying] = useState(false);
@@ -99,6 +99,8 @@ export default function GroupMap({ shifts, map, hues, device, arrows = false }: 
   const changed = groups.filter(g => g.event && g.since);
   const marked = groups.length === 2 && changed.length === 2 && changed.every(g => g.event === "grew" || g.event === "shrank") ? changed.filter(g => g.event === "grew") : changed;
   const events = marked.map(g => ({ g, at: shifts.bins.findIndex(bin => g.since! < bin.to) }));
+  const start = shifts.bins[0].from, span = shifts.bins[last].to - start;
+  const recorded = changes.map(c => ({ ...c, at: (Date.parse(`${c.day}T00:00:00Z`) - start) / span })).filter(c => c.at >= 0 && c.at <= 1);
   const bin = shifts.bins[Math.round(t)];
   const ends = mapDirections(map);
   // Biplot: each measure's correlation with the two directions, drawn from the average visit.
@@ -167,6 +169,7 @@ export default function GroupMap({ shifts, map, hues, device, arrows = false }: 
         <div className="map-scrub">
           <input type="range" min={0} max={last} step={0.01} value={t} aria-label="Time"
             aria-valuetext={`${day(bin.from)} to ${day(bin.to)}`} onChange={e => { setPlaying(false); setT(Number(e.target.value)); }} />
+          {recorded.map(c => <i key={c.day + c.note} className="map-change" style={{ left: `${c.at * 100}%` }} title={`Your change on ${day(Date.parse(`${c.day}T00:00:00Z`))}${c.note ? `: ${c.note}` : ""}`} />)}
           {events.map(e => e.at >= 0 && <i key={e.g.id} className="map-event" style={{ left: `${(e.at / Math.max(1, last)) * 100}%`, background: `var(${hueOf.get(e.g.id)})` }} title={`${e.g.headline}: ${e.g.event} around ${day(e.g.since!)}`} />)}
         </div>
         <span className="map-date">{day(bin.from)}–{day(bin.to)}</span>

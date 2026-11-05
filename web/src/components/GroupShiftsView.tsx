@@ -42,6 +42,31 @@ function Bars({ rows, mark }: { rows: { label: string; value: number; on?: boole
   );
 }
 
+const band = (b: [number, number, number]) => `${b[0] >= 0 ? "+" : "−"}${Math.abs(b[0] * 100).toFixed(1)} pts`;
+const range = (b: [number, number, number]) => `${(b[1] * 100).toFixed(1)} to ${(b[2] * 100).toFixed(1)}`;
+
+function Impact({ current, goal }: { current: DeviceShifts; goal: string }) {
+  const impact = current.impact!;
+  const names = new Map(current.groups.map(g => [g.id, g.headline]));
+  const withSources = current.groups.filter(g => g.sources);
+  // With two groups, one's change is the other's in reverse: show the one that grew.
+  const sourced = withSources.length === 2 && current.groups.length === 2 ? withSources.filter(g => g.sources!.change > 0) : withSources;
+  return (
+    <div className="method-block">
+      <h4>{goal} <span>before and after {day(impact.since)}, split by Kitagawa decomposition; 95% bootstrap intervals</span></h4>
+      <dl className="stats">
+        <div><dt>Change</dt><dd>{band(impact.total)}<small>{percent(impact.rate_before)} → {percent(impact.rate_after)} · {range(impact.total)}</small></dd></div>
+        <div><dt>Who's visiting</dt><dd>{band(impact.mix)}<small>{range(impact.mix)}</small></dd></div>
+        <div><dt>How they behave</dt><dd>{band(impact.behaviour)}<small>{range(impact.behaviour)}</small></dd></div>
+      </dl>
+      <table className="shift-table"><thead><tr><th>Group</th><th>Share before → after</th><th>{goal} before → after</th></tr></thead>
+        <tbody>{impact.groups.map(g => <tr key={g.id}><td>{names.get(g.id)}</td><td className="num">{percent(g.share_before)} → {percent(g.share_after)}</td><td className="num">{percent(g.rate_before)} → {percent(g.rate_after)}</td></tr>)}</tbody>
+      </table>
+      {sourced.map(g => <p key={g.id} className="method-note">{g.headline} {band([g.sources!.change, g.sources!.change, g.sources!.change])}: traffic mix {band(g.sources!.traffic)} ({range(g.sources!.traffic)}), within sources {band(g.sources!.within)} ({range(g.sources!.within)}){g.sources!.drivers.length ? `; mainly ${g.sources!.drivers[0].source}, ${percent(g.sources!.drivers[0].traffic_before)} → ${percent(g.sources!.drivers[0].traffic_after)} of visits` : ""}.</p>)}
+    </div>
+  );
+}
+
 function Method({ current, arrows, setArrows }: { current: DeviceShifts; arrows: boolean; setArrows: (on: boolean) => void }) {
   const map = current.map, m = current.method;
   const measures = Object.keys(map?.loadings || {});
@@ -88,18 +113,19 @@ export default function GroupShiftsView({ shifts }: { shifts: GroupShifts }) {
   if (!device) return null;
   const current = shifts[device]!;
   const hues = groupColorSlots(current.groups.map(g => g.key || undefined)).map(slot => HUES[slot]);
-  const lines = shiftSentences(current, device);
+  const lines = shiftSentences(current, device, { goal: shifts.goal, changes: shifts.changes });
   return (
     <section className="panel shifts">
       <div className="panel-head"><h2>How the groups changed</h2>
         {devices.length > 1 && <div className="end"><div className="seg" role="group" aria-label="Device">{devices.map(d => <button key={d} type="button" className={d === device ? "on" : ""} onClick={() => setPicked(d)}>{d === "desktop" ? "Desktop" : "Mobile"}</button>)}</div></div>}
       </div>
       <div className="panel-body">
-        {current.map?.frames.length === current.bins.length && <GroupMap key={device} shifts={current} map={current.map} hues={hues} device={device} arrows={arrows} />}
+        {current.map?.frames.length === current.bins.length && <GroupMap key={device} shifts={current} map={current.map} hues={hues} device={device} arrows={arrows} changes={shifts.changes} />}
         {lines.length
           ? <ul className="shift-lines">{lines.map(line => <li key={line}>{line}</li>)}</ul>
           : <p className="muted">No real changes: shares and behaviour stayed within normal variation.</p>}
         <details className="shift-details"><summary>Details</summary>
+          {current.impact && shifts.goal && <Impact current={current} goal={shifts.goal} />}
           <Method current={current} arrows={arrows} setArrows={setArrows} />
           <Stream shifts={current} hues={hues} />
           <details className="shift-weeks"><summary>Weekly numbers</summary>

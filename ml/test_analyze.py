@@ -111,6 +111,39 @@ class ClusteringTest(unittest.TestCase):
         first, last = np.array(frames[0]["centres"]["1"]), np.array(frames[-1]["centres"]["1"])
         self.assertGreater(np.linalg.norm(last - first), 0.1)
 
+    def test_goal_change_splits_into_who_visits_and_how_they_behave(self):
+        rng = np.random.default_rng(9)
+        now = 100 * group_shifts.WEEK_MS
+        n = 4000
+        start = now - rng.integers(0, 12 * group_shifts.WEEK_MS, size=n)
+        recent = start > now - 4 * group_shifts.WEEK_MS
+        # Instagram visits arrive only recently, and they're mostly in group 1.
+        sources = np.where(recent & (rng.random(n) < 0.35), "Instagram", "Google")
+        labels = np.where(sources == "Instagram", (rng.random(n) < 0.9).astype(int), (rng.random(n) < 0.3).astype(int))
+        reached = rng.random(n) < np.where(labels == 1, 0.1, 0.4)
+        result = group_shifts.shifts(start, labels, rng.normal(size=(n, 1)), ["click_rate"], now, None, reached, sources)
+        impact = result["impact"]
+        self.assertAlmostEqual(impact["mix"][0] + impact["behaviour"][0], impact["total"][0], places=3)
+        self.assertLess(impact["mix"][2], 0)
+        self.assertLessEqual(impact["behaviour"][1], 0)
+        self.assertGreaterEqual(impact["behaviour"][2], 0)
+        drivers = result["groups"]["1"]["sources"]["drivers"]
+        self.assertEqual(drivers[0]["source"], "Instagram")
+        self.assertGreater(drivers[0]["part"], 0.5)
+
+    def test_a_shift_within_every_source_names_no_source(self):
+        rng = np.random.default_rng(10)
+        now = 100 * group_shifts.WEEK_MS
+        n = 4000
+        start = now - rng.integers(0, 12 * group_shifts.WEEK_MS, size=n)
+        recent = start > now - 4 * group_shifts.WEEK_MS
+        sources = rng.choice(["Google", "Instagram", "no referrer"], size=n, p=[0.5, 0.2, 0.3])
+        labels = (rng.random(n) < np.where(recent, 0.5, 0.3)).astype(int)
+        group = group_shifts.shifts(start, labels, rng.normal(size=(n, 1)), ["click_rate"], now, None, None, sources)["groups"]["1"]
+        self.assertEqual(group["event"], "grew")
+        self.assertEqual(group["sources"]["drivers"], [])
+        self.assertGreater(group["sources"]["within"][1], 0)
+
     def test_shifts_report_drift_inside_a_group(self):
         rng = np.random.default_rng(6)
         now = 100 * group_shifts.WEEK_MS

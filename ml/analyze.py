@@ -499,7 +499,9 @@ def main(device, site_key):
         "min_group_size": min_size,
         "spread": dict(zip(used, T.std(axis=0).round(4).tolist())),
         "centres": {int(c): dict(zip(used, T[km_labels == c].mean(axis=0).round(4).tolist())) for c in set(km_labels)},
-        "shifts": group_shifts.shifts(df_raw["start_time"].to_numpy(), km_labels, df[used].to_numpy(dtype=float), used, int(time.time() * 1000), X)
+        "shifts": group_shifts.shifts(df_raw["start_time"].to_numpy(), km_labels, df[used].to_numpy(dtype=float), used, int(time.time() * 1000), X,
+            df_raw["goal_hits"].apply(lambda hits: isinstance(hits, list) and goal["id"] in hits).to_numpy() if goal and "goal_hits" in df_raw.columns else None,
+            df_raw["source"].fillna("unknown").to_numpy() if "source" in df_raw.columns else None)
             if "start_time" in df_raw.columns else None,
         "goal_informed_k": reached is not None
     }

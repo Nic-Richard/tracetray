@@ -25,6 +25,11 @@ MAP_POINTS = 150
 # A week's centre for a drifting group needs this many of its visits across the smoothing window.
 MIN_CENTRE_VISITS = 15
 RANDOM_SEED = 42
+BOOTSTRAP = 400
+MIN_PERIOD_VISITS = 40
+MIN_PERIOD_HITS = 5
+# A source is named as the driver when its traffic change accounts for at least this much of the group's change.
+DRIVER_SHARE = 0.4
 
 
 def wilson(k, n, z=1.96):
@@ -102,6 +107,92 @@ def drift(values, early, recent, features):
     return rows
 
 
+def kitagawa(labels, reached, after, ids):
+    """Change in the goal rate between two periods, split exactly into a mix part (group shares changed, each at its
+    average rate) and a behaviour part (group rates changed, at their average share). A group missing from one period
+    takes its rate from the other, so it contributes only through mix."""
+    total_b, total_a = (~after).sum(), after.sum()
+    rate_b, rate_a = reached[~after].mean(), reached[after].mean()
+    mix = behaviour = 0.0
+    rows = []
+    for cid in ids:
+        mine = labels == cid
+        nb, na = (mine & ~after).sum(), (mine & after).sum()
+        sb, sa = nb / total_b, na / total_a
+        rb = reached[mine & ~after].mean() if nb else None
+        ra = reached[mine & after].mean() if na else None
+        rb, ra = (ra if rb is None else rb), (rb if ra is None else ra)
+        rb, ra = (rate_b if rb is None else rb), (rate_a if ra is None else ra)
+        mix += (sa - sb) * (rb + ra) / 2
+        behaviour += (ra - rb) * (sb + sa) / 2
+        rows.append({"id": int(cid), "share_before": round(float(sb), 4), "share_after": round(float(sa), 4),
+                     "rate_before": round(float(rb), 4), "rate_after": round(float(ra), 4)})
+    return float(rate_a - rate_b), float(mix), float(behaviour), float(rate_b), float(rate_a), rows
+
+
+def impact(labels, reached, index, split, ids, bins):
+    """The decomposition at a split, with bootstrap intervals (visits resampled within each period)."""
+    after = index >= split
+    if min(after.sum(), (~after).sum()) < MIN_PERIOD_VISITS or min(reached[after].sum(), reached[~after].sum()) < MIN_PERIOD_HITS:
+        return None
+    total, mix, behaviour, rate_b, rate_a, rows = kitagawa(labels, reached, after, ids)
+    rng = np.random.default_rng(RANDOM_SEED)
+    before_idx, after_idx = np.flatnonzero(~after), np.flatnonzero(after)
+    draws = []
+    for _ in range(BOOTSTRAP):
+        pick = np.concatenate([rng.choice(before_idx, len(before_idx)), rng.choice(after_idx, len(after_idx))])
+        draws.append(kitagawa(labels[pick], reached[pick], after[pick], ids)[:3])
+    low, high = np.percentile(np.array(draws), [2.5, 97.5], axis=0)
+    band = lambda i, v: [round(v, 4), round(float(low[i]), 4), round(float(high[i]), 4)]
+    return {"since": bins[split]["from"], "rate_before": round(rate_b, 4), "rate_after": round(rate_a, 4),
+            "total": band(0, total), "mix": band(1, mix), "behaviour": band(2, behaviour), "groups": rows}
+
+
+def by_source(member, sources, after):
+    """A group's share split by traffic source: the part from where visitors came from changing (traffic) and the
+    part from the group becoming more or less common within sources. Returns totals and per-source traffic parts."""
+    names = sorted(set(sources))
+    nb, na = (~after).sum(), after.sum()
+    traffic = within = 0.0
+    parts = {}
+    for src in names:
+        here = sources == src
+        wb, wa = (here & ~after).sum() / nb, (here & after).sum() / na
+        pb = member[here & ~after].mean() if (here & ~after).any() else None
+        pa = member[here & after].mean() if (here & after).any() else None
+        pb, pa = (pa if pb is None else pb), (pb if pa is None else pa)
+        parts[src] = (wa - wb) * (pb + pa) / 2
+        traffic += parts[src]
+        within += (pa - pb) * (wb + wa) / 2
+    return float(traffic), float(within), parts
+
+
+def source_drivers(labels, sources, index, split, cid):
+    """Whether a group's change came from a change in where visitors come from, or happened within sources. The
+    traffic part is reported, with its main source, only when its bootstrap interval excludes zero and it carries at
+    least half of the change."""
+    after = index >= split
+    member = (labels == cid).astype(float)
+    change = float(member[after].mean() - member[~after].mean())
+    traffic, within, parts = by_source(member, sources, after)
+    rng = np.random.default_rng(RANDOM_SEED)
+    before_idx, after_idx = np.flatnonzero(~after), np.flatnonzero(after)
+    draws = []
+    for _ in range(BOOTSTRAP):
+        pick = np.concatenate([rng.choice(before_idx, len(before_idx)), rng.choice(after_idx, len(after_idx))])
+        draws.append(by_source(member[pick], sources[pick], after[pick])[:2])
+    low, high = np.percentile(np.array(draws), [2.5, 97.5], axis=0)
+    out = {"change": round(change, 4), "traffic": [round(traffic, 4), round(float(low[0]), 4), round(float(high[0]), 4)],
+           "within": [round(within, 4), round(float(low[1]), 4), round(float(high[1]), 4)], "drivers": []}
+    real = low[0] > 0 or high[0] < 0
+    if change and real and traffic / change >= 0.5:
+        src, part = max(parts.items(), key=lambda kv: kv[1] * np.sign(change))
+        if part / change >= DRIVER_SHARE:
+            out["drivers"] = [{"source": src, "part": round(part / change, 3),
+                               "traffic_before": round(float((sources[~after] == src).mean()), 4), "traffic_after": round(float((sources[after] == src).mean()), 4)}]
+    return out
+
+
 def group_map(X, labels, index, bins, drifting, features):
     """Sampled visits per frame and each group's centre per frame, in [-1, 1] on both axes."""
     pca = PCA(n_components=2, random_state=RANDOM_SEED).fit(X)
@@ -136,9 +227,10 @@ def group_map(X, labels, index, bins, drifting, features):
             "origin": [round(float(origin[0]), 3), round(float(origin[1]), 3)], "extent": extent, "frames": frames}
 
 
-def shifts(start_ms, labels, values, features, now_ms, X=None):
-    """None when the window is too short to say anything about change. X, the standardized clustering matrix,
-    adds the map for the animated view."""
+def shifts(start_ms, labels, values, features, now_ms, X=None, reached=None, sources=None):
+    """None when the window is too short to say anything about change. X, the standardized clustering matrix, adds
+    the map for the animated view; reached (goal hits) adds the decomposition of the goal rate's change; sources adds
+    which traffic drove each group's shift."""
     start_ms = np.asarray(start_ms, dtype=np.int64)
     index, bins, weeks = time_bins(start_ms, now_ms)
     if index is None:
@@ -156,6 +248,7 @@ def shifts(start_ms, labels, values, features, now_ms, X=None):
                        "p": p, "split": split, "before": before, "after": after, "lo_hi": lo_hi}
     real = bh(trend_p)
     third = max(1, len(bins) // 3)
+    splits = {}
     for i, cid in enumerate(ids):
         g = groups[cid]
         shares = g["shares"]
@@ -175,13 +268,17 @@ def shifts(start_ms, labels, values, features, now_ms, X=None):
         else:
             g["from"] = round(float(np.mean(shares[:third])), 4)
             g["to"] = round(float(np.mean(shares[-third:])), 4)
+        if event in ("grew", "shrank"):
+            splits[cid] = g["split"]
         for key in ("split", "before", "after"):
             del g[key]
         if event == "appeared":
-            g["since"] = bins[next(b for b, s in enumerate(shares) if s >= PRESENT)]["from"]
+            splits[cid] = next(b for b, s in enumerate(shares) if s >= PRESENT)
+            g["since"] = bins[splits[cid]]["from"]
         if event == "faded":
             last = max(b for b, s in enumerate(shares) if s >= PRESENT)
-            g["since"] = bins[min(last + 1, len(bins) - 1)]["from"]
+            splits[cid] = min(last + 1, len(bins) - 1)
+            g["since"] = bins[splits[cid]]["from"]
         del g["lo_hi"]
 
     early_cut = index < len(bins) // 2
@@ -200,7 +297,21 @@ def shifts(start_ms, labels, values, features, now_ms, X=None):
     for cid in ids:
         groups[cid]["drift"] = sorted(groups[cid]["drift"], key=lambda r: -abs(r["change"]))[:2]
         groups[cid]["p"] = round(groups[cid]["p"], 6)
+    if sources is not None:
+        sources = np.asarray(sources, dtype=object)
+        for cid, split in splits.items():
+            groups[cid]["sources"] = source_drivers(labels, sources, index, split, cid)
     out = {"bin_weeks": weeks, "bins": bins, "groups": {str(cid): g for cid, g in groups.items()}}
+    if reached is not None:
+        reached = np.asarray(reached, dtype=float)
+        # The change to explain: a real change in the goal rate itself, else the strongest real group shift.
+        hits = [int(reached[index == b].sum()) for b in range(len(bins))]
+        p, at, _, _ = change_point(hits, [b["visits"] for b in bins])
+        split = at if p < 0.05 else None
+        if split is None and splits:
+            split = min(splits.items(), key=lambda kv: groups[kv[0]]["p"])[1]
+        if split is not None:
+            out["impact"] = impact(labels, reached, index, split, ids, bins)
     if X is not None and X.shape[1] >= 2:
         out["map"] = group_map(X, labels, index, len(bins), {cid for cid in ids if groups[cid]["drift"]}, features)
     return out
