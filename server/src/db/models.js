@@ -119,6 +119,7 @@ const PageShot = mongoose.model("PageShot", new mongoose.Schema({
     width:        Number,
     page_height:  Number,
     shown_height: Number,
+    layout:       mongoose.Schema.Types.Mixed,
     taken_at:     Date,
     viewed_at:    Date,
     error:        String,

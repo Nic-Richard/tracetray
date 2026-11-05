@@ -85,7 +85,32 @@ async function closeBrowser() {
     if (running) await running.then(b => b.close()).catch(() => {});
 }
 
-async function capture(address, device) {
+// Runs in the page. Sections run from one visible heading to the next; elements are named the way the tracker
+// names a click target (text, id, path on this site or the other domain), so clicks can be placed on them.
+function readLayout() {
+    const box = el => { const r = el.getBoundingClientRect(); return { top: Math.round(r.top + window.scrollY), height: Math.round(r.height), left: Math.round(r.left), width: Math.round(r.width) }; };
+    const shown = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden"; };
+    const text = el => (el.innerText || el.value || el.getAttribute("aria-label") || "").trim().replace(/\s+/g, " ").slice(0, 80);
+    const pageHeight = Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0);
+    const headings = [...document.querySelectorAll("h1, h2, h3")].filter(shown).map(el => ({ name: text(el), top: box(el).top })).filter(h => h.name).slice(0, 40);
+    const sections = headings.map((h, i) => ({ name: h.name, top: h.top, bottom: headings[i + 1]?.top ?? pageHeight }));
+    const href = el => {
+        if (el.tagName !== "A") return null;
+        try {
+            const u = new URL(el.href, location.href);
+            if (!/^https?:$/.test(u.protocol)) return u.protocol;
+            return u.origin === location.origin ? u.pathname : u.hostname;
+        } catch (e) { return null; }
+    };
+    const elements = [...document.querySelectorAll("a[href], button, [role='button'], input[type='submit'], input[type='button'], summary, label")]
+        .filter(shown).slice(0, 150).map(el => ({ tag: el.tagName, id: el.id || null, text: text(el) || null, href: href(el), ...box(el) }));
+    // Pictures, so clicks on things that don't respond can be named ("the product photo") rather than placed.
+    const media = [...document.querySelectorAll("img[alt], [role='img'][aria-label]")].filter(el => shown(el) && el.getBoundingClientRect().width >= 80)
+        .slice(0, 40).map(el => ({ name: (el.getAttribute("alt") || el.getAttribute("aria-label")).trim().slice(0, 80), ...box(el) })).filter(m => m.name);
+    return { sections, elements, media };
+}
+
+async function capture(address, device, { trusted = false } = {}) {
     const tab = await (await browser()).newPage();
     try {
         await tab.setViewport(DEVICES[device]);
@@ -95,6 +120,7 @@ async function capture(address, device) {
             const url = request.url();
             if (url.startsWith("data:")) return request.continue();
             if (SKIPPED_TYPES.has(request.resourceType()) || TRACKER.test(url)) return request.abort();
+            if (trusted) return request.continue();
             publicUrl(url).then(ok => (ok ? request.continue() : request.abort())).catch(() => request.abort());
         });
         await tab.goto(address, { waitUntil: "networkidle2", timeout: 30000 });
@@ -109,7 +135,7 @@ async function capture(address, device) {
         const pageHeight = await tab.evaluate(() => Math.max(document.documentElement.scrollHeight, document.body ? document.body.scrollHeight : 0));
         const height = Math.min(pageHeight, MAX_HEIGHT);
         const image = await tab.screenshot({ type: "webp", quality: 80, clip: { x: 0, y: 0, width: DEVICES[device].width, height } });
-        return { image, pageHeight, shownHeight: height };
+        return { image, pageHeight, shownHeight: height, layout: await tab.evaluate(readLayout) };
     } finally {
         await tab.close().catch(() => {});
     }
@@ -137,7 +163,7 @@ async function takeShots(siteKey, page) {
             fs.mkdirSync(path.dirname(file), { recursive: true });
             fs.writeFileSync(file, shot.image);
             await PageShot.updateOne({ site_key: siteKey, page, device }, {
-                $set: { address, taken_at, file, page_height: shot.pageHeight, shown_height: shot.shownHeight, width: DEVICES[device].width, error: null },
+                $set: { address, taken_at, file, page_height: shot.pageHeight, shown_height: shot.shownHeight, width: DEVICES[device].width, layout: shot.layout, error: null },
                 $setOnInsert: { viewed_at: taken_at }
             }, { upsert: true });
         } catch (err) {
@@ -187,4 +213,4 @@ async function removeShots(filter) {
 const removeUnviewedShots = (now = Date.now()) => removeShots({ viewed_at: { $lt: new Date(now - UNVIEWED_DAYS * DAY_MS) } });
 
 const shotsPending = siteKey => [...pending].some(key => key.startsWith(`${siteKey}|`));
-module.exports = { refreshShots, shotInfo, shotFile, removeShots, removeUnviewedShots, publicUrl, privateAddress, shotsPending };
+module.exports = { capture, closeBrowser, fileFor, DEVICES, refreshShots, shotInfo, shotFile, removeShots, removeUnviewedShots, publicUrl, privateAddress, shotsPending };

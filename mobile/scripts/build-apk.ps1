@@ -61,7 +61,7 @@ try {
     }
     $variant = if ($Standalone -or $AppBundle) { 'release' } else { 'debug' }
     $assembleTask = if ($AppBundle) { ':app:bundleRelease' } elseif ($Standalone) { ':app:assembleRelease' } else { ':app:assembleDebug' }
-    $tasks = if ($Standalone -or $AppBundle) { @(':app:createBundleReleaseJsAndAssets', '--rerun', $assembleTask) } else { @($assembleTask) }
+    $tasks = @(if ($Standalone -or $AppBundle) { ':app:createBundleReleaseJsAndAssets', '--rerun', $assembleTask } else { $assembleTask })
     & '.\android\gradlew.bat' -p android @tasks "-PreactNativeArchitectures=$Architectures" --max-workers=4 --console=plain
     if ($LASTEXITCODE -ne 0) { throw 'Android build failed.' }
     if ($AppBundle) { Write-Host (Join-Path $mobileRoot 'android\app\build\outputs\bundle\release\app-release.aab') }
