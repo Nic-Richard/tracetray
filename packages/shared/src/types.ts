@@ -393,6 +393,8 @@ export interface DeviceAnalysis {
   /** What separates visits that reached the main goal from those that didn't; only "ok" results are shown. */
   goal_model?: GoalModel | null;
   goal_patterns?: GoalPatterns | null;
+  /** How each group's share changed over the window; see shifts.ts for the full shape. */
+  shifts?: { groups: Record<string, { event: "appeared" | "faded" | "grew" | "shrank" | null; since?: number; steps?: { since: number; share: number }[] }> } | null;
   clusters: Cluster[];
   kruskal_wallis?: KruskalWallis[];
   k_rationale?: Record<string, unknown>;
@@ -492,6 +494,8 @@ export interface GoalPatterns {
   reached: number;
   tried?: number;
   patterns: { fact: string; with: { visits: number; reached: number }; without: { visits: number; reached: number }; holds: boolean }[];
+  /** Per group id, the fact within that group most tied to reaching the goal, when one held up. */
+  levers?: Record<string, { fact: string; with: { visits: number; reached: number }; without: { visits: number; reached: number } }>;
 }
 
 export interface SectionAttention {

@@ -12,8 +12,8 @@ test("shift sentences name what changed and stay quiet otherwise", () => {
     group("Quick leavers", { event: "appeared", since: Date.UTC(2026, 8, 7), from: 0, to: 0.12 })
   ] }, "desktop");
   assert.deepEqual(lines, [
-    "Re-checkers have averaged 18% of desktop visits since around Sep 14, down from 31% before.",
-    "New: Quick leavers, first seen around Sep 7, now 12% of desktop visits.",
+    "Re-checkers: 31% → 18% of desktop visits since Sep 14.",
+    "New: Quick leavers, 12% of desktop visits since Sep 7.",
     "Re-checkers now wait before clicking about a third less than they did around Aug 17."
   ]);
 });
@@ -24,7 +24,7 @@ test("a share that changed more than once reads as steps, and drift is timed fro
     group("Header scanners", { event: "grew", since: bins[1].from, from: 0.25, to: 0.38, steps,
       drift: [{ feature: "click_rate", before: 0.1, after: 0.05, change: -0.5, since: bins[1].from }] })
   ] }, "desktop"), [
-    "Header scanners went from 25% of desktop visits to 45% around Aug 24, then back to 26% around Sep 7.",
+    "Header scanners: 25% → 45% of desktop visits around Aug 24, then back to 26% around Sep 7.",
     "Header scanners now click about a half less than they did before Aug 24."
   ]);
 });
@@ -41,16 +41,15 @@ test("the goal's change is explained by who's visiting or how they behave, only 
   const mixGroups = { groups: [{ id: 0, share_before: 0.3, share_after: 0.45, rate_before: 0.1, rate_after: 0.1 }, { id: 1, share_before: 0.7, share_after: 0.55, rate_before: 0.3, rate_after: 0.29 }] };
   const leavers = [group("Quick leavers", { id: 0 }), group("Readers", { id: 1 })];
   assert.deepEqual(shiftSentences(shifts({ total: [-0.03, -0.05, -0.01], mix: [-0.028, -0.04, -0.015], behaviour: [-0.002, -0.02, 0.015], ...mixGroups }, leavers), "desktop", { goal: "Added to cart", changes: [{ day: "2026-10-12", note: "Clearer size guide" }] }), [
-    "Added to cart went from 24% to 21% of desktop visits around Oct 8, close to your change “Clearer size guide” on Oct 12.",
-    "That's who's visiting, not how they behave: more Quick leavers, who reach it less often than others, worth about 2.8 points; each group reaches it about as often as before."
+    "Added to cart: 24% → 21% of desktop visits since Oct 8, close to your change “Clearer size guide” on Oct 12. Driven by who's visiting: more Quick leavers, who reach it less often."
   ]);
   assert.deepEqual(shiftSentences(shifts({ total: [0.04, -0.01, 0.09], mix: [0.012, 0.003, 0.024], behaviour: [0.03, -0.03, 0.08], ...mixGroups }, leavers), "desktop", { goal: "Added to cart", changes }), [
-    "Added to cart went from 24% to 21% of desktop visits around Oct 8, within normal variation. The part that holds up: more Quick leavers, who reach it less often than others, worth about 1.2 points."
+    "Added to cart: 24% → 21% of desktop visits since Oct 8, not conclusive yet. What holds up: more Quick leavers, who reach it less often, worth about 1.2 points."
   ]);
   assert.match(shiftSentences(shifts({ total: [0.001, -0.02, 0.02], mix: [-0.03, -0.045, -0.015], behaviour: [0.031, 0.012, 0.05] }), "desktop", { goal: "Added to cart" })[0],
-    /held at about 21% of desktop visits around Oct 8, but only because two changes cancelled out: who's visiting moved it 3.0 points down/);
+    /held at about 21% since Oct 8: who's visiting pushed it down, how they behave pushed it back/);
   const grew = group("Header scanners", { event: "grew", since, from: 0.29, to: 0.39, sources: { change: 0.1, traffic: [0.07, 0.03, 0.11], within: [0.03, -0.01, 0.07], drivers: [{ source: "Instagram", part: 0.7, traffic_before: 0.06, traffic_after: 0.18 }] } });
   assert.deepEqual(shiftSentences({ structure: "some", bin_weeks: 1, bins, groups: [grew] }, "desktop"), [
-    "Header scanners have averaged 39% of desktop visits since around Oct 8, up from 29% before, mostly because more visits came from Instagram (6% → 18% of visits)."
+    "Header scanners: 29% → 39% of desktop visits since Oct 8, mostly down to more visits from Instagram."
   ]);
 });

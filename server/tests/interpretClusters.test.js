@@ -213,3 +213,11 @@ test("a goal reached only a handful of times doesn't judge any group", () => {
     const result = interpretClusters({ desktop: fewHits, goal: { id: "g1", name: "checkout" } });
     assert.ok(Object.values(result.cluster_stories).every(s => !s.goal));
 });
+
+test("a small goal gap that only clears one test, not one per group, isn't called above or below", () => {
+    const groups = structuredClone(readerAndScanner);
+    groups.clusters = [0, 1, 2, 3].map(id => ({ ...cluster(id, 100, readerAndScanner.clusters[id % 2].feature_means), goal_hits: { g1: id === 0 ? 32 : 20 } }));
+    groups.session_count = 400;
+    const result = interpretClusters({ desktop: groups, pageUrl: "https://example.com/", goal: { id: "g1", name: "checkout", type: "click", match: { text: "Checkout" } } });
+    assert.equal(result.cluster_stories[0].goal.standing, "about");
+});

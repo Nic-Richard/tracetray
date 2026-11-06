@@ -109,6 +109,8 @@ function analysisHandler({ failProcess = false, failSave = false, busy = false, 
             if (name === "../lib/runAnalysis") return loadRunAnalysis();
             if (name === "express") return { Router: () => ({ post(route, auth, fn) { if (route === "/api/run-analysis") handler = fn; } }) };
             if (name === "path") return path;
+            if (name === "fs") return fs;
+            if (name === "os") return require("os");
             if (name === "@clerk/express") return { getAuth: () => ({ userId }) };
             if (name === "../middleware/auth") return { requireAuth: () => () => {} };
             if (name === "../lib/runProcess") return { async runProcess() {

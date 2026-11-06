@@ -1,5 +1,7 @@
 // One analysis run for a site (or one page of it): extract features, cluster desktop and mobile,
 // describe the groups and save the result. Used by the Refresh button and the weekly runs.
+const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { runProcess } = require("./runProcess");
 const { Account, Session, AnalysisResult } = require("../db/models");
@@ -25,6 +27,15 @@ async function runPythonAnalysis(device, env) {
     return JSON.parse(resultLine.slice(marker.length).trim());
 }
 
+// Each visit's group from this run, per device; not stored.
+function readGroups(base) {
+    const out = {};
+    for (const device of ["desktop", "mobile"]) {
+        try { out[device] = JSON.parse(fs.readFileSync(`${base}.${device}.json`, "utf8")); } catch { /* no groups on this device */ }
+    }
+    return out;
+}
+
 async function runAnalysis(siteKey, pageFilter = null) {
     if (analysisRunning[siteKey]) {
         const err = new Error("analysis already running");
@@ -33,13 +44,15 @@ async function runAnalysis(siteKey, pageFilter = null) {
     }
     analysisRunning[siteKey] = true;
     logger.debug(`starting analysis  key=${siteKey}`);
+    const assignments = path.join(os.tmpdir(), `tracetray-groups-${process.pid}-${Date.now()}`);
     try {
         if (!await Account.exists({ deletion_requested_at: null, $or: [{ site_key: siteKey }, { "sites.key": siteKey }] })) {
             throw new Error("website is unavailable for analysis");
         }
         const main = pageFilter ? await mainGoalFor(siteKey, pageFilter).catch(err => { logger.error("main goal lookup failed:", err); return null; }) : null;
         const env = { ...process.env, TRACETRAY_SITE_KEY: siteKey, TRACETRAY_PAGE_FILTER: pageFilter || "",
-            TRACETRAY_GOAL: main ? JSON.stringify({ id: main.id, type: main.type, match: main.match }) : "" };
+            TRACETRAY_GOAL: main ? JSON.stringify({ id: main.id, type: main.type, match: main.match }) : "",
+            TRACETRAY_ASSIGNMENTS: assignments };
         await runProcess(process.execPath, [path.join(ROOT, "analysis", "extractFeatures.js")], { cwd: ROOT, env });
         logger.debug("extraction done");
 
@@ -94,7 +107,7 @@ async function runAnalysis(siteKey, pageFilter = null) {
 
         if (main && pageFilter) {
             try {
-                const patterns = await goalPatterns(siteKey, pageFilter, main, new URL(pageFilter).origin);
+                const patterns = await goalPatterns(siteKey, pageFilter, main, new URL(pageFilter).origin, readGroups(assignments));
                 clusterResult.goal_patterns = patterns?.desktop || null;
                 if (clusterResult.mobile) clusterResult.mobile.goal_patterns = patterns?.mobile || null;
             } catch (err) {
@@ -107,6 +120,7 @@ async function runAnalysis(siteKey, pageFilter = null) {
         return clusterResult;
     } finally {
         analysisRunning[siteKey] = false;
+        for (const device of ["desktop", "mobile"]) fs.rm(`${assignments}.${device}.json`, { force: true }, () => {});
     }
 }
 

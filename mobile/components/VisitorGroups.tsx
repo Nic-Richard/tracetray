@@ -128,6 +128,7 @@ export default function VisitorGroups({ result }: { result: AnalysisResult }) {
               <Text style={styles.muted}>
                 {type.sessions.toLocaleString()} visits · of {device} visits
                 {type.age ? ` · ${type.age}` : ""}
+                {type.trend ? ` · ${type.trend.up ? "▲" : "▼"} ${type.trend.text}` : ""}
               </Text>
               {story?.goal ? (
                 <View style={{ gap: 4 }}>
@@ -151,6 +152,7 @@ export default function VisitorGroups({ result }: { result: AnalysisResult }) {
                   </Text>
                 </View>
               ) : null}
+              {type.lever ? <Text style={[styles.text, { borderLeftWidth: 2, borderLeftColor: colors.line, paddingLeft: 10 }]}>{type.lever}</Text> : null}
               {summary ? <Text style={styles.text}>{summary}</Text> : null}
               {story?.traits?.length ? <TraitBars traits={story.traits} color={color} /> : null}
               {story?.suggestions?.length ? (

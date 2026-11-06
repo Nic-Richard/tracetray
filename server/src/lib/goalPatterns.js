@@ -4,6 +4,7 @@ const { Session, PageShot } = require("../db/models");
 const { clickMatches, formMatches } = require("./goals");
 const { sectionTimes } = require("./sectionAttention");
 const { sourceName } = require("./sources");
+const { twoSided } = require("./pvalue");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WINDOW_DAYS = 90;
@@ -80,13 +81,6 @@ function factsOf(session, goal, layout, origin, skipSection) {
     return facts;
 }
 
-// Two-sided normal p-value (Abramowitz and Stegun 26.2.17).
-function twoSided(z) {
-    const t = 1 / (1 + 0.2316419 * Math.abs(z));
-    const tail = 0.3989423 * Math.exp(-z * z / 2) * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
-    return 2 * tail;
-}
-
 function benjaminiHochberg(rows) {
     const sorted = [...rows].sort((a, b) => a.p - b.p);
     let cutoff = -1;
@@ -114,15 +108,19 @@ function holdsByLength(visits, fact, raw) {
     return Math.sign(adjusted) === Math.sign(raw) && Math.abs(adjusted) >= Math.abs(raw) / 2;
 }
 
-function patternsFor(sessions, goal, layout, origin) {
+function visitsOf(sessions, goal, layout, origin) {
     const skip = goalSection(goal, layout);
-    const visits = sessions.map(session => {
+    return sessions.map(session => {
         const reached = (session.goal_hits || []).includes(goal.id);
         const before = beforeGoal(session, goal, reached);
-        return { reached, ms: Math.max(0, before.end_time - before.start_time), facts: factsOf(before, goal, layout, origin, skip) };
+        return { id: session.session_id, reached, ms: Math.max(0, before.end_time - before.start_time), facts: factsOf(before, goal, layout, origin, skip) };
     });
+}
+
+// Each fact's goal rate with and without it, tested against the pooled rate; empty when either side is too thin.
+function factRows(visits) {
     const total = visits.length, reachedTotal = visits.filter(v => v.reached).length;
-    if (reachedTotal < MIN_EACH_SIDE || total - reachedTotal < MIN_EACH_SIDE) return { visits: total, reached: reachedTotal, patterns: [] };
+    if (reachedTotal < MIN_EACH_SIDE || total - reachedTotal < MIN_EACH_SIDE) return [];
     const counts = new Map();
     for (const v of visits) for (const fact of v.facts) {
         const row = counts.get(fact) || { fact, n: 0, hits: 0 };
@@ -130,22 +128,52 @@ function patternsFor(sessions, goal, layout, origin) {
         if (v.reached) row.hits++;
         counts.set(fact, row);
     }
-    const rows = [...counts.values()].filter(row => row.n >= MIN_EACH_SIDE && total - row.n >= MIN_EACH_SIDE
+    return [...counts.values()].filter(row => row.n >= MIN_EACH_SIDE && total - row.n >= MIN_EACH_SIDE
         && !(row.fact.startsWith("Scrolled down to") && row.n / total > MAX_REACH)).map(row => {
         const withRate = row.hits / row.n, withoutRate = (reachedTotal - row.hits) / (total - row.n);
         const pooled = reachedTotal / total;
         const se = Math.sqrt(pooled * (1 - pooled) * (1 / row.n + 1 / (total - row.n)));
-        return { ...row, withRate, withoutRate, diff: withRate - withoutRate, p: se > 0 ? twoSided((withRate - withoutRate) / se) : 1 };
+        return { ...row, total, reachedTotal, withRate, withoutRate, diff: withRate - withoutRate, p: se > 0 ? twoSided((withRate - withoutRate) / se) : 1 };
     });
+}
+
+const sides = row => ({ with: { visits: row.n, reached: row.hits }, without: { visits: row.total - row.n, reached: row.reachedTotal - row.hits } });
+
+function patternsFor(sessions, goal, layout, origin) {
+    const visits = visitsOf(sessions, goal, layout, origin);
+    const total = visits.length, reachedTotal = visits.filter(v => v.reached).length;
+    const rows = factRows(visits);
     const kept = benjaminiHochberg(rows);
     const patterns = rows.filter(row => kept.has(row) && Math.abs(row.diff) >= MIN_DIFFERENCE)
         .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).slice(0, MAX_PATTERNS)
-        .map(row => ({ fact: row.fact, with: { visits: row.n, reached: row.hits }, without: { visits: total - row.n, reached: reachedTotal - row.hits },
-            holds: holdsByLength(visits, row.fact, row.diff) }));
+        .map(row => ({ fact: row.fact, ...sides(row), holds: holdsByLength(visits, row.fact, row.diff) }));
     return { visits: total, reached: reachedTotal, tried: rows.length, patterns };
 }
 
-async function goalPatterns(siteKey, page, goal, origin) {
+/** Within each group, the fact that goes most with reaching the goal more often: what to put in that group's path.
+ * Tested across all groups together at the same false discovery rate, and dropped when visit length explains it.
+ * Leaving through a link can't be a lever: the visit ends there, so it never reaches the goal. */
+function leversFor(sessions, groups, goal, layout, origin) {
+    const visits = visitsOf(sessions, goal, layout, origin);
+    const byGroup = new Map();
+    for (const v of visits) {
+        const id = groups[v.id];
+        if (id === undefined) continue;
+        if (!byGroup.has(id)) byGroup.set(id, []);
+        byGroup.get(id).push(v);
+    }
+    const rows = [...byGroup].flatMap(([id, members]) => factRows(members).map(row => ({ ...row, id })));
+    const kept = benjaminiHochberg(rows);
+    const out = {};
+    for (const row of rows.filter(r => kept.has(r) && r.diff >= MIN_DIFFERENCE && !r.fact.startsWith("Left through")).sort((a, b) => b.diff - a.diff)) {
+        if (out[row.id] || !holdsByLength(byGroup.get(row.id), row.fact, row.diff)) continue;
+        out[row.id] = { fact: row.fact, ...sides(row) };
+    }
+    return out;
+}
+
+/** groups: each device's visit-to-group map from this run, for the per-group levers. */
+async function goalPatterns(siteKey, page, goal, origin, groups = {}) {
     if (!goal || !page) return null;
     const shots = await PageShot.find({ site_key: siteKey, page, layout: { $exists: true } }, { device: 1, layout: 1, page_height: 1 }).lean();
     const out = {};
@@ -155,10 +183,11 @@ async function goalPatterns(siteKey, page, goal, origin) {
             site_key: siteKey, page, end_time: { $ne: null }, detailed: { $ne: false }, events_trimmed_at: { $exists: false },
             start_time: { $gte: Date.now() - WINDOW_DAYS * DAY_MS },
             ...(device === "mobile" ? { device_type: "mobile" } : { device_type: { $ne: "mobile" } })
-        }, { events: 1, start_time: 1, end_time: 1, goal_hits: 1, referrer: 1, page_path: 1, _id: 0 }).sort({ start_time: -1 }).limit(LIMIT).lean();
-        out[device] = { goal: goal.name, ...patternsFor(sessions, goal, shot && { ...shot.layout, height: shot.page_height }, origin) };
+        }, { session_id: 1, events: 1, start_time: 1, end_time: 1, goal_hits: 1, referrer: 1, page_path: 1, _id: 0 }).sort({ start_time: -1 }).limit(LIMIT).lean();
+        const layout = shot && { ...shot.layout, height: shot.page_height };
+        out[device] = { goal: goal.name, ...patternsFor(sessions, goal, layout, origin), levers: groups[device] ? leversFor(sessions, groups[device], goal, layout, origin) : {} };
     }
     return out;
 }
 
-module.exports = { goalPatterns, patternsFor, sourceOf, twoSided, benjaminiHochberg };
+module.exports = { goalPatterns, patternsFor, leversFor, sourceOf, twoSided, benjaminiHochberg };

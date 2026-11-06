@@ -529,6 +529,10 @@ if __name__ == "__main__":
             sys.exit(0)
 
         engineered = DESKTOP_ENGINEERED_FEATURES if args.device == "desktop" else MOBILE_ENGINEERED_FEATURES
+        # Each visit's group, for the server's per-group goal patterns; a file because busy pages would overflow stdout.
+        if os.environ.get("TRACETRAY_ASSIGNMENTS"):
+            with open(f"{os.environ['TRACETRAY_ASSIGNMENTS']}.{args.device}.json", "w", encoding="utf-8") as f:
+                json.dump(dict(zip(df_out["session_id"].astype(str), df_out["cluster_km"].astype(int).tolist())), f)
 
         clusters_out = []
         for cl_id, label in df_out.groupby("cluster_km")["behaviour_label"].first().to_dict().items():

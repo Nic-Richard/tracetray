@@ -1,4 +1,4 @@
-import type { AnalysisResult, ChangeFinding, Cluster, ClusterStory, Device, DeviceAnalysis, Interpretation, Trait } from "./types";
+import type { AnalysisResult, ChangeFinding, Cluster, ClusterStory, Device, DeviceAnalysis, GoalPatterns, Interpretation, Trait } from "./types";
 
 export function interpretationOf(result: AnalysisResult | null | undefined): Interpretation | null {
   return result?.interpretation || result?.ai_interpretation || null;
@@ -13,6 +13,10 @@ export interface VisitorType {
   headline: string;
   /** "New" or "Since Oct 5"; empty on a page's first tracked analysis. */
   age: string | null;
+  /** "Growing since Oct 8" and the like, only when the change held up. */
+  trend: { text: string; up: boolean } | null;
+  /** Within the group, what goes with reaching the goal, when it held up. */
+  lever: string | null;
 }
 
 export function deviceAnalysis(result: AnalysisResult | null | undefined, device: Device): DeviceAnalysis | null {
@@ -36,7 +40,28 @@ export function visitorTypes(result: AnalysisResult | null | undefined, device: 
   const stories = (device === "mobile" ? interpretation?.mobile_cluster_stories : interpretation?.cluster_stories) || {};
   return [...(source?.clusters || [])]
     .sort((a, b) => b.n - a.n)
-    .map(c => ({ id: c.id, key: stories[c.id]?.key, share: c.n / total, sessions: c.n, story: stories[c.id] || null, headline: stories[c.id]?.headline || c.label, age: groupAge(c.track, result?.ran_at) }));
+    .map(c => ({ id: c.id, key: stories[c.id]?.key, share: c.n / total, sessions: c.n, story: stories[c.id] || null, headline: stories[c.id]?.headline || c.label,
+      age: groupAge(c.track, result?.ran_at), trend: groupTrend(source?.shifts?.groups[c.id]), lever: groupLever(source?.goal_patterns, c.id) }));
+}
+
+const shortDay = (ms: number) => new Date(ms).toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" });
+
+function groupTrend(shift: NonNullable<NonNullable<DeviceAnalysis["shifts"]>["groups"][string]> | undefined): VisitorType["trend"] {
+  if (!shift?.event || !shift.since) return null;
+  if (shift.event === "appeared") return { text: `New since ${shortDay(shift.since)}`, up: true };
+  if (shift.event === "faded") return { text: `Fading since ${shortDay(shift.since)}`, up: false };
+  // With several steps, the latest one is what's true now.
+  const steps = shift.steps;
+  const last = steps && steps.length > 2 ? steps[steps.length - 1] : null;
+  const up = last ? last.share > steps![steps!.length - 2].share : shift.event === "grew";
+  return { text: `${up ? "Growing" : "Shrinking"} since ${shortDay(last ? last.since : shift.since)}`, up };
+}
+
+function groupLever(found: GoalPatterns | null | undefined, id: number): string | null {
+  const lever = found?.levers?.[id];
+  if (!lever) return null;
+  const rate = (side: { visits: number; reached: number }) => percentage(side.reached / side.visits);
+  return `Those who ${lever.fact.charAt(0).toLowerCase()}${lever.fact.slice(1)}: ${rate(lever.with)} reached ${found!.goal} (rest of the group ${rate(lever.without)})`;
 }
 
 function groupAge(track: Cluster["track"], ranAt: string | undefined): string | null {

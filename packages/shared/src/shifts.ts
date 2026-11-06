@@ -133,33 +133,32 @@ function mainMover(impact: GoalImpact, groups: GroupShift[]) {
 
 function impactSentences(impact: GoalImpact, goal: string, device: Device, groups: GroupShift[], note: string): string[] {
   const { total, mix, behaviour } = impact;
-  const moved = `${goal} went from ${pct(impact.rate_before)} to ${pct(impact.rate_after)} of ${device} visits around ${day(impact.since)}${note}`;
+  const moved = `${goal}: ${pct(impact.rate_before)} → ${pct(impact.rate_after)} of ${device} visits since ${day(impact.since)}${note}`;
   const mover = mainMover(impact, groups);
-  const mixPart = mover
-    ? `${mover.more ? "more" : "fewer"} ${mover.name}, who reach it ${mover.better ? "more" : "less"} often than others, worth about ${points(mix[0])}`
-    : `the change in who's visiting, worth about ${points(mix[0])}`;
+  const who = mover ? `${mover.more ? "more" : "fewer"} ${mover.name}, who reach it ${mover.better ? "more" : "less"} often` : "a change in who's visiting";
+  const push = (v: number) => (v > 0 ? "up" : "down");
   if (real(total)) {
-    if (real(mix) && !real(behaviour)) return [`${moved}.`, `That's who's visiting, not how they behave: ${mixPart}; each group reaches it about as often as before.`];
-    if (real(behaviour) && !real(mix)) return [`${moved}.`, `That's how visitors behave: the mix of groups barely moved, but they reach it ${behaviour[0] > 0 ? "more" : "less"} often.`];
+    if (real(mix) && !real(behaviour)) return [`${moved}. Driven by who's visiting: ${who}.`];
+    if (real(behaviour) && !real(mix)) return [`${moved}. Driven by how visitors behave, not who's visiting.`];
     if (real(mix) && real(behaviour)) {
-      return [`${moved}.`, Math.sign(mix[0]) === Math.sign(behaviour[0])
-        ? `About ${points(mix[0])} of that comes from who's visiting and ${points(behaviour[0])} from how they behave.`
-        : `Who's visiting moved it ${points(mix[0])} ${mix[0] > 0 ? "up" : "down"}; how they behave moved it ${points(behaviour[0])} ${behaviour[0] > 0 ? "up" : "down"}.`];
+      return [Math.sign(mix[0]) === Math.sign(behaviour[0])
+        ? `${moved}. Partly who's visiting (${who}), partly how they behave.`
+        : `${moved}. Who's visiting pushed it ${push(mix[0])}; how they behave pushed it ${push(behaviour[0])}.`];
     }
     return [`${moved}.`];
   }
   if (real(mix) && real(behaviour) && Math.sign(mix[0]) !== Math.sign(behaviour[0])) {
-    return [`${goal} held at about ${pct(impact.rate_after)} of ${device} visits around ${day(impact.since)}${note}, but only because two changes cancelled out: who's visiting moved it ${points(mix[0])} ${mix[0] > 0 ? "up" : "down"}, and how they behave moved it back.`];
+    return [`${goal} held at about ${pct(impact.rate_after)} since ${day(impact.since)}${note}: who's visiting pushed it ${push(mix[0])}, how they behave pushed it back.`];
   }
-  if (real(mix)) return [`${moved}, within normal variation. The part that holds up: ${mixPart}.`];
+  if (real(mix)) return [`${moved}, not conclusive yet. What holds up: ${who}, worth about ${points(mix[0])}.`];
   return [];
 }
 
 function cause(g: GroupShift): string {
   const top = g.sources?.drivers[0];
   if (top) {
-    const from = top.source === "no referrer" ? "visits with no referrer" : top.source;
-    return `, ${top.part >= 0.6 ? "mostly" : "partly"} because ${top.traffic_after > top.traffic_before ? "more" : "fewer"} visits came from ${from} (${pct(top.traffic_before)} → ${pct(top.traffic_after)} of visits)`;
+    const from = top.source === "no referrer" ? "with no referrer" : `from ${top.source}`;
+    return `, ${top.part >= 0.6 ? "mostly" : "partly"} down to ${top.traffic_after > top.traffic_before ? "more" : "fewer"} visits ${from}`;
   }
   return g.sources && real(g.sources.within) && !real(g.sources.traffic) ? ", across traffic sources" : "";
 }
@@ -183,13 +182,14 @@ export function shiftSentences(shifts: DeviceShifts | null, device: Device, cont
     ? shifts.groups.filter(g => g.event === "grew") : shifts.groups;
   for (const g of groups) {
     const near = g.since ? note(g.since) : "";
-    if (g.event === "appeared") out.push(`New: ${g.headline}, first seen around ${day(g.since!)}${near}, now ${pct(g.to)} of ${device} visits${cause(g)}.`);
-    if (g.event === "faded") out.push(`${g.headline} faded out after ${day(g.since!)}${near}: ${pct(g.from)} of ${device} visits early on, ${pct(g.to)} lately.`);
+    if (g.event === "appeared") out.push(`New: ${g.headline}, ${pct(g.to)} of ${device} visits since ${day(g.since!)}${near}${cause(g)}.`);
+    if (g.event === "faded") out.push(`${g.headline} faded out after ${day(g.since!)}${near}: ${pct(g.from)} → ${pct(g.to)} of ${device} visits.`);
     if (g.steps && g.steps.length > 2) {
       const [first, ...rest] = g.steps;
-      const path = rest.map((s, i) => `${i ? ", then " : ""}${i && Math.abs(s.share - first.share) < 0.03 ? "back " : ""}to ${pct(s.share)} around ${day(s.since)}${i ? "" : near}`).join("");
-      out.push(`${g.headline} went from ${pct(first.share)} of ${device} visits ${path}${cause(g)}.`);
-    } else if (g.event === "grew" || g.event === "shrank") out.push(`${g.headline} have averaged ${pct(g.to)} of ${device} visits since around ${day(g.since!)}${near}, ${g.event === "grew" ? "up" : "down"} from ${pct(g.from)} before${cause(g)}.`);
+      const [next, ...later] = rest;
+      const after = later.map(s => `, then ${Math.abs(s.share - first.share) < 0.03 ? "back " : ""}to ${pct(s.share)} around ${day(s.since)}`).join("");
+      out.push(`${g.headline}: ${pct(first.share)} → ${pct(next.share)} of ${device} visits around ${day(next.since)}${near}${after}${cause(g)}.`);
+    } else if (g.event === "grew" || g.event === "shrank") out.push(`${g.headline}: ${pct(g.from)} → ${pct(g.to)} of ${device} visits since ${day(g.since!)}${near}${cause(g)}.`);
   }
   for (const g of shifts.groups) for (const d of g.drift) {
     const what = MEASURES[d.feature];

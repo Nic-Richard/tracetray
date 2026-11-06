@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const { sectionTimes, rageIn, deviceAttention } = require("../src/lib/sectionAttention");
-const { patternsFor, sourceOf } = require("../src/lib/goalPatterns");
+const { patternsFor, leversFor, sourceOf } = require("../src/lib/goalPatterns");
 
 const sections = [{ name: "Top", top: 0, bottom: 800 }, { name: "Reviews", top: 800, bottom: 1600 }, { name: "More", top: 1600, bottom: 2400 }];
 const geometry = { pageHeight: 2400, viewport: 800 };
@@ -54,4 +54,25 @@ test("goal patterns leave out the goal's own button and the approach to it", () 
     assert.ok(patterns.some(p => p.fact === "Left through a link in “More”" && p.with.reached === 0));
     assert.ok(!patterns.some(p => p.fact.includes("“Top”")));
     assert.ok(!patterns.some(p => p.fact.startsWith("Came back to")));
+});
+
+test("a group's lever is the fact tied to its goal rate, and a group without one gets none", () => {
+    const goal = { id: "cart", name: "Added to cart", type: "click", match: { text: "Add to cart" } };
+    const layout = { height: 2400, sections, elements: [{ tag: "BUTTON", text: "Add to cart", top: 400 }, { tag: "BUTTON", text: "Size guide", top: 900 }], media: [] };
+    const groups = {};
+    const sessions = Array.from({ length: 400 }, (_, i) => {
+        const group = i < 200 ? 0 : 1, guide = i % 2 === 0;
+        const buys = group === 0 ? (guide ? i % 10 < 6 : i % 10 < 2) : i % 3 === 0;
+        groups[`v${i}`] = group;
+        const events = [{ type: "page_load", page_height: 2400, viewport_height: 800, timestamp: 0 }];
+        if (guide) events.push({ type: "click", target: { tag: "BUTTON", text: "Size guide" }, timestamp: 3000 });
+        // Lengths vary the same way for buyers and others, so length doesn't explain the gap.
+        const end = 6000 + (i * 7919) % 15000;
+        if (buys) events.push({ type: "click", target: { tag: "BUTTON", text: "Add to cart" }, timestamp: end - 500 });
+        return { session_id: `v${i}`, start_time: 0, end_time: end, referrer: "", page_path: "/products/this", events, goal_hits: buys ? ["cart"] : [] };
+    });
+    const levers = leversFor(sessions, groups, goal, layout, "https://shop.example");
+    assert.equal(levers[0].fact, "Clicked “Size guide”");
+    assert.ok(levers[0].with.reached / levers[0].with.visits > levers[0].without.reached / levers[0].without.visits);
+    assert.equal(levers[1], undefined);
 });

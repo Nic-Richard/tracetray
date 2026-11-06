@@ -1,6 +1,8 @@
 // Names and explains visitor groups by comparing each cluster with its page's average.
 // Deterministic: the same behaviour always gets the same name, so groups can be compared across runs.
 
+const { twoSided } = require("./pvalue");
+
 const STRONG = 0.4;
 // Below this many analysed visits a group is a handful of people, too few to base a change on.
 // packages/shared/src/analysis.ts keeps the same number for analyses saved before this rule.
@@ -338,15 +340,21 @@ function describeCluster(cluster, base, significance, archetypes, taken, used) {
     return { key: archetype?.key || "composed", headline, body, summary: meaning, traits: traitData, suggestions: [] };
 }
 
-// A group's goal rate against the page's. "above" or "below" only when the gap is about two standard errors
-// or more, so small groups don't get called winners or losers by chance.
-function goalStanding(cluster, goal, average) {
-    const n = cluster.n || 0;
-    const reached = cluster.goal_hits?.[goal.id] || 0;
-    const rate = n ? reached / n : 0;
-    const spread = Math.sqrt(Math.max(average * (1 - average), 1e-6) / Math.max(n, 1));
-    const z = (rate - average) / spread;
-    return { rate, average, reached, standing: z >= 2 ? "above" : z <= -2 ? "below" : "about" };
+// Each group's goal rate against every other visit on the device (two-proportion test), "above" or "below" only
+// where it holds after Holm's correction across the groups, so no group is called a winner or loser by chance.
+function goalStandings(clusters, goal, visits, reachedAll) {
+    const average = reachedAll / visits;
+    const rows = clusters.map(c => {
+        const n = c.n || 0, reached = c.goal_hits?.[goal.id] || 0;
+        const rate = n ? reached / n : 0;
+        const restN = visits - n, restRate = restN > 0 ? (reachedAll - reached) / restN : average;
+        const se = n && restN > 0 ? Math.sqrt(Math.max(average * (1 - average), 1e-6) * (1 / n + 1 / restN)) : 0;
+        return { id: c.id, rate, average, reached, p: se ? twoSided((rate - restRate) / se) : 1, up: rate > restRate };
+    });
+    const order = [...rows].sort((a, b) => a.p - b.p);
+    let holding = true;
+    order.forEach((row, i) => { holding = holding && row.p <= 0.05 / (rows.length - i); row.holds = holding; });
+    return Object.fromEntries(rows.map(r => [r.id, { rate: r.rate, average: r.average, reached: r.reached, standing: r.holds ? (r.up ? "above" : "below") : "about" }]));
 }
 
 function goalSentence(standing, goal, deviceLabel) {
@@ -459,7 +467,7 @@ function describeDevice(result, archetypes, deviceLabel, goal = null, pagePath =
     const visits = base.total + (result.inactive_count || 0);
     if (goal && reached >= 5) {
         const average = goalAverage = reached / visits;
-        const standings = Object.fromEntries(clusters.map(c => [c.id, goalStanding(c, goal, average)]));
+        const standings = goalStandings(clusters, goal, visits, reached);
         for (const c of clusters) addGoal(stories[c.id], standings[c.id], goal, deviceLabel);
         const missing = c => (c.n || 0) * Math.max(0, average - standings[c.id].rate);
         priority = [...ordered].sort((a, b) => missing(b) - missing(a) || (b.n || 0) - (a.n || 0));

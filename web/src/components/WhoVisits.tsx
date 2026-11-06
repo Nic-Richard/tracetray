@@ -13,6 +13,8 @@ interface Row {
   color: string;
   goal: { rate: number; average: number; standing?: string } | null;
   figures?: string[];
+  trend?: { text: string; up: boolean } | null;
+  lever?: string | null;
 }
 
 function GoalBar({ goal, name, color }: { goal: NonNullable<Row["goal"]>; name: string; color: string }) {
@@ -51,7 +53,7 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
   } else {
     rows = types.map((t, i) => ({
       id: t.id, headline: t.headline, share: t.share, color: colors[i],
-      text: t.story?.summary ?? "",
+      text: t.story?.summary ?? "", trend: t.trend, lever: t.lever,
       goal: t.story?.goal ? { rate: t.story.goal.rate, average: t.story.goal.average, standing: t.story.goal.standing } : null
     }));
   }
@@ -89,10 +91,12 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
               {rows.map(row => (
                 <div className="who-row" key={row.id}>
                   <span className="dot" style={{ background: row.color }} />
-                  <b>{row.headline} <span className="num" style={{ color: row.color }}>{Math.round(row.share * 100)}%</span></b>
+                  <b>{row.headline} <span className="num" style={{ color: row.color }}>{Math.round(row.share * 100)}%</span>
+                    {row.trend && <span className={`who-trend ${row.trend.up ? "up" : "down"}`}>{row.trend.up ? "▲" : "▼"} {row.trend.text}</span>}</b>
                   {row.text && <p>{row.text}</p>}
                   {row.figures && row.figures.length > 0 && <p className="who-figures">{row.figures.map(f => <span key={f}>{f}</span>)}</p>}
                   {row.goal && goal && <GoalBar goal={row.goal} name={goal.name} color={row.color} />}
+                  {row.lever && <p className="who-lever">{row.lever}</p>}
                   {row.id >= 0 && (
                     <button type="button" className="ask-link" onClick={() =>
                       askAbout(`On ${pagePath(page)}, what does the "${row.headline}" group (${Math.round(row.share * 100)}% of ${device} visitors) tell me, and what should I change?`)}>
