@@ -195,8 +195,8 @@ CLERK_SECRET_KEY
 ANTHROPIC_API_KEY
 ```
 
-`ASK_MODEL`, `ASK_EFFORT` and `ASK_DAILY_LIMIT` tune the Ask tab (defaults: `claude-sonnet-5-5`, `medium`, 100
-questions a day across all accounts). Each account can also ask 20 questions a day.
+`ASK_MODEL` and `ASK_EFFORT` tune the Ask tab (defaults: `claude-haiku-5-5`, `medium`). Each plan has a monthly
+question allowance, and each person can ask up to 100 questions a day.
 
 `RAW_EVENT_RETENTION_DAYS` deletes raw cursor events (keeping session summaries) from sessions older than that many
 days. It's off when empty.

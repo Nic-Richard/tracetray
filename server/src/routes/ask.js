@@ -12,22 +12,15 @@ const logger = require("../lib/logger");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// A guard against scripted use; plan allowances are the real limit.
 const userLimit = rateLimit({
-    limit: 20,
+    limit: 100,
     windowMs: DAY_MS,
     key: (req) => getAuth(req).userId,
-    message: "you've asked 20 questions today, try again tomorrow",
+    message: "you've asked 100 questions today, try again tomorrow",
 });
 
-// Caps total spend across every account, whatever the per-user limits allow.
-const siteWideLimit = rateLimit({
-    limit: Number(process.env.ASK_DAILY_LIMIT) || 100,
-    windowMs: DAY_MS,
-    key: () => "all",
-    message: "questions are busy right now, try again later",
-});
-
-router.post("/api/ask", requireAuth(), userLimit, siteWideLimit, async (req, res) => {
+router.post("/api/ask", requireAuth(), userLimit, async (req, res) => {
     try {
         const account = await Account.findOne({ clerk_user_id: getAuth(req).userId }).lean();
         if (!account) return res.status(404).json({ error: "account not found" });
