@@ -1,6 +1,7 @@
 const { Session } = require("../db/models");
 const { ABANDON_THRESHOLD_MS } = require("../config");
 const logger = require("../lib/logger");
+const { markAttention } = require("../lib/goalHits");
 
 async function finalizeSession(session) {
     const events       = session.events || [];
@@ -19,6 +20,7 @@ async function finalizeSession(session) {
         { _id: session._id },
         { $set: { end_time: new Date(lastTs || Date.now()).toISOString(), summary: { duration_ms, total_events: events.length, mouse_moves: moves, cursor_pauses: pauses, clicks, scrolls, taps, scroll_pauses: scrollPauses, attention_pauses: attentionPauses } } }
     );
+    await markAttention(session.site_key, session.session_id);
     if (moves > 0 || taps > 0) logger.debug(`finalized abandoned session ${session.session_id}`);
 }
 

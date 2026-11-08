@@ -8,6 +8,7 @@ const mongoose = require("mongoose");
 const { MONGODB_URI } = require("../src/config");
 const { Account, Session, PageShot } = require("../src/db/models");
 const { regroupSite } = require("../src/lib/pageDays");
+const { backfillGoal } = require("../src/lib/goalHits");
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const VISITORS = 3200;
@@ -31,6 +32,13 @@ const SOURCES = [["https://www.google.com/", 42, 0], ["https://www.instagram.com
 const PLAIN = { "/cart": [1300, "Checkout"], "/checkout": [1500, "Pay now"], "/journal": [3200, "Shop the gear"] };
 
 let seed = 23;
+// Post reading draws from its own sequence, so tuning it leaves every shop visit as it was.
+let postSeed = 7;
+function onPostStream(fn) {
+    const main = seed;
+    seed = postSeed;
+    try { return fn(); } finally { postSeed = seed; seed = main; }
+}
 const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
 const pick = list => list[Math.floor(rand() * list.length)];
 const weighted = list => { let r = rand() * list.reduce((s, [, w]) => s + w, 0); for (const row of list) if ((r -= row[1]) <= 0) return row; return list[0]; };
@@ -129,6 +137,15 @@ function planView(page, layout, t, clearGuide) {
     if (bought) steps.push({ wait: 0.4 + 5 * doubt * lognormal(0.4), click: find(layout, "Add to cart") });
     else if (others && chance(0.3)) steps.push({ click: pick(elements.filter(e => e.top >= others.top && e.href)) });
     return { steps, height, bought };
+}
+
+// Posts are read further by patient visitors and by those who came looking for the topic.
+function postView(t) {
+    const [height, button] = PLAIN["/journal"];
+    const share = 0.3 + 0.7 * sigmoid(1 + 1.1 * normal() + 1.4 * Math.log(t.patience) + 2 * (t.intent - 0.5));
+    const steps = [{ read: [0, height * share], secs: (6 + 20 * t.patience * rand()) * (0.6 + share) }];
+    if (chance(0.3 + 0.5 * t.intent)) steps.push({ click: { tag: "BUTTON", id: null, text: button, href: null, top: height * 0.4, height: 40, left: 400, width: 300 } });
+    return { steps, height, bought: false };
 }
 
 function desktopEvents(start, view, t) {
@@ -277,15 +294,20 @@ function isLocal(uri) {
             // The pictured page stands in for every product; a link to itself points at this visit's own page.
             for (const step of view.steps) if (step.click?.href?.endsWith("/sample")) step.click = { ...step.click, href: page };
             const left = step === 0 && chance(0.06 + 0.1 * (1 - traits.intent));
-            const { events, durationMs } = left
+            let { events, durationMs } = left
                 ? bounce(start, view.height, mobile ? 700 : Math.round(clamp(820 + 110 * normal(), 620, 1080)))
                 : mobile ? phoneEvents(start, view, traits) : desktopEvents(start, view, traits);
+            if (!left && page.startsWith("/journal/")) ({ events, durationMs } = onPostStream(() => {
+                const post = postView(traits);
+                return mobile ? phoneEvents(start, post, traits) : desktopEvents(start, post, traits);
+            }));
             const count = type => events.filter(e => e.type === type).length;
             docs.push({
                 site_key: site.key, session_id: `demo-${v}-${step}`, visitor_id: `demo-visitor-${v}`,
                 page: origin + page, device_type: mobile ? "mobile" : "desktop",
                 referrer: step === 0 ? referrer : origin + path[step - 1],
                 start_time: start, end_time: start + durationMs,
+                max_scroll_depth: Math.max(0, ...events.filter(e => e.type === "scroll" || e.type === "page_load").map(e => e.scroll_depth || 0)),
                 summary: {
                     duration_ms: Math.round(durationMs), total_events: events.length, mouse_moves: count("mousemove"),
                     cursor_pauses: count("cursor_pause"), clicks: count("click"), scrolls: count("scroll"), taps: count("tap"),
@@ -304,8 +326,14 @@ function isLocal(uri) {
     // Recorded the way an owner would in Before and after, so the dashboard can line shifts up with it.
     site.page_changes = [...(site.page_changes || []).filter(c => c.id !== "demo-size-guide"),
         { id: "demo-size-guide", page: `${origin}/products/:product`, day: new Date(now - CHANGE_DAYS_AGO * DAY_MS).toISOString().slice(0, 10), note: "Clearer size guide", created_at: new Date() }];
+    const postGroup = `${origin}/journal/:post`;
+    if (!(site.goals || []).some(g => g.id === "demo-read")) {
+        site.goals = [...(site.goals || []), { id: "demo-read", name: "Read to the end", type: "attention", match: { kind: "end", seconds: 15, depth: 0.8 }, pages: [postGroup], target: null, backfill: "done", created_at: new Date() }];
+        site.main_goals = [...(site.main_goals || []).filter(m => m.page !== postGroup), { page: postGroup, goal: "demo-read" }];
+    }
     await account.save();
     await regroupSite(site.key, site.page_groups || []);
+    for (const goal of site.goals || []) await backfillGoal(site.key, goal);
     console.log(`Added ${docs.length} demo visits from ${VISITORS} shoppers to ${site.name} (${site.key}).`);
     await mongoose.disconnect();
 })().catch(err => {

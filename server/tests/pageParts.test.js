@@ -56,6 +56,19 @@ test("goal patterns leave out the goal's own button and the approach to it", () 
     assert.ok(!patterns.some(p => p.fact.startsWith("Came back to")));
 });
 
+test("an attention goal's patterns leave out how far and how long people read, which would only restate it", () => {
+    const goal = { id: "read", name: "Read to the end", type: "attention", match: { kind: "end", seconds: 15, depth: 0.8 } };
+    const layout = { height: 2400, sections, elements: [], media: [] };
+    const sessions = Array.from({ length: 200 }, (_, i) => {
+        const reads = i % 2 === 0, fromSearch = i % 4 === 0;
+        const events = [{ type: "page_load", page_height: 2400, viewport_height: 800, timestamp: 0 }, { type: "scroll", to: reads ? 1600 : 400, timestamp: 4000 }];
+        return { start_time: 0, end_time: 20000, referrer: fromSearch ? "https://www.google.com/" : "", page_path: "/blog/a", events, goal_hits: reads ? ["read"] : [] };
+    });
+    const { patterns } = patternsFor(sessions, goal, layout, "https://shop.example");
+    assert.ok(patterns.some(p => p.fact.startsWith("Came from")));
+    assert.ok(!patterns.some(p => /Scrolled down to|on screen for|Came back to/.test(p.fact)));
+});
+
 test("a group's lever is the fact tied to its goal rate, and a group without one gets none", () => {
     const goal = { id: "cart", name: "Added to cart", type: "click", match: { text: "Add to cart" } };
     const layout = { height: 2400, sections, elements: [{ tag: "BUTTON", text: "Add to cart", top: 400 }, { tag: "BUTTON", text: "Size guide", top: 900 }], media: [] };

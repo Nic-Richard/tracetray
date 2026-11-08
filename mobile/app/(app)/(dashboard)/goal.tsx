@@ -10,6 +10,7 @@ import {
   pageLabel,
   pagePath,
   parseGoalTarget,
+  type AttentionKind,
   type ClickSeen,
   type FormSeen,
   type Goal,
@@ -36,6 +37,10 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
   const [click, setClick] = useState("");
   const [destination, setDestination] = useState("");
   const [form, setForm] = useState("");
+  const [kind, setKind] = useState<AttentionKind>("end");
+  const [section, setSection] = useState("");
+  const [seconds, setSeconds] = useState("");
+  const [depth, setDepth] = useState("");
   const initialTarget = goal?.target != null ? String(goal.target * 100) : "";
   const [target, setTarget] = useState(initialTarget);
   const [scoped, setScoped] = useState(!!page);
@@ -61,6 +66,10 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
     () => (!goal && type === "click" ? api.clicks(siteKey) : Promise.resolve([])),
     [api, siteKey, type, goal?.id],
   );
+  const sections = useLoad(
+    () => (!goal && type === "attention" && kind === "section" && page ? api.pageSections(siteKey, page) : Promise.resolve({ sections: [] })),
+    [api, siteKey, type, kind, page, goal?.id],
+  );
   const typed = click === "typed";
   const picked = typed ? undefined : clicks.data?.find(value => clickKey(value) === click);
   async function save() {
@@ -81,7 +90,9 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
         ? !(picked || (typed && text.trim()))
         : type === "page"
           ? !pages.data?.some(value => value.page === destination)
-          : !list.form_goals || !chosen)
+          : type === "attention"
+            ? kind === "section" && !section
+            : !list.form_goals || !chosen)
     ) {
       setError("Choose what counts as reaching this goal.");
       return;
@@ -98,18 +109,26 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
             ? picked ? clickMatch(picked) : { text: text.trim() }
             : type === "page"
               ? { page: destination }
+              : type === "attention"
+                ? {
+                    kind,
+                    ...(seconds.trim() && kind !== "section" ? { seconds: Number(seconds) } : {}),
+                    ...(kind === "end" && depth.trim() ? { depth: Number(depth) / 100 } : {}),
+                    ...(kind === "section" ? { section } : {}),
+                  }
               : chosen?.id
                 ? { id: chosen.id }
                 : chosen?.name
                   ? { name: chosen.name }
                   : { action: chosen?.action };
-        const fallback = type === "click" ? (picked ? picked.text || clickLabel(picked) : text.trim()) : type === "page" ? pageLabel(destination) : formLabel(chosen);
+        const fallback = type === "click" ? (picked ? picked.text || clickLabel(picked) : text.trim()) : type === "page" ? pageLabel(destination)
+          : type === "attention" ? (kind === "end" ? "Read to the end" : kind === "section" ? `Reached ${section}` : "Stayed engaged") : formLabel(chosen);
         await api.addGoal(siteKey, {
           type,
           name: (name.trim() || fallback).slice(0, 60),
           match,
           target: aim.target,
-          pages: scoped && page ? [page] : [],
+          pages: (scoped || (type === "attention" && kind === "section")) && page ? [page] : [],
         });
       }
       if (active.current) {
@@ -145,6 +164,7 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
               [
                 { type: "page", label: "Go on to a page" },
                 { type: "click", label: "Click a button or link" },
+                { type: "attention", label: "Read the page" },
                 { type: "form", label: `Send a form${list.form_goals ? "" : " (Ultra)"}` },
               ] as const
             ).map(choice => (
@@ -209,6 +229,60 @@ function GoalForm({ siteKey, page, goal, list }: { siteKey: string; page: string
                     </Text>
                   </>
                 ) : null}
+              </>
+            ) : type === "attention" ? (
+              <>
+                <ChoicePicker
+                  label="What counts"
+                  value={kind}
+                  disabled={busy}
+                  choices={[
+                    { key: "end", label: "Reads to the end", detail: "Scrolls most of the way down and stays a while" },
+                    ...(page ? [{ key: "section", label: "Reaches a section", detail: `A part of ${pagePath(page)}` }] : []),
+                    { key: "engaged", label: "Stays engaged", detail: "Stays a while and scrolls, clicks or taps" },
+                  ]}
+                  onChange={value => setKind(value as AttentionKind)}
+                />
+                {kind === "section" ? (
+                  sections.loading ? (
+                    <Text style={styles.muted}>Loading sections…</Text>
+                  ) : sections.data?.sections.length ? (
+                    <ChoicePicker
+                      label="Section"
+                      value={section}
+                      disabled={busy}
+                      choices={sections.data.sections.map(value => ({ key: value, label: value }))}
+                      onChange={setSection}
+                    />
+                  ) : (
+                    <Text style={styles.muted}>There's no picture of this page yet, so its sections aren't known.</Text>
+                  )
+                ) : (
+                  <>
+                    {kind === "end" ? (
+                      <TextInput
+                        accessibilityLabel="How far down counts as the end, percent"
+                        value={depth}
+                        onChangeText={setDepth}
+                        editable={!busy}
+                        keyboardType="numeric"
+                        style={styles.input}
+                        placeholder="80% down"
+                        placeholderTextColor={colors.muted}
+                      />
+                    ) : null}
+                    <TextInput
+                      accessibilityLabel="Seconds on the page"
+                      value={seconds}
+                      onChangeText={setSeconds}
+                      editable={!busy}
+                      keyboardType="numeric"
+                      style={styles.input}
+                      placeholder={`${kind === "end" ? 15 : 20} seconds or more`}
+                      placeholderTextColor={colors.muted}
+                    />
+                  </>
+                )}
               </>
             ) : type === "page" ? (
               <>

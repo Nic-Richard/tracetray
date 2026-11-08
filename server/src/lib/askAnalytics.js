@@ -214,7 +214,9 @@ async function runTool(siteKey, name, input = {}, { siteHost = null } = {}) {
             const days = [7, 30, 90].includes(input.days) ? input.days : 30;
             const rates = await Promise.all(goals.map(async goal => ({
                 goal: goal.name,
-                kind: goal.type === "page" ? `goes on to ${goal.match.page}` : `clicks ${goal.match.href || goal.match.text || goal.match.id}`,
+                kind: goal.type === "page" ? `goes on to ${goal.match.page}`
+                    : goal.type === "attention" ? (goal.match.kind === "end" ? `reads to ${Math.round(goal.match.depth * 100)}% down and stays ${goal.match.seconds} s` : goal.match.kind === "section" ? `scrolls to the section "${goal.match.section}"` : `stays ${goal.match.seconds} s and scrolls, clicks or taps`)
+                    : `clicks ${goal.match.href || goal.match.text || goal.match.id}`,
                 target: goal.target ?? null,
                 ...await goalRate(siteKey, goal, { page, days })
             })));

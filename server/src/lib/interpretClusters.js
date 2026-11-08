@@ -377,6 +377,7 @@ function goalTarget(goal) {
     const match = goal?.match || {};
     if (goal?.type === "click") return match.href ? `the link to ${match.href}` : match.text ? `“${match.text}”` : `#${match.id}`;
     if (goal?.type === "form") return "the form";
+    if (goal?.type === "attention") return goal.match?.kind === "section" ? `“${goal.match.section}”` : "the end of the page";
     return `going on to ${goal?.name}`;
 }
 
@@ -420,7 +421,7 @@ function adviceFor(cluster, story, base, goal, deviceLabel, visits, pagePath) {
 
     const depth = cluster.feature_means?.scroll_depth_reached;
     const position = goal.position?.[deviceLabel === "mobile" ? "mobile" : "desktop"];
-    if (typeof depth === "number" && typeof position === "number" && depth + 0.05 < position) {
+    if (goal.type !== "attention" && typeof depth === "number" && typeof position === "number" && depth + 0.05 < position) {
         return {
             action: `Try moving ${target} higher, or repeating it before ${pct(depth)} of the way down.`,
             evidence: `${who} scroll about ${pct(depth)} of the way down on average, but ${target} sits at about ${pct(position)}; ${reach} (${vs}).`
@@ -437,7 +438,7 @@ function adviceFor(cluster, story, base, goal, deviceLabel, visits, pagePath) {
     }
     const wait = ratio(cluster, base, deviceLabel === "mobile" ? "dwell_before_tap" : "dwell_before_click");
     const waitMs = cluster.feature_means?.[deviceLabel === "mobile" ? "dwell_before_tap" : "dwell_before_click"];
-    if (goal.type !== "page" && wait !== null && wait >= 1.5 && waitMs >= 1000) {
+    if ((goal.type === "click" || goal.type === "form") && wait !== null && wait >= 1.5 && waitMs >= 1000) {
         return {
             action: `Try clarifying what ${target} leads to.`,
             evidence: `${who} wait about ${secs(waitMs)} before ${deviceLabel === "mobile" ? "tapping" : "clicking"}, ${wait.toFixed(1)}× the page average, and ${reach} (${vs}).`

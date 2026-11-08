@@ -76,6 +76,7 @@ export function createApi({ baseUrl = "", getToken }: ApiOptions) {
     goals: (siteKey: string) => request<GoalList>("GET", "/api/goals", { siteKey }),
     addGoal: (siteKey: string, goal: GoalInput) => request<Goal>("POST", "/api/goals", { siteKey, body: goal }),
     editGoal: (siteKey: string, id: string, goal: Partial<GoalInput>) => request<Goal>("PATCH", `/api/goals/${encodeURIComponent(id)}`, { siteKey, body: goal }),
+    pageSections: (siteKey: string, page: string) => request<{ sections: string[] }>("GET", "/api/page-sections", { siteKey, query: { page } }),
     removeGoal: (siteKey: string, id: string) => request<{ deleted: boolean }>("DELETE", `/api/goals/${encodeURIComponent(id)}`, { siteKey }),
     setMainGoal: (siteKey: string, page: string, goal: string | null) => request<{ page: string; goal: string | null }>("PUT", "/api/main-goal", { siteKey, body: { page, goal } }),
     goalRates: (siteKey: string, page: string, days: 7 | 30 | 90 = 30) => request<GoalRates>("GET", "/api/goal-rates", { siteKey, query: { page, days } }),

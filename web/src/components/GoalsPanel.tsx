@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useLocation } from "react-router";
-import { clickLabel, clickMatch, comparisonPeriods, describeGoal, formLabel, pageLabel, percent, type Goal, type GoalType } from "@tracetray/shared";
+import { clickLabel, clickMatch, comparisonPeriods, describeGoal, formLabel, pageLabel, percent, type AttentionKind, type Goal, type GoalType } from "@tracetray/shared";
 import { useApi } from "../api";
 import { useSite } from "../state/site";
 import { useLoad } from "../lib/useLoad";
@@ -109,6 +109,12 @@ export default function GoalsPanel() {
   const [target, setTarget] = useState("");
   const [form, setForm] = useState("");
   const [click, setClick] = useState("");
+  const [kind, setKind] = useState<AttentionKind>("end");
+  const [onPage, setOnPage] = useState("");
+  const [section, setSection] = useState("");
+  const [seconds, setSeconds] = useState("");
+  const [depth, setDepth] = useState("");
+  const sections = useLoad(() => type === "attention" && kind === "section" && onPage ? api.pageSections(siteKey, onPage) : null, [api, siteKey, type, kind, onPage]);
   const forms = useLoad(() => type === "form" ? api.forms(siteKey) : null, [api, siteKey, type]);
   const clicks = useLoad(() => type === "click" ? api.clicks(siteKey) : null, [api, siteKey, type]);
   const typed = click === "typed";
@@ -135,10 +141,12 @@ export default function GoalsPanel() {
       const sent = forms.data?.[Number(form)];
       const match = type === "click" ? (picked ? clickMatch(picked) : { text })
         : type === "form" ? (sent?.id ? { id: sent.id } : sent?.name ? { name: sent.name } : { action: sent?.action })
+        : type === "attention" ? { kind, ...(seconds ? { seconds: Number(seconds) } : {}), ...(kind === "end" && depth ? { depth: Number(depth) / 100 } : {}), ...(kind === "section" ? { section } : {}) }
         : { page: target };
-      const fallback = type === "click" ? (picked ? picked.text || clickLabel(picked) : text) : type === "form" ? formLabel(sent) : pageLabel(target);
-      await api.addGoal(siteKey, { name: name || fallback, type, match });
-      setName(""); setText(""); setTarget(""); setForm(""); setClick("");
+      const fallback = type === "click" ? (picked ? picked.text || clickLabel(picked) : text) : type === "form" ? formLabel(sent)
+        : type === "attention" ? (kind === "end" ? "Read to the end" : kind === "section" ? `Reached ${section}` : "Stayed engaged") : pageLabel(target);
+      await api.addGoal(siteKey, { name: name || fallback, type, match, ...(type === "attention" && onPage ? { pages: [onPage] } : {}) });
+      setName(""); setText(""); setTarget(""); setForm(""); setClick(""); setSection(""); setSeconds(""); setDepth("");
       list.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "The goal wasn't saved");
@@ -149,7 +157,8 @@ export default function GoalsPanel() {
 
   const goals = list.data?.goals || [];
   const full = list.data ? goals.length >= list.data.cap : false;
-  const ready = type === "click" ? (typed ? text.trim() : click) : type === "form" ? form : target;
+  const ready = type === "click" ? (typed ? text.trim() : click) : type === "form" ? form
+    : type === "attention" ? (kind !== "section" || (onPage && section)) : target;
   return (
     <section className="panel" id="goals">
       <div className="panel-head">
@@ -157,7 +166,7 @@ export default function GoalsPanel() {
         {list.data && <div className="end"><span className="ask-note">{goals.length} {goals.length === 1 ? "goal" : "goals"} · up to {list.data.cap}</span></div>}
       </div>
       <div className="panel-body setup-copy">
-        <p>A goal is what a page is for: a button or link people click, a form they send, or a page they go on to, like checkout or a thank-you page. Each page then shows how many visits reached it, and new goals are checked against past visits too.</p>
+        <p>A goal is what a page is for: a button or link people click, a form they send, a page they go on to, like checkout or a thank-you page, or reading the page itself. Each page then shows how many visits reached it, and new goals are checked against past visits too.</p>
         {list.error && <p className="form-error">{list.error}</p>}
         {list.data && (
           <ul className="rule-list goal-list">
@@ -170,6 +179,7 @@ export default function GoalsPanel() {
             <div className="seg" role="group" aria-label="Kind of goal">
               <button type="button" className={type === "page" ? "on" : ""} onClick={() => setType("page")}>Goes on to a page</button>
               <button type="button" className={type === "click" ? "on" : ""} onClick={() => setType("click")}>Clicks a button or link</button>
+              <button type="button" className={type === "attention" ? "on" : ""} onClick={() => setType("attention")}>Reads the page</button>
               <button type="button" className={type === "form" ? "on" : ""} onClick={() => setType("form")} disabled={!list.data.form_goals} title={list.data.form_goals ? undefined : "Included with Ultra"}>Sends a form{list.data.form_goals ? "" : " (Ultra)"}</button>
             </div>
             <div className="inline-form">
@@ -181,6 +191,26 @@ export default function GoalsPanel() {
                     <option value="typed">Not listed: type its text</option>
                   </select>
                   {typed && <input value={text} onChange={event => setText(event.target.value)} placeholder="Exact button or link text" aria-label="Button or link text" maxLength={80} autoFocus />}
+                </>
+              ) : type === "attention" ? (
+                <>
+                  <select value={kind} onChange={event => setKind(event.target.value as AttentionKind)} aria-label="What counts">
+                    <option value="end">Reads to the end</option>
+                    <option value="section">Reaches a section</option>
+                    <option value="engaged">Stays engaged</option>
+                  </select>
+                  <select value={onPage} onChange={event => { setOnPage(event.target.value); setSection(""); }} aria-label="Page">
+                    <option value="">{kind === "section" ? "Choose a page" : "Every page"}</option>
+                    {(pages || []).map(p => <option key={p.page} value={p.page}>{pageLabel(p.page)}</option>)}
+                  </select>
+                  {kind === "section" && onPage && (
+                    <select value={section} onChange={event => setSection(event.target.value)} aria-label="Section">
+                      <option value="">{sections.loading ? "Loading sections…" : sections.data?.sections.length === 0 ? "No picture of this page yet" : "Choose a section"}</option>
+                      {(sections.data?.sections || []).map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  )}
+                  {kind === "end" && <label className="target-input"><input type="number" min="50" max="100" step="5" value={depth} onChange={event => setDepth(event.target.value)} placeholder="80" aria-label="How far down counts as the end, percent" /> % down</label>}
+                  {kind !== "section" && <label className="target-input"><input type="number" min="0" max="600" step="5" value={seconds} onChange={event => setSeconds(event.target.value)} placeholder={kind === "end" ? "15" : "20"} aria-label="Seconds on the page" /> s or more</label>}
                 </>
               ) : type === "form" ? (
                 <select value={form} onChange={event => setForm(event.target.value)} aria-label="Form">
@@ -196,6 +226,9 @@ export default function GoalsPanel() {
               <input value={name} onChange={event => setName(event.target.value)} placeholder="Name (optional)" aria-label="Goal name" maxLength={60} />
               <button type="submit" className="btn primary" disabled={saving || !ready}>{saving ? "Adding…" : "Add goal"}</button>
             </div>
+            {type === "attention" && <p className="muted">{kind === "end" ? "Counts visits that scroll at least this far down and stay at least this long. The very bottom is usually a footer, so 80% is a fair end."
+              : kind === "section" ? "Counts visits that scroll a third of the way into the section, using the page's picture for each device."
+              : "Counts visits that stay at least this long and scroll, click or tap. For opening or playing something, use a click goal."}</p>}
             {type === "click" && typed && <p className="muted">Type the text exactly as it appears on the button or link; capitals and extra spaces don't matter. It won't match if the wording is different, and the goal will show no matches.</p>}
             {clicks.error && type === "click" && <p className="form-error">{clicks.error}</p>}
             {error && <p className="form-error">{error}</p>}

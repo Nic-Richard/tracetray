@@ -22,6 +22,12 @@ export function describeGoal(goal: Pick<Goal, "type" | "match">): string {
     try { page = new URL(page).pathname; } catch {}
     return `Goes on to ${page}`;
   }
+  if (goal.type === "attention") {
+    const time = goal.match.seconds ? `, ${goal.match.seconds} s or more` : "";
+    if (goal.match.kind === "end") return `Reads to the end (${Math.round((goal.match.depth ?? 0.8) * 100)}% down${time})`;
+    if (goal.match.kind === "section") return `Reaches “${goal.match.section || "a section"}”${time ? ` (${time.slice(2)})` : ""}`;
+    return `Stays engaged ${goal.match.seconds ?? 20} s or more`;
+  }
   if (goal.type === "form") return `Sends the form ${goal.match.id ? `#${goal.match.id}` : goal.match.name ? `“${goal.match.name}”` : `to ${goal.match.action}`}`;
   if (goal.match.id) return `Clicks #${goal.match.id}`;
   if (goal.match.href) return `Clicks a link to ${goal.match.href}`;

@@ -8,7 +8,7 @@ const { groupPage } = require("../lib/pageGroups");
 const { countSession } = require("../lib/pageDays");
 const { overVisitAllowance } = require("../lib/limits");
 const { detailRate, inSample } = require("../lib/sampling");
-const { markBatch } = require("../lib/goalHits");
+const { markBatch, markAttention } = require("../lib/goalHits");
 const { visitorIdFor } = require("../lib/visitorId");
 const { startCollection } = require("../lib/collectionState");
 
@@ -167,6 +167,7 @@ router.post("/collect", async (req, res) => {
 
         // Goals read every event in the batch, so visits past the plan's allowance still count.
         await markBatch(site, { session_id: sessionId, page, page_path: path, start_time: startTime, visitor_id: visitorId }, events, write.upsertedCount === 1);
+        if (isFinal) await markAttention(siteKey, sessionId, site.goals || []);
 
         res.sendStatus(200);
     } catch (err) {

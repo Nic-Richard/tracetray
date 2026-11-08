@@ -1,7 +1,7 @@
 // Marks visits that reached a goal (session.goal_hits) and counts them in the daily page rows
 // (page_days.goals.<id>), so goal rates read small daily rows instead of every visit.
 const { Account, Session, PageDay } = require("../db/models");
-const { eventHits, pageGoalMarks, journeysOf, appliesTo, isGoalPage } = require("./goals");
+const { eventHits, attentionHits, pageGoalMarks, journeysOf, appliesTo, isGoalPage } = require("./goals");
 const { dayOf } = require("./pageDays");
 const logger = require("./logger");
 
@@ -44,6 +44,21 @@ async function markBatch(site, session, events, isNew) {
     }
 }
 
+const ATTENTION_FIELDS = { _id: 0, session_id: 1, page: 1, page_path: 1, device_type: 1, start_time: 1, end_time: 1, max_scroll_depth: 1, summary: 1 };
+
+// Attention goals are checked once a visit has ended, from what it stored. `goals` is optional: the cleanup job
+// closing an abandoned visit doesn't have them to hand.
+async function markAttention(siteKey, sessionId, goals = null) {
+    if (!goals) {
+        const account = await Account.findOne({ "sites.key": siteKey }, { "sites.$": 1 }).lean();
+        goals = account?.sites?.[0]?.goals || [];
+    }
+    if (!goals.some(g => g.type === "attention")) return;
+    const session = await Session.findOne({ site_key: siteKey, session_id: sessionId }, ATTENTION_FIELDS).lean();
+    const hits = session ? attentionHits(goals, session) : [];
+    if (hits.length) await markHits(siteKey, sessionId, hits, { page: session.page, path: session.page_path, startTime: session.start_time });
+}
+
 async function bulkMark(siteKey, marks) {
     let ops = [];
     for (const [sessionId, ids] of marks) {
@@ -73,7 +88,8 @@ async function recountGoal(siteKey, goalId, fromDay = null) {
     if (ops.length) await PageDay.bulkWrite(ops, { ordered: false });
 }
 
-// Applies a goal to stored visits: clicks and forms back 90 days (how long event detail is kept), pages back 13 months.
+// Applies a goal to stored visits: clicks and forms back 90 days (how long event detail is kept), pages and attention
+// back 13 months.
 async function backfillGoal(siteKey, goal, now = Date.now()) {
     await Session.updateMany({ site_key: siteKey, goal_hits: goal.id }, { $pull: { goal_hits: goal.id } });
     const marks = new Map();
@@ -85,6 +101,9 @@ async function backfillGoal(siteKey, goal, now = Date.now()) {
             { $match: { "events.0": { $exists: true } } }
         ]).allowDiskUse(true).cursor();
         for await (const s of cursor) if (eventHits([goal], s, s.events).length) marks.set(s.session_id, [goal.id]);
+    } else if (goal.type === "attention") {
+        const cursor = Session.find({ site_key: siteKey, end_time: { $ne: null }, start_time: { $gte: now - PAGE_LOOKBACK_DAYS * DAY_MS } }, ATTENTION_FIELDS).lean().cursor();
+        for await (const s of cursor) if (attentionHits([goal], s).length) marks.set(s.session_id, [goal.id]);
     } else {
         const cursor = Session.find(
             { site_key: siteKey, visitor_id: { $ne: null }, start_time: { $gte: now - PAGE_LOOKBACK_DAYS * DAY_MS } },
@@ -214,4 +233,4 @@ function milestoneCrossed(before, after) {
 
 const nextMilestone = total => MILESTONES.find(m => m > total) || null;
 
-module.exports = { MILESTONES, milestoneCrossed, nextMilestone, goalTotals, mainGoalFor, goalWeeks, markBatch, markHits, backfillGoal, queueBackfill, resumeBackfills, recountGoal, removeGoalMarks, goalRate, setBackfillState };
+module.exports = { markAttention, MILESTONES, milestoneCrossed, nextMilestone, goalTotals, mainGoalFor, goalWeeks, markBatch, markHits, backfillGoal, queueBackfill, resumeBackfills, recountGoal, removeGoalMarks, goalRate, setBackfillState };

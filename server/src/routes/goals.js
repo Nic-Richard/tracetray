@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { getAuth } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
-const { Account, PageDay, Session } = require("../db/models");
+const { Account, PageDay, PageShot, Session } = require("../db/models");
 const { resolveSiteKey } = require("../lib/siteAccount");
 const { limitsFor, hasFeature } = require("../lib/limits");
 const { parseGoal, matchChanged, appliesTo, isGoalPage } = require("../lib/goals");
@@ -22,6 +22,24 @@ async function loadSite(req, res) {
 
 // Plans cap goals per website.
 const goalCap = account => limitsFor(account)?.goals ?? 0;
+
+// A section counts as reached once a third of it has scrolled into view, the same rule the attention view uses.
+async function sectionDepths(siteKey, page, name) {
+    const shots = await PageShot.find({ site_key: siteKey, page, "layout.sections.0": { $exists: true } }, { device: 1, layout: 1, page_height: 1 }).lean();
+    const depths = {};
+    for (const shot of shots) {
+        const section = shot.layout.sections.find(s => s.name === name);
+        if (section && shot.page_height > 0) depths[shot.device] = Math.min(1, (section.top + (section.bottom - section.top) / 3) / shot.page_height);
+    }
+    return depths;
+}
+
+// A section goal belongs to the one page its section was picked from.
+async function withSectionDepths(siteKey, body) {
+    if (body?.match?.kind !== "section") return body;
+    const page = Array.isArray(body.pages) && body.pages.length === 1 ? body.pages[0] : null;
+    return { ...body, match: { ...body.match, depths: page ? await sectionDepths(siteKey, page, body.match.section) : {} } };
+}
 
 const view = goal => ({ id: goal.id, name: goal.name, type: goal.type, match: goal.match, pages: goal.pages || [], target: goal.target ?? null, backfill: goal.backfill || "done" });
 
@@ -60,7 +78,7 @@ router.post("/api/goals", requireAuth(), async (req, res) => {
         const goals = found.site.goals || [];
         const cap = goalCap(found.account);
         if (goals.length >= cap) return res.status(400).json({ error: `your plan allows ${cap} goals per website; remove one or upgrade`, limit_reached: "goals" });
-        const parsed = parseGoal(req.body);
+        const parsed = parseGoal(await withSectionDepths(found.site.key, req.body));
         if (parsed.error) return res.status(400).json({ error: parsed.error });
         if (parsed.goal.type === "form" && !hasFeature(found.account, "formGoals")) {
             return res.status(403).json({ error: "form goals are part of Ultra", limit_reached: "plan" });
@@ -84,7 +102,8 @@ router.patch("/api/goals/:id", requireAuth(), async (req, res) => {
         const existing = goals.find(g => g.id === req.params.id);
         if (!existing) return res.status(404).json({ error: "that goal isn't there" });
         const before = existing.toObject ? existing.toObject() : existing;
-        const parsed = parseGoal({ name: req.body.name ?? before.name, match: req.body.match, pages: req.body.pages, ...("target" in req.body ? { target: req.body.target } : {}) }, before);
+        const body = req.body.match ? await withSectionDepths(found.site.key, { ...req.body, pages: req.body.pages ?? before.pages }) : req.body;
+        const parsed = parseGoal({ name: body.name ?? before.name, match: body.match, pages: body.pages, ...("target" in body ? { target: body.target } : {}) }, before);
         if (parsed.error) return res.status(400).json({ error: parsed.error });
         const recheck = matchChanged(before, parsed.goal);
         const goal = { ...before, ...parsed.goal, ...(recheck ? { backfill: "queued", measurement_version: (before.measurement_version || 0) + 1 } : {}) };
@@ -112,6 +131,21 @@ router.delete("/api/goals/:id", requireAuth(), async (req, res) => {
     } catch (err) {
         logger.error("delete goal error:", err);
         res.status(500).json({ error: "couldn't remove the goal" });
+    }
+});
+
+// Section names from a page's pictures, for picking a section goal.
+router.get("/api/page-sections", requireAuth(), async (req, res) => {
+    try {
+        const found = await loadSite(req, res);
+        if (!found) return;
+        const page = typeof req.query.page === "string" ? req.query.page : "";
+        const shots = await PageShot.find({ site_key: found.site.key, page, "layout.sections.0": { $exists: true } }, { device: 1, "layout.sections.name": 1 }).lean();
+        shots.sort((a, b) => (a.device === "desktop" ? -1 : 1) - (b.device === "desktop" ? -1 : 1));
+        res.json({ sections: [...new Set(shots.flatMap(s => s.layout.sections.map(x => x.name)))] });
+    } catch (err) {
+        logger.error("page sections error:", err);
+        res.status(500).json({ error: "couldn't load the page's sections" });
     }
 });
 

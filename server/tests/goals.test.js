@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { eventHits, pageGoalMarks, journeysOf, parseGoal, matchChanged, appliesTo } = require("../src/lib/goals");
+const { eventHits, attentionHits, pageGoalMarks, journeysOf, parseGoal, matchChanged, appliesTo } = require("../src/lib/goals");
 
 const site = "https://shop.example";
 const click = (target, extra = {}) => ({ type: "click", tag: "SPAN", text: "icon", target, ...extra });
@@ -47,7 +47,7 @@ test("page goals mark the earlier pages of a journey that reaches the goal page,
 test("goal input is checked and cleaned, and only match or page changes need past visits rechecked", () => {
     assert.match(parseGoal({ type: "click", name: "Trial", match: {} }).error, /button or link/);
     assert.match(parseGoal({ type: "page", name: "Thanks", match: { page: "/thanks" } }).error, /page/);
-    assert.match(parseGoal({ type: "visit", name: "x" }).error, /click, form or page goal/);
+    assert.match(parseGoal({ type: "visit", name: "x" }).error, /click, form, page or attention goal/);
     const { goal } = parseGoal({ type: "click", name: "  Start   trial ", match: { text: " Start  free trial ", tag: "button" }, pages: ["javascript:x", `${site}/`] });
     assert.equal(goal.name, "Start trial");
     assert.deepEqual(goal.match, { id: null, href: null, text: "Start free trial", tag: "BUTTON" });
@@ -101,4 +101,32 @@ test("a funnel counts steps reached in order, ignoring pages in between", () => 
     assert.match(parsePath({ name: "Buy", steps: [steps[0]] }).error, /2 to 6/);
     assert.match(parsePath({ name: "Buy", steps: [steps[0], steps[0]] }).error, /only be one step/);
     assert.deepEqual(parsePath({ name: " Buy ", steps }).path.steps, steps);
+});
+
+test("attention goals count from how far down and how long a visit stayed, once it has ended", () => {
+    const end = parseGoal({ name: "Read to the end", type: "attention", match: { kind: "end" } }).goal;
+    const engaged = parseGoal({ name: "Stayed", type: "attention", match: { kind: "engaged", seconds: 30 } }).goal;
+    const section = { id: "s", type: "attention", match: { kind: "section", seconds: 0, section: "Comments", depths: { desktop: 0.9, mobile: 0.7 } }, pages: [] };
+    assert.deepEqual(end.match, { kind: "end", seconds: 15, depth: 0.8 });
+    const visit = (depth, ms, extra = {}) => ({ page: `${site}/blog/a`, start_time: 1000, end_time: 1000 + ms, max_scroll_depth: depth, summary: { duration_ms: ms, scrolls: 3 }, ...extra });
+
+    assert.deepEqual(attentionHits([end], visit(0.85, 20000)), [end.id]);
+    assert.deepEqual(attentionHits([end], visit(0.85, 5000)), [], "a quick flick to the bottom isn't reading");
+    assert.deepEqual(attentionHits([end], visit(0.6, 60000)), []);
+    assert.deepEqual(attentionHits([end], { ...visit(0.9, 20000), end_time: null }), [], "only once the visit has ended");
+
+    assert.deepEqual(attentionHits([engaged], visit(0.1, 40000)), [engaged.id]);
+    assert.deepEqual(attentionHits([engaged], visit(0.1, 40000, { summary: { duration_ms: 40000 } })), [], "an idle open tab isn't engaged");
+
+    assert.deepEqual(attentionHits([section], visit(0.75, 3000, { device_type: "mobile" })), ["s"], "each device uses its own picture");
+    assert.deepEqual(attentionHits([section], visit(0.75, 3000)), []);
+});
+
+test("attention goal input is checked: a kind, a sensible depth and time, and a section with a depth", () => {
+    assert.match(parseGoal({ name: "x", type: "attention", match: {} }).error, /reading to the end/);
+    assert.match(parseGoal({ name: "x", type: "attention", match: { kind: "end", depth: 0.3 } }).error, /50%/);
+    assert.match(parseGoal({ name: "x", type: "attention", match: { kind: "engaged", seconds: 9999 } }).error, /600 seconds/);
+    assert.match(parseGoal({ name: "x", type: "attention", match: { kind: "section", section: "Comments", depths: {} } }).error, /picture/);
+    assert.deepEqual(parseGoal({ name: "x", type: "attention", match: { kind: "section", section: "Comments", depths: { desktop: 0.8 } } }).goal.match,
+        { kind: "section", seconds: 0, section: "Comments", depths: { desktop: 0.8 } });
 });

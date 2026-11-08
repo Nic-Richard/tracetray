@@ -69,7 +69,8 @@ function factsOf(session, goal, layout, origin, skipSection) {
         }
     }
     const load = session.events.find(e => e.page_height && e.viewport_height);
-    if (layout?.sections?.length && load) {
+    // An attention goal is defined by how far and how long a visit read, so section facts would only restate it.
+    if (goal.type !== "attention" && layout?.sections?.length && load) {
         const { ms, seen, returned } = sectionTimes(session, { pageHeight: load.page_height, viewport: load.viewport_height }, layout.sections, layout.height / load.page_height);
         layout.sections.forEach((s, i) => {
             if (s.name === skipSection) return;

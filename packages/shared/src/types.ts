@@ -18,9 +18,11 @@ export interface Usage {
   askQuestions: number;
 }
 
-export type GoalType = "click" | "form" | "page";
+export type GoalType = "click" | "form" | "page" | "attention";
+export type AttentionKind = "end" | "section" | "engaged";
 
-/** A click goal matches id, else href, else text (and tag when given); a form goal id, else name, else action; a page goal page. */
+/** A click goal matches id, else href, else text (and tag when given); a form goal id, else name, else action; a page goal page.
+ * An attention goal is a kind with a minimum time, plus a depth (end) or a section and its depth per device. */
 export interface GoalMatch {
   id?: string | null;
   href?: string | null;
@@ -29,6 +31,11 @@ export interface GoalMatch {
   name?: string | null;
   action?: string | null;
   page?: string;
+  kind?: AttentionKind;
+  seconds?: number;
+  depth?: number;
+  section?: string;
+  depths?: Partial<Record<Device, number>>;
 }
 
 export interface Goal {
