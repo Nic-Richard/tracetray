@@ -191,12 +191,8 @@ router.get("/api/group-shifts", requireAuth(), async (req, res) => {
         if (await isPageLocked(account, siteKey, page)) {
             return res.status(403).json({ error: "this page is past your plan's page limit for this month", limit_reached: "pages" });
         }
-        const latest = await AnalysisResult.findOne({ site_key: siteKey, page }, {
-            ran_at: 1, structure: 1, clusters: 1, shifts: 1, k: 1, silhouette_score: 1, stability: 1, algorithm_agreement: 1, k_rationale: 1, kruskal_wallis: 1,
-            "mobile.structure": 1, "mobile.clusters": 1, "mobile.shifts": 1, "mobile.k": 1, "mobile.silhouette_score": 1, "mobile.stability": 1,
-            "mobile.algorithm_agreement": 1, "mobile.k_rationale": 1, "mobile.kruskal_wallis": 1,
-            "interpretation.cluster_stories": 1, "interpretation.mobile_cluster_stories": 1, "goal.name": 1
-        }).sort({ ran_at: -1 }).lean();
+        // latestAnalysis rebuilds the group names on read, so the map and the cards always agree.
+        const latest = await latestAnalysis(siteKey, page);
         if (!latest) return res.json({ ran_at: null, goal: null, changes: [], desktop: null, mobile: null });
         const site = account.sites?.find(s => s.key === siteKey);
         const changes = (site?.page_changes || []).filter(c => c.page === page).map(c => ({ day: c.day, note: c.note || null }));

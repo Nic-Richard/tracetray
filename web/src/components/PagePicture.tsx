@@ -49,7 +49,6 @@ export default function PagePicture({ src, info, bands, color, reach, goal, part
         </div>
         {sections?.map((s, i) => {
           const pos = atPx(s.top);
-          // Labels sit just above each section's line so they don't cover its heading; the first has no room above.
           return pos && <div key={s.name} className={`page-section${i === 0 ? " first" : ""}`} style={pos}><span>{percent(s.reach)} reach{s.seconds != null ? ` · ${s.seconds} s` : ""}</span></div>;
         })}
         {lines.map((line, i) => {

@@ -15,7 +15,6 @@ function SampleScope({ data, device }: { data: AttentionProfile; device: "deskto
   );
 }
 
-// What the dots on the picture mean, next to the picture rather than under the table.
 const PinKey = ({ parts }: { parts: SectionAttention | null }) => parts?.elements.length
   ? <p className="pin-key">Dots show the share of visits that clicked there; red ones were clicked but don't do anything.</p> : null;
 

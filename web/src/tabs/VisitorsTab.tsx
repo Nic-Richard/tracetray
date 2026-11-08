@@ -60,13 +60,14 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
               </div>
               <div className="panel-body type-body">
                 <div className="meter" aria-hidden="true"><i style={{ width: `${type.share * 100}%` }} /></div>
-                <p className="muted">{type.sessions.toLocaleString()} {device} visits{type.age ? ` · ${type.age}` : ""}</p>
+                <p className="muted">{type.sessions.toLocaleString()} {device} visits{type.age ? ` · ${type.age}` : ""}{type.trend && <span className="who-trend">{type.trend.up ? "▲" : "▼"} {type.trend.text}</span>}</p>
                 {type.story?.goal && (
                   <p className="group-goal">
                     <span className={`verdict ${type.story.goal.standing === "above" ? "better" : type.story.goal.standing === "below" ? "worse" : ""}`}>{rate(type.story.goal.rate)} reached {type.story.goal.name}</span>
                     <small>{device} average {rate(type.story.goal.average)}</small>
                   </p>
                 )}
+                {type.lever && <p className="who-lever">{type.lever}</p>}
                 {type.story?.summary !== undefined ? type.story.summary && <p>{type.story.summary}</p> : !type.story?.traits?.length && type.story?.body && <p>{type.story.body}</p>}
                 {(type.story?.traits?.length || 0) > 0 && (
                   <>

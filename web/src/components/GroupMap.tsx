@@ -113,8 +113,6 @@ export default function GroupMap({ shifts, map, hues, device, arrows = false, ch
     if (same) same.names.push(measureName(feature));
     else measures.push({ names: [measureName(feature)], a, b });
   }
-  // Arrow labels wrap to fit about half the map and stay inside it; on narrow maps the tips are numbered instead,
-  // with the names listed underneath, since inline names would cover the groups.
   const numbered = W < 520;
   const perLine = Math.max(14, Math.floor((W * 0.45) / 6.4));
   const arrowLabels: { x: number; y: number }[] = [];
