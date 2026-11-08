@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 const { parseGoal } = createRequire(import.meta.url)("../../server/src/lib/goals.js");
 const { findingSnapshot } = createRequire(import.meta.url)("../../server/src/lib/changeFinding.js");
 
-const READS = new Set(["/api/config", "/api/pages", "/api/sites", "/api/stats", "/api/sessions/timeseries", "/api/goal-rates", "/api/goals", "/api/pages/members", "/api/usage", "/api/journey", "/api/ux-trends", "/api/goal-trend", "/api/attention-profile", "/api/page-shot", "/api/sessions/recent", "/api/group-shifts", "/api/clicks"]);
+const READS = new Set(["/api/config", "/api/pages", "/api/sites", "/api/stats", "/api/sessions/timeseries", "/api/goal-rates", "/api/goals", "/api/pages/members", "/api/usage", "/api/journey", "/api/ux-trends", "/api/goal-trend", "/api/attention-profile", "/api/page-shot", "/api/sessions/recent", "/api/group-shifts", "/api/clicks", "/api/page-sections"]);
 
 async function readBody(request) {
   const chunks = [];
