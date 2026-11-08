@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { analysisAdvice, groupCountNote, pagePath, type AnalysisResult, type FindingReference } from "@tracetray/shared";
+import { analysisAdvice, pagePath, type AnalysisResult, type FindingReference } from "@tracetray/shared";
 import { useAskAbout } from "../lib/askLink";
-import AnalysisScope from "./AnalysisScope";
 import BeforeAfter from "./BeforeAfter";
 
 export default function SummaryPanel({ result, page }: { result: AnalysisResult; page: string }) {
@@ -18,7 +17,6 @@ export default function SummaryPanel({ result, page }: { result: AnalysisResult;
         {advice.map(item => (
           <div key={item.action} className="advice-item">
             <p className="advice-why">{item.evidence}</p>
-            {(item.devices || [item.device]).map(device => <div key={device}><AnalysisScope result={result} device={device} />{groupCountNote(result, device) && <p className="note">{groupCountNote(result, device)}</p>}</div>)}
             <p className="advice-action">Change to try: {item.action}</p>
             {(item.devices || [item.device]).map(device => <button key={device} type="button" className="btn" onClick={() => { setSource({ ran_at: result.ran_at, device, group: item.group, action: item.action }); setFollowing(true); }}>Record this change{item.devices ? ` for ${device}` : ""}</button>)}
           </div>

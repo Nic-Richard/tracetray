@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { groupCountNote, pagePath, percent, visitCount, type AnalysisResult, type Device } from "@tracetray/shared";
-import AnalysisScope from "./AnalysisScope";
-import { alikeNote, deviceAverages, deviceGoal, inactiveVisits, INACTIVE_TEXT, interpretationOf, visitorTypes } from "../lib/analysis";
+import { pagePath, percent, visitCount, type AnalysisResult, type Device } from "@tracetray/shared";
+import { alikeNote, deviceAverages, deviceGoal, inactiveVisits, INACTIVE_TEXT, visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
 import { useAskAbout } from "../lib/askLink";
 
@@ -14,7 +13,7 @@ interface Row {
   goal: { rate: number; average: number; standing?: string } | null;
   figures?: string[];
   trend?: { text: string; up: boolean } | null;
-  lever?: string | null;
+  lever?: { short: string; full: string } | null;
 }
 
 function GoalBar({ goal, name, color }: { goal: NonNullable<Row["goal"]>; name: string; color: string }) {
@@ -36,7 +35,7 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
   const alike = alikeNote(result, device);
   const inactive = inactiveVisits(result, device);
   const goal = deviceGoal(result, device);
-  const note = device === "desktop" ? interpretationOf(result)?.data_note : null;
+  const overlap = (device === "mobile" ? result.mobile?.structure : result.structure) === "some";
 
   let rows: Row[];
   if (alike) {
@@ -68,7 +67,7 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
   return (
     <section className="panel">
       <div className="panel-head">
-        <h2>Who visits</h2>
+        <h2>Who visits{overlap && <span className="tag" title="The groups overlap, so read them as tendencies">Groups overlap</span>}</h2>
         <div className="end">
           <div className="seg" role="group" aria-label="Device">
             <button type="button" className={device === "desktop" ? "on" : ""} onClick={() => setDevice("desktop")}>Desktop</button>
@@ -78,8 +77,6 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
         </div>
       </div>
       <div className="panel-body">
-        <AnalysisScope result={result} device={device} />
-        {groupCountNote(result, device) && <p className="note">{groupCountNote(result, device)}</p>}
         {types.length === 0 ? (
           <p className="empty">{(device === "mobile" ? result.mobile?.failure?.message : result.failure?.message) || "Not enough visits yet to sort them into groups."}</p>
         ) : (
@@ -96,7 +93,7 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
                   {row.text && <p>{row.text}</p>}
                   {row.figures && row.figures.length > 0 && <p className="who-figures">{row.figures.map(f => <span key={f}>{f}</span>)}</p>}
                   {row.goal && goal && <GoalBar goal={row.goal} name={goal.name} color={row.color} />}
-                  {row.lever && <p className="who-lever">{row.lever}</p>}
+                  {row.lever && <p className="who-lever" title={row.lever.full}>{row.lever.short}</p>}
                   {row.id >= 0 && (
                     <button type="button" className="ask-link" onClick={() =>
                       askAbout(`On ${pagePath(page)}, what does the "${row.headline}" group (${Math.round(row.share * 100)}% of ${device} visitors) tell me, and what should I change?`)}>
@@ -106,7 +103,6 @@ export default function WhoVisits({ result, page }: { result: AnalysisResult; pa
                 </div>
               ))}
             </div>
-            {note && <p className="note who-note">{note}</p>}
           </>
         )}
       </div>

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type React from "react";
-import { goalDrivers, groupCountNote, pagePath, percent, visitCount, visitorIntro, type AnalysisResult, type Device } from "@tracetray/shared";
-import AnalysisScope from "../components/AnalysisScope";
+import { goalDrivers, pagePath, percent, visitCount, visitorIntro, type AnalysisResult, type Device } from "@tracetray/shared";
 import { alikeNote, deviceAnalysis, inactiveVisits, INACTIVE_TEXT, visitorTypes } from "../lib/analysis";
 import { groupColors } from "../lib/palette";
 import TraitBars from "../components/TraitBars";
@@ -30,8 +29,6 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
           <button type="button" className={device === "mobile" ? "on" : ""} onClick={() => setDevice("mobile")} disabled={!hasMobile}>Mobile</button>
         </div>
       </div>
-      <AnalysisScope result={result} device={device} />
-      {groupCountNote(result, device) && <p className="note">{groupCountNote(result, device)}</p>}
       {types.length === 0 ? (
         <section className="panel"><p className="empty">{source?.failure?.message || `Not enough ${device} visits yet to sort them into groups.`}</p></section>
       ) : (
@@ -67,7 +64,7 @@ export default function VisitorsTab({ result, page }: { result: AnalysisResult; 
                     <small>{device} average {rate(type.story.goal.average)}</small>
                   </p>
                 )}
-                {type.lever && <p className="who-lever">{type.lever}</p>}
+                {type.lever && <p className="who-lever" title={type.lever.full}>{type.lever.short}</p>}
                 {type.story?.summary !== undefined ? type.story.summary && <p>{type.story.summary}</p> : !type.story?.traits?.length && type.story?.body && <p>{type.story.body}</p>}
                 {(type.story?.traits?.length || 0) > 0 && (
                   <>

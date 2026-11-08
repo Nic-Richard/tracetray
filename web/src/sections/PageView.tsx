@@ -129,11 +129,10 @@ function Overview({ page, stats, timeseries, groupSize, onRefresh, refreshing }:
     <div className="content">
       <div className="figures">
         <Figure accent="var(--d1)" label="Visits, last 30 days" value={timeseries ? compactNumber(visits) : "–"} note={desktopShare === null ? undefined : `${percent(desktopShare)} on desktop`} />
-        <Figure accent="var(--d2)" label="Engaged visits, last 30 days" value={timeseries && visits ? percent(timeseries.engagement_rate) : "–"} note="Stayed 10 seconds or more and scrolled, clicked or tapped" />
-        <Figure accent="var(--d5)" label="Without interaction, last analysis" value={inactiveKnown && analyzed ? percent(inactive / analyzed) : "–"} note={inactiveKnown && analyzed ? "Didn't scroll, click, tap or move the cursor; analysis period below" : "Shows after the next analysis"} />
-        <Figure accent="var(--d3)" label="Last analysed" value={result ? timeAgo(result.ran_at) : "Never"} note={result ? "After a page change, collect new visits before refreshing. A refresh also includes older visits." : undefined} />
+        <Figure accent="var(--d2)" label="Engaged visits, last 30 days" value={timeseries && visits ? percent(timeseries.engagement_rate) : "–"} note="10 seconds or more, with a scroll, click or tap" />
+        <Figure accent="var(--d5)" label="Without interaction, last analysis" value={inactiveKnown && analyzed ? percent(inactive / analyzed) : "–"} note={inactiveKnown && analyzed ? "Didn't scroll, click, tap or move the cursor" : "Shows after the next analysis"} />
+        <Figure accent="var(--d3)" label="Last analysed" value={result ? timeAgo(result.ran_at) : "Never"} note={result ? `Covers ${analysisPeriod(result, "desktop")}` : undefined} />
       </div>
-      {result && <p className="note">Last analysis periods: desktop: {analysisPeriod(result, "desktop")}; mobile: {analysisPeriod(result, "mobile")}. Traffic and engagement above cover the last 30 days.</p>}
       <GroupingNudge page={page} />
       <div className="split">
         <div className="split-stack">

@@ -15,8 +15,8 @@ export interface VisitorType {
   age: string | null;
   /** "Growing since Oct 8" and the like, only when the change held up. */
   trend: { text: string; up: boolean } | null;
-  /** Within the group, what goes with reaching the goal, when it held up. */
-  lever: string | null;
+  /** Within the group, what goes with reaching the goal, when it held up: the short line and the full sentence. */
+  lever: { short: string; full: string } | null;
 }
 
 export function deviceAnalysis(result: AnalysisResult | null | undefined, device: Device): DeviceAnalysis | null {
@@ -57,11 +57,14 @@ function groupTrend(shift: NonNullable<NonNullable<DeviceAnalysis["shifts"]>["gr
   return { text: `${up ? "Growing" : "Shrinking"} since ${shortDay(last ? last.since : shift.since)}`, up };
 }
 
-function groupLever(found: GoalPatterns | null | undefined, id: number): string | null {
+function groupLever(found: GoalPatterns | null | undefined, id: number): VisitorType["lever"] {
   const lever = found?.levers?.[id];
   if (!lever) return null;
   const rate = (side: { visits: number; reached: number }) => percentage(side.reached / side.visits);
-  return `Those who ${lever.fact.charAt(0).toLowerCase()}${lever.fact.slice(1)}: ${rate(lever.with)} reached ${found!.goal} (rest of the group ${rate(lever.without)})`;
+  return {
+    short: `${lever.fact} → ${rate(lever.with)} vs ${rate(lever.without)}`,
+    full: `Those who ${lever.fact.charAt(0).toLowerCase()}${lever.fact.slice(1)}: ${rate(lever.with)} reached ${found!.goal}, against ${rate(lever.without)} of the rest of the group`
+  };
 }
 
 function groupAge(track: Cluster["track"], ranAt: string | undefined): string | null {

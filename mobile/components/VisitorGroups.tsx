@@ -8,7 +8,6 @@ import {
   deviceAverages,
   deviceGoal,
   goalDrivers,
-  groupCountNote,
   groupColorSlots,
   inactiveVisits,
   INACTIVE_TEXT,
@@ -21,7 +20,6 @@ import {
 } from "@tracetray/shared";
 import { useTheme } from "../lib/theme";
 import TraitBars from "./TraitBars";
-import AnalysisScope from "./AnalysisScope";
 
 const rate = (value: number) => percent(value, value > 0 && value < 0.01 ? 1 : 0);
 
@@ -35,9 +33,6 @@ export function Suggestions({ result, site, page }: { result: AnalysisResult; si
       {advice.map((item, index) => (
         <View key={`${item.device}:${item.group}:${index}`} style={{ gap: 6, marginTop: 8 }}>
           <Text style={styles.muted}>{item.evidence}</Text>
-          {(item.devices || [item.device]).map(device => (
-            <View key={device}><AnalysisScope result={result} device={device} />{groupCountNote(result, device) ? <Text style={styles.muted}>{groupCountNote(result, device)}</Text> : null}</View>
-          ))}
           <Text style={styles.text}>Change to try: {item.action}</Text>
           {(item.devices || [item.device]).map(device => <Pressable key={device} accessibilityRole="button" style={styles.secondaryButton}
             onPress={() => router.push({ pathname: "/changes", params: { site, page, finding: JSON.stringify({ ran_at: result.ran_at, device, group: item.group, action: item.action }) } })}>
@@ -92,8 +87,6 @@ export default function VisitorGroups({ result }: { result: AnalysisResult }) {
         ))}
       </View>
       <Text style={styles.muted}>{visitorIntro(result, device, types.length)}</Text>
-      <AnalysisScope result={result} device={device} />
-      {groupCountNote(result, device) ? <Text style={styles.muted}>{groupCountNote(result, device)}</Text> : null}
       {alike ? (
         <View style={[styles.panel, { borderLeftWidth: 4, borderLeftColor: colors.groups[0] }]}>
           <View style={styles.row}>
@@ -152,7 +145,7 @@ export default function VisitorGroups({ result }: { result: AnalysisResult }) {
                   </Text>
                 </View>
               ) : null}
-              {type.lever ? <Text style={[styles.text, { borderLeftWidth: 2, borderLeftColor: colors.line, paddingLeft: 10 }]}>{type.lever}</Text> : null}
+              {type.lever ? <Text style={[styles.text, { borderLeftWidth: 2, borderLeftColor: colors.line, paddingLeft: 10 }]}>{type.lever.short}</Text> : null}
               {summary ? <Text style={styles.text}>{summary}</Text> : null}
               {story?.traits?.length ? <TraitBars traits={story.traits} color={color} /> : null}
               {story?.suggestions?.length ? (

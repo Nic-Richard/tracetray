@@ -632,3 +632,4 @@ td.strong { font-weight: 700; }
 .analysis-scope { margin: 12px 0; }
 .analysis-scope summary { cursor: pointer; overflow-wrap: anywhere; }
 .analysis-scope p { margin-top: 8px; }
+.panel-head h2 .tag { margin-left: 10px; vertical-align: 3px; }
