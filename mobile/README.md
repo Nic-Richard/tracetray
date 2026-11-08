@@ -154,7 +154,7 @@ Install Android platform 37.0, build-tools 37.0.0, NDK 27.1.12297006 and CMake 3
 The current Android CLI names the platform package `platforms/android-37.0`;
 `platforms;android-37` is not available. Keep Android source generated; configure native
 changes in `app.json` or a config plugin. Production upload credentials live outside
-the repository; see `RELEASE.md`.
+the repository.
 
 ## Standalone phone QA and Play preparation
 
@@ -165,8 +165,7 @@ build caches with Expo 58's `--no-clean` option; Play signing remains separate.
 
 The icon/splash reuse the website mark. `npm run brand -w mobile` regenerates app assets.
 Local `-AppBundle` builds produce the signed AAB;
-optional EAS builds generate shared surfaces in their post-install hook. See [RELEASE.md](RELEASE.md) for the
-phone check, Clerk setup, listing/declarations and approval-dependent release steps.
+optional EAS builds generate shared surfaces in their post-install hook.
 
 ## Checks
 
@@ -187,7 +186,7 @@ Android release bundles build locally with `scripts/build-apk.ps1 -AppBundle` an
 the separate TraceTray signing credentials. EAS remains optional with approval.
 The production API defaults to `https://tracetray.com`; release configuration rejects
 HTTP origins. Store assets and remaining real-phone QA
-remain release work. The full build plan is in [MOBILE.md](../docs/MOBILE.md).
+remain release work.
 
 ## First emulator check (Oct 16)
 
