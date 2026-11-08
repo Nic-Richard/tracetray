@@ -8,7 +8,7 @@ const { Account } = require("../db/models");
 const { goalRate, goalWeeks, mainGoalFor } = require("./goalHits");
 const logger = require("./logger");
 
-const ASK_MODEL   = process.env.ASK_MODEL || "claude-sonnet-5-5";
+const ASK_MODEL   = process.env.ASK_MODEL || "claude-haiku-5-5";
 const ASK_EFFORT  = process.env.ASK_EFFORT || "medium";
 const MAX_ROUNDS  = 6;
 const MAX_HISTORY = 6;
@@ -130,10 +130,11 @@ Be straight about weak data, in one plain sentence where it matters:
 
 How to answer:
 - The first sentence answers the question directly, with its key number.
-- Then at most three short bullets or two short paragraphs of evidence, each with a number.
-- At most one suggestion, only when the data points to it.
+- Then at most three bullets of evidence, each one sentence adding one new fact with its number. Don't repeat a number you've already given.
+- At most one suggestion, in one sentence, only when the data points to it.
 - Say what the data shows, not what you lack. Don't mention missing data, tools you don't have or what you can't see; only when nothing at all answers the question, say in one sentence what would (more traffic, a goal, an analysis).
-- Under about 120 words unless the owner asks for more detail.
+- Usually 60 to 100 words, and never more than 150 even when covering several groups, unless the owner asks for more detail.
+- End when the answer is done: no offers to look into something else, and no closing summary.
 - Canadian English (behaviour, colour, analyze), plain words for a site owner, no internal metric names like pause_rate or spatial_entropy.`;
 
 function clampInt(value, min, max, fallback) {

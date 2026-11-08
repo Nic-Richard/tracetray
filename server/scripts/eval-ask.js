@@ -8,6 +8,8 @@ const { MONGODB_URI } = require("../src/config");
 const { Account } = require("../src/db/models");
 const { askAnalytics, runTool, ASK_MODEL } = require("../src/lib/askAnalytics");
 
+// The prompt allows 150; a little slack for markdown and numbers split by spaces.
+const MAX_WORDS = 160;
 const arg = name => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
 
 // A percentage written as a whole number, allowing one point either way for rounding.
@@ -154,6 +156,8 @@ async function groundTruth(siteKey, siteHost) {
         if (c.tools.length) results.push({ label: `used ${c.tools.join(" or ")}`, ok: c.tools.some(t => toolsUsed.includes(t)) });
         for (const check of await c.checks(truth)) if (!check.skip) results.push({ label: check.label, ok: check.test.test(answer) });
         for (const rule of c.forbid || []) results.push({ label: `doesn't ${rule.label}`, ok: !rule.test.test(answer) });
+        const words = answer.split(/\s+/).filter(Boolean).length;
+        results.push({ label: `${words} words (max ${MAX_WORDS})`, ok: words <= MAX_WORDS });
         const ok = results.every(r => r.ok);
         if (ok) passed++;
         console.log(`${ok ? "PASS" : "FAIL"}  ${c.id.padEnd(15)} ${results.map(r => `${r.ok ? "✓" : "✗"} ${r.label}`).join(" · ")}`);
