@@ -47,9 +47,10 @@ export default function PagePicture({ src, info, bands, color, reach, goal, part
         <div className="page-picture-heat" style={{ height: percent(scale, 2) }}>
           {bands.map((weight, i) => <i key={i} style={{ opacity: (weight * 0.55).toFixed(3), background: color }} />)}
         </div>
-        {sections?.map(s => {
+        {sections?.map((s, i) => {
           const pos = atPx(s.top);
-          return pos && <div key={s.name} className="page-section" style={pos}><span>{percent(s.reach)} reach{s.seconds != null ? ` · ${s.seconds} s` : ""}</span></div>;
+          // Labels sit just above each section's line so they don't cover its heading; the first has no room above.
+          return pos && <div key={s.name} className={`page-section${i === 0 ? " first" : ""}`} style={pos}><span>{percent(s.reach)} reach{s.seconds != null ? ` · ${s.seconds} s` : ""}</span></div>;
         })}
         {lines.map((line, i) => {
           const pos = at(line.depth);

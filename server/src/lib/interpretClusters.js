@@ -124,7 +124,7 @@ const ARCHETYPES = {
             meaning: "They move the cursor across more of the page and click more often."
         },
         {
-            key: "header_scanners", name: "Header scanners", traits: { top_zone_ratio: 1, scroll_depth_reached: -1 },
+            key: "header_scanners", name: "Headliners", traits: { top_zone_ratio: 1, scroll_depth_reached: -1 },
             meaning: "They stay in the top section and rarely go further down."
         },
         {

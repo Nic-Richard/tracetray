@@ -11,5 +11,6 @@ main { display: grid; gap: 20px; }
 .tab-intro { margin: 0; }
 .attention-surface > .content { padding: 0 20px 20px; display: grid; gap: 20px; }
 .attention-surface .attention.pictured, .attention-surface .phone-attention.pictured { grid-template-columns: 1fr; }
-.attention-surface .page-picture { max-height: 65vh; }
+/* The picture grows with the page so a swipe on it scrolls the screen instead of getting stuck inside. */
+.attention-surface .page-picture { max-height: none; overflow: visible; }
 .attention-surface .page-line span { max-width: 95%; overflow: hidden; text-overflow: ellipsis; }

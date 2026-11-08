@@ -5,9 +5,19 @@ import AnalysisScope from "./AnalysisScope";
 
 function SampleScope({ data, device }: { data: AttentionProfile; device: "desktop" | "mobile" }) {
   const sample = data.samples?.[device];
-  const dates = sample?.from && sample.to ? `${sample.from.slice(0, 10)} to ${sample.to.slice(0, 10)} (UTC)` : "Dates weren't saved for this sample";
-  return <p className="note">{sample ? `${sample.visits.toLocaleString()} ${device} visits selected, ${dates}. Latest ${sample.limit.toLocaleString()} eligible completed visits at most; unfinished visits, trimmed events and visits without full detail are excluded. ${device === "desktop" ? "Only visits with recorded cursor movement are selected; each measure uses visits with the required events." : `${(data.phone_reading?.visits || 0).toLocaleString()} visits with recorded scroll pauses contribute to the shading.`}` : dates}</p>;
+  if (!sample) return <p className="note">Dates weren't saved for this sample</p>;
+  const dates = sample.from && sample.to ? `${sample.from.slice(0, 10)} to ${sample.to.slice(0, 10)} (UTC)` : "dates not saved";
+  return (
+    <details className="note analysis-scope">
+      <summary>{sample.visits.toLocaleString()} {device} visits · {dates} · Scope and exclusions</summary>
+      <p>{`Latest ${sample.limit.toLocaleString()} eligible completed visits at most; unfinished visits, trimmed events and visits without full detail are excluded. ${device === "desktop" ? "Only visits with recorded cursor movement are selected; each measure uses visits with the required events." : `${(data.phone_reading?.visits || 0).toLocaleString()} visits with recorded scroll pauses contribute to the shading.`}`}</p>
+    </details>
+  );
 }
+
+// What the dots on the picture mean, next to the picture rather than under the table.
+const PinKey = ({ parts }: { parts: SectionAttention | null }) => parts?.elements.length
+  ? <p className="pin-key">Dots show the share of visits that clicked there; red ones were clicked but don't do anything.</p> : null;
 
 function SectionFacts({ parts }: { parts: SectionAttention }) {
   const goal = parts.goal?.name;
@@ -22,7 +32,7 @@ function SectionFacts({ parts }: { parts: SectionAttention }) {
             {compared && <td className="num">{s.goal ? `${s.goal.reached} / ${s.goal.missed} s` : "–"}</td>}</tr>
         ))}</tbody>
       </table>
-      <p className="muted">From {parts.visits.toLocaleString()} visits. On screen is the typical time a section was in view for visits that reached it; came back counts visits that scrolled away and returned.{parts.elements.length > 0 && " Dots on the picture show the most used buttons and links; red ones were clicked but don't do anything."}</p>
+      <p className="muted">From {parts.visits.toLocaleString()} visits. On screen is the typical time a section was in view for visits that reached it; came back counts visits that scrolled away and returned.</p>
     </div>
   );
 }
@@ -59,7 +69,7 @@ export default function AttentionContent({ data, result, desktopShot, phoneShot 
       {data.sessions > 0 && <>
       <SampleScope data={data} device="desktop" />
       <section className="panel">
-        <div className="panel-head"><h2>Where the cursor spends time</h2><div className="end"><span className="ask-note">{data.sessions.toLocaleString()} desktop visits</span></div></div>
+        <div className="panel-head"><h2>{desktopParts?.sections.length ? "How far people get, and what they click" : "Where the cursor spends time"}</h2><div className="end"><span className="ask-note">{data.sessions.toLocaleString()} desktop visits</span></div></div>
         <div className={`panel-body attention${desktopShot && data.shots?.desktop ? " pictured" : ""}`}>
           <div className="depth-col">
           {desktopShot && data.shots?.desktop ? (
@@ -72,6 +82,7 @@ export default function AttentionContent({ data, result, desktopShot, phoneShot 
             </div>
           )}
           <div className="depth-legend" aria-hidden="true"><small>Cursor activity</small><span>Less</span><i /><span>More</span></div>
+          {desktopShot && data.shots?.desktop && <PinKey parts={desktopParts} />}
           </div>
           {desktopParts?.sections.length ? <SectionFacts parts={desktopParts} /> : <div className="zones">
             {([["Top third", zones.top], ["Middle third", zones.middle], ["Bottom third", zones.bottom]] as const).map(([label, value]) => (
@@ -107,6 +118,7 @@ export default function AttentionContent({ data, result, desktopShot, phoneShot 
                 <span>{percent(phoneDepth)}</span>
               </div>
             )}
+            {phoneShot && data.shots?.mobile && <PinKey parts={phoneParts} />}
             {phoneParts?.sections.length ? <SectionFacts parts={phoneParts} /> : <div className="facts">
               {result && <AnalysisScope result={result} device="mobile" />}
               <p className="note">The phone measures below use the last analysis; the shaded pause map uses the separate sample above.</p>

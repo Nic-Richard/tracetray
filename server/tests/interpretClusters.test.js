@@ -17,7 +17,7 @@ const readerAndScanner = {
 test("clear behaviour gets the matching archetype, with the numbers behind it", () => {
     const result = interpretClusters({ desktop: readerAndScanner, pageUrl: "https://example.com/" });
     assert.equal(result.cluster_stories[0].headline, "Methodical readers");
-    assert.match(result.cluster_stories[1].headline, /Content skimmers|Header scanners/);
+    assert.match(result.cluster_stories[1].headline, /Content skimmers|Headliners/);
     assert.match(result.cluster_stories[0].body, /^They .*pause about 48% more often than average\./);
     assert.equal(result.page_type, "Homepage");
     assert.match(result.site_summary, /^58% of desktop visitors are methodical readers\./);

@@ -281,6 +281,8 @@ p.tab-intro { max-width: 80ch; }
 .depth-col { display: grid; gap: 10px; }
 .depth-legend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
 .depth-legend small { flex-basis: 100%; font-size: 12px; }
+.page-section.first span { bottom: auto; top: 3px; }
+.pin-key { margin-top: 6px; font-size: 12px; color: var(--muted); }
 .depth-legend i { flex: 1; max-width: 70px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, color-mix(in srgb, var(--d1) 10%, var(--canvas)), var(--d1)); }
 .attention.pictured { grid-template-columns: minmax(0, 400px) minmax(0, 1fr); }
 .phone-attention.pictured { grid-template-columns: 200px minmax(0, 1fr); }
@@ -300,7 +302,7 @@ p.tab-intro { max-width: 80ch; }
 .page-line.goal span { top: -22px; background: var(--good); color: #fff; box-shadow: none; }
 .page-line.goal.below span { top: 3px; }
 .page-section { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid color-mix(in srgb, var(--ink) 30%, transparent); }
-.page-section span { position: absolute; left: 6px; top: 3px; font-size: 11.5px; font-weight: 600; line-height: 1.4; padding: 1px 7px; border-radius: 999px; background: var(--panel); color: var(--ink); box-shadow: 0 0 0 1px var(--line); white-space: nowrap; }
+.page-section span { position: absolute; left: 6px; bottom: 3px; font-size: 11.5px; font-weight: 600; line-height: 1.4; padding: 1px 7px; border-radius: 999px; background: var(--panel); color: var(--ink); box-shadow: 0 0 0 1px var(--line); white-space: nowrap; }
 .page-pin { position: absolute; transform: translate(-50%, -50%); }
 .page-pin span { display: block; font-size: 11px; font-weight: 700; line-height: 1; padding: 4px 6px; border-radius: 999px; background: var(--d1); color: #fff; box-shadow: 0 0 0 2px var(--panel); white-space: nowrap; }
 .page-pin.dead span { background: var(--danger); }
