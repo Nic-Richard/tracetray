@@ -30,7 +30,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/site.css?v=5">
+<link rel="stylesheet" href="/assets/site.css?v=6">
 <script>try { const t = localStorage.getItem("tt-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body>
@@ -91,6 +91,7 @@
         <a class="btn" href="mailto:support@tracetray.com?subject=TraceTray%20Enterprise">Get in touch</a>
       </div>
     </div>
+    <div class="free-plan"><h2>Free</h2><p>2,000 visits a month, 10 pages, one website and the last 30 days, with visitor groups, attention, journeys, 3 goals and 5 Ask questions a month. Any plan moves to Free if you cancel.</p><a href="/sign-in?mode=sign-up" id="free-signup">Or sign up free</a></div>
     <p class="pricing-error" id="error-msg" role="alert"></p>
 
     <section class="compare-plans" aria-labelledby="compare-title">
@@ -134,9 +135,9 @@
         <details><summary>What counts as a visit?</summary><p>One person viewing one page. Someone who reads three pages makes three visits. Visits are counted per calendar month and reset on the 1st.</p></details>
         <details><summary>What counts as a page?</summary><p>Every distinct address on your site, ignoring anything after a question mark. When you group pages, such as all your product pages, each address in the group still counts toward the limit.</p></details>
         <details><summary>What happens if I go over a limit?</summary><p>Nothing breaks and tracking carries on. Past your visit limit, new visits keep their summary but not their movement detail until the next month. Pages past your page limit are locked in the dashboard. Upgrading lifts either limit straight away.</p></details>
-        <details><summary>How does the free trial work?</summary><p>Every plan starts with 30 days free, once per account. Cancel anytime during the trial and you won't be charged. You'll get an email before it ends.</p></details>
-        <details><summary>Can I change plans later?</summary><p>Yes, from Billing in the dashboard. An upgrade takes effect straight away and you pay the difference for the rest of the billing period. If you cancel, your plan runs until the end of the period you've paid for.</p></details>
-        <details><summary>What happens to my data if I cancel?</summary><p>Your website data is kept for 30 days after your plan ends, in case you come back. You'll get an email 7 days before it's deleted.</p></details>
+        <details><summary>How does the free trial work?</summary><p>Every paid plan starts with 30 days free, once per account. Cancel anytime during the trial and you won't be charged, and you'll move to the Free plan when it ends. You'll get an email before it ends.</p></details>
+        <details><summary>Can I change plans later?</summary><p>Yes, from Billing in the dashboard. An upgrade takes effect straight away and you pay the difference for the rest of the billing period. If you cancel, your plan runs until the end of the period you've paid for, then moves to Free.</p></details>
+        <details><summary>What happens to my data if I cancel?</summary><p>Nothing is deleted. You move to the Free plan, tracking carries on within its limits, and the dashboard shows the last 30 days. Upgrade again and your full history is back.</p></details>
         <details><summary>Is every visit analyzed on busy sites?</summary><p>Every visit is counted and keeps its summary, scroll depth, clicks and taps. On very busy pages, full movement detail is kept for a random sample of visits, which is plenty for accurate visitor groups. <a href="/collects">See exactly what TraceTray collects</a>.</p></details>
         <details><summary>What does Enterprise include?</summary><p>The limits you need, invoices instead of card payments, and terms such as a data processing agreement. <a href="mailto:support@tracetray.com?subject=TraceTray%20Enterprise">Get in touch</a> and we'll put a plan together with you.</p></details>
       </div>
@@ -230,11 +231,12 @@ async function init() {
     if (signedInBefore) {
       await loadClerk(config.clerk_publishable_key);
       if (!window.Clerk.user) try { localStorage.removeItem("tt-signed-in"); } catch (e) {}
+      else document.getElementById("free-signup").hidden = true;
     }
   } catch (e) {}
 
   document.querySelectorAll("button[data-plan]").forEach(button => button.addEventListener("click", async () => {
-    if (!window.Clerk?.user) { window.location.href = "/sign-in"; return; }
+    if (!window.Clerk?.user) { window.location.href = `/sign-in?mode=sign-up&plan=${button.dataset.plan}&interval=${interval}`; return; }
     await subscribe(button.dataset.plan, button);
   }));
 }

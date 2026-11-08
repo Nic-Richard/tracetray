@@ -34,7 +34,8 @@ function UsageCard({ data }: { data: UsageResponse }) {
       <Text style={styles.heading}>Plan and usage</Text>
       <Text style={styles.muted}>{month} so far</Text>
       <Text style={styles.text}>
-        {plan === "none" ? "No active plan. Choose one on the web to keep collecting." : `You're on ${PLAN_NAMES[plan]}.`}
+        {plan === "none" ? "No active plan. Choose one on the web to keep collecting."
+          : plan === "free" ? "You're on Free. A paid plan, chosen on the web, adds more visits, pages and history." : `You're on ${PLAN_NAMES[plan]}.`}
       </Text>
       <Text style={styles.muted}>
         Across all your websites. Visits, tracked pages and Ask questions reset on the 1st (UTC).

@@ -171,6 +171,10 @@ section { padding: 104px 0; }
 .plan { border: 1px solid var(--line); border-radius: 18px; padding: 32px; display: grid; gap: 16px; grid-template-rows: auto auto 1fr auto; background: var(--paper); }
 .plan.pro { background: linear-gradient(var(--paper), var(--paper)) padding-box, var(--heat) border-box; border: 2px solid transparent; }
 .plan header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.free-plan { margin-top: 24px; border: 1px dashed var(--line); border-radius: 18px; padding: 20px 32px; display: flex; gap: 8px 24px; align-items: baseline; flex-wrap: wrap; }
+.free-plan h3 { margin: 0; }
+.free-plan p { margin: 0; flex: 1 1 420px; color: var(--ink-2); }
+.free-plan a { font-weight: 600; white-space: nowrap; }
 .plans-note { margin-top: 20px; color: var(--muted); font-size: 15.5px; }
 .plan .soon { font-size: 14px; color: var(--muted); }
 .plan .price { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
@@ -433,7 +437,7 @@ footer span { margin-left: auto; }
             <li>6 months of history</li>
             <li>Weekly summary email</li>
           </ul>
-          <a class="btn" href="/pricing" data-auth-cta="pricing">Start free trial</a>
+          <a class="btn" href="/sign-in?mode=sign-up&amp;plan=starter" data-auth-cta="pricing">Start free trial</a>
         </div>
         <div class="plan pro">
           <header><h3>Pro</h3><span class="soon">Most popular</span></header>
@@ -444,7 +448,7 @@ footer span { margin-left: auto; }
             <li>2 years of history</li>
             <li>Weekly automatic analysis</li>
           </ul>
-          <a class="btn primary" href="/pricing" data-auth-cta="pricing">Start free trial</a>
+          <a class="btn primary" href="/sign-in?mode=sign-up&amp;plan=pro" data-auth-cta="pricing">Start free trial</a>
         </div>
         <div class="plan">
           <header><h3>Ultra</h3></header>
@@ -455,9 +459,10 @@ footer span { margin-left: auto; }
             <li>4 years of history</li>
             <li>Priority support</li>
           </ul>
-          <a class="btn" href="/pricing" data-auth-cta="pricing">Start free trial</a>
+          <a class="btn" href="/sign-in?mode=sign-up&amp;plan=ultra" data-auth-cta="pricing">Start free trial</a>
         </div>
       </div>
+      <div class="free-plan"><h3>Free</h3><p>2,000 visits a month, one website and the last 30 days, with visitor groups, attention and journeys. Any plan moves to Free if you cancel.</p><a href="/sign-in?mode=sign-up" data-auth-cta="pricing">Or sign up free</a></div>
       <p class="plans-note"><a href="/pricing">Compare all plans</a> to see every limit and feature. Need more? <a href="mailto:support@tracetray.com?subject=TraceTray%20Enterprise">Get in touch</a> about Enterprise.</p>
     </div>
   </section>
@@ -470,7 +475,7 @@ footer span { margin-left: auto; }
         <details><summary>What does the tracker collect?</summary><p>Cursor movement, pauses, clicks, taps, scrolling, page depth, timing and the text of clicked elements. Never keystrokes, form values, screenshots or video. It sets no cookies and stores nothing on the visitor's device; visits are grouped with an identifier that changes daily and never stores the IP address.</p></details>
         <details><summary>Do I need a cookie banner for TraceTray?</summary><p>TraceTray sets no cookies and stores nothing on visitors' devices, which is what EU and UK cookie rules cover. Whether your site needs consent overall depends on your other tools and where your visitors are, so check with your own adviser.</p></details>
         <details><summary>Who is it for?</summary><p>Site owners, marketers, UX designers and product teams who want to improve user experience and conversions: stores, SaaS sites, portfolios and blogs, including teams that can't use recording tools, like health, finance, legal and education sites. No analytics background needed.</p></details>
-        <details><summary>How does the free trial work?</summary><p>Every plan starts with 30 days free, once per account. Cancel anytime during the trial and you won't be charged. <a href="/pricing">Compare plans</a> to see what each one includes.</p></details>
+        <details><summary>How does the free trial work?</summary><p>Every paid plan starts with 30 days free, once per account. Cancel anytime during the trial and you won't be charged. <a href="/pricing">Compare plans</a> to see what each one includes.</p></details>
         <details><summary>How many visits do I need?</summary><p>Fewer than you'd think. Groups appear once a page has a modest number of active visits, and each analysis shows how many it used.</p></details>
         <details><summary>Does it work on phones?</summary><p>Yes. Taps, scrolling and reading pauses are tracked on phones, and mobile is analyzed separately.</p></details>
         <details><summary>Can I track a whole site?</summary><p>Yes. Add the snippet site-wide and group pages that share a URL pattern.</p></details>

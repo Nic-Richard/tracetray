@@ -515,6 +515,12 @@ td.strong { font-weight: 700; }
 .dialog-body label { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
 .dialog-body select, .dialog-body textarea { font: inherit; color: var(--ink); background: var(--canvas); border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; resize: vertical; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.trial-plans { display: grid; gap: 8px; }
+.trial-plan { display: grid; gap: 2px; text-align: left; font: inherit; color: var(--ink); background: var(--canvas); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; }
+.trial-plan.featured { background: linear-gradient(var(--canvas), var(--canvas)) padding-box, linear-gradient(90deg, var(--heat-cool), var(--heat-warm), var(--heat-hot)) border-box; border: 2px solid transparent; }
+.trial-plan:hover:not(:disabled) { border-color: var(--heat-cool); }
+.trial-plan b span { font-weight: 500; color: var(--muted); margin-left: 6px; }
+.trial-plan small { color: var(--muted); font-size: 13.5px; }
 
 @media (max-width: 1180px) {
   .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }

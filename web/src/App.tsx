@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useSearchParams } from "react-router";
 import { ApiError, type Account } from "@tracetray/shared";
 import DeleteAccount from "./sections/DeleteAccount";
 import { useApi } from "./api";
-import { SiteProvider } from "./state/site";
+import { SiteProvider, useSite } from "./state/site";
 import Rail from "./components/Rail";
 import PageTree from "./components/PageTree";
 import BugReport from "./components/BugReport";
+import TrialOffer from "./components/TrialOffer";
 import Icon from "./components/Icon";
 import PageView from "./sections/PageView";
 import Ask from "./sections/Ask";
@@ -20,6 +21,10 @@ function Shell() {
   const [reporting, setReporting] = useState(false);
   const [params, setParams] = useSearchParams();
   const [notice, setNotice] = useState("");
+  const { account } = useSite();
+  const api = useApi();
+  const chosenPlan = params.get("plan");
+  const [offering, setOffering] = useState(!!account.trial_offer && !chosenPlan);
   const onPages = pathname.startsWith("/pages");
 
   useEffect(() => {
@@ -27,6 +32,20 @@ function Shell() {
     setNotice("Subscription activated. Welcome to TraceTray.");
     setParams(prev => { const next = new URLSearchParams(prev); next.delete("checkout"); return next; }, { replace: true });
   }, [params, setParams]);
+
+  const checkoutStarted = useRef(false);
+  useEffect(() => {
+    if (chosenPlan !== "starter" && chosenPlan !== "pro" && chosenPlan !== "ultra") return;
+    if (checkoutStarted.current) return;
+    checkoutStarted.current = true;
+    setNotice("Opening checkout…");
+    api.checkout(chosenPlan, params.get("interval") === "year" ? "year" : "month")
+      .then(({ url }) => { window.location.href = url; })
+      .catch(err => {
+        setNotice(`${err instanceof Error ? err.message : "Checkout didn't open"}. You can start a trial from Pricing.`);
+        setParams(prev => { const next = new URLSearchParams(prev); next.delete("plan"); next.delete("interval"); return next; }, { replace: true });
+      });
+  }, []);
 
   useEffect(() => { setSheetOpen(false); }, [pathname]);
 
@@ -58,6 +77,7 @@ function Shell() {
         </div>
       )}
       {reporting && <BugReport onClose={() => setReporting(false)} />}
+      {offering && <TrialOffer onClose={() => setOffering(false)} />}
     </div>
   );
 }

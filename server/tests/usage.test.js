@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const { monthOf, monthRange } = require("../src/lib/usage");
-const { planLimits, subscriptionSummary } = require("../src/lib/plans");
+const { planLimits, subscriptionSummary, offersTrial } = require("../src/lib/plans");
 const { lockUnits } = require("../src/lib/limits");
 
 test("months run from the first of the month to the first of the next, across the year end", () => {
@@ -15,6 +15,21 @@ test("each plan has limits and no plan has none", () => {
     assert.equal(planLimits("pro").visits, 100000);
     assert.equal(planLimits("enterprise").pages, null);
     assert.equal(planLimits("none"), null);
+});
+
+test("Free has its own limits and a nonzero Ask cap, since 0 would read as no limit", () => {
+    const free = planLimits("free");
+    assert.equal(free.visits, 2000);
+    assert.equal(free.historyDays, 30);
+    assert.ok(free.askQuestions > 0);
+    assert.equal(free.shiftAlerts, false);
+});
+
+test("a new Free account is offered a trial until it takes or skips one, and a cancelled one isn't", () => {
+    assert.equal(offersTrial({ plan: "free" }), true);
+    assert.equal(offersTrial({ plan: "free", trial_offer_skipped: true }), false);
+    assert.equal(offersTrial({ plan: "free", trial_used: true, subscription: { status: "canceled" } }), false);
+    assert.equal(offersTrial({ plan: "pro", subscription: { status: "trialing" } }), false);
 });
 
 test("subscription summaries expose status and dates without payment identifiers", () => {

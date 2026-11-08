@@ -1,4 +1,4 @@
-export type Plan = "starter" | "pro" | "ultra" | "enterprise" | "none";
+export type Plan = "free" | "starter" | "pro" | "ultra" | "enterprise" | "none";
 
 /** null = no limit. Visits and Ask questions are per calendar month. */
 export interface PlanLimits {
@@ -239,6 +239,8 @@ export interface Account {
   sites: Site[];
   site_limit: number;
   plan: Plan;
+  /** A new Free account that hasn't used or skipped its trial. */
+  trial_offer?: boolean;
   dashboard: string;
   snippet: string;
 }

@@ -4,7 +4,7 @@ const { getAuth, clerkClient } = require("@clerk/express");
 const { requireAuth } = require("../middleware/auth");
 const { Account, AccountDeletion } = require("../db/models");
 const { generateSiteKey, getSiteLimit, ensureAccountSites, deleteSiteData } = require("../lib/siteAccount");
-const { PLANS, planLimits, subscriptionSummary } = require("../lib/plans");
+const { PLANS, planLimits, subscriptionSummary, offersTrial } = require("../lib/plans");
 const { getUsage } = require("../lib/usage");
 const logger = require("../lib/logger");
 const { refuseDemo } = require("../lib/demo");
@@ -35,7 +35,7 @@ router.post("/api/account", requireAuth(), async (req, res) => {
                     domain: null,
                     created_at: new Date()
                 }],
-                plan:       "none",
+                plan:       "free",
                 created_at: new Date()
             });
             logger.info(`new account  email=${email}  key=${site_key}`);
@@ -57,12 +57,23 @@ router.post("/api/account", requireAuth(), async (req, res) => {
             sites,
             site_limit: getSiteLimit(account),
             plan:      account.plan,
+            trial_offer: offersTrial(account),
             dashboard: `${host}/app/`,
             snippet:   `<script>\n  window.TraceTray = { endpoint: "${host}/collect", key: "${sites[0].key}" };\n</script>\n<script src="${host}/client/tracker.js" defer></script>`
         });
     } catch (err) {
         logger.error("account error:", err);
         res.status(500).json({ error: "account setup failed" });
+    }
+});
+
+router.post("/api/trial-offer/skip", requireAuth(), async (req, res) => {
+    try {
+        await Account.updateOne({ clerk_user_id: getAuth(req).userId }, { $set: { trial_offer_skipped: true } });
+        res.json({ ok: true });
+    } catch (err) {
+        logger.error("trial offer skip error:", err);
+        res.status(500).json({ error: "couldn't save that" });
     }
 });
 

@@ -5,7 +5,7 @@ export const EMAILS: { list: EmailList; name: string; about: string }[] = [
   { list: "shift_alerts", name: "Behaviour-shift alerts", about: "After the weekly analysis, when a page's visitor groups move 10 points or more." }
 ];
 
-export const PLAN_NAMES: Record<Plan, string> = { starter: "Starter", pro: "Pro", ultra: "Ultra", enterprise: "Enterprise", none: "No plan" };
+export const PLAN_NAMES: Record<Plan, string> = { free: "Free", starter: "Starter", pro: "Pro", ultra: "Ultra", enterprise: "Enterprise", none: "No plan" };
 
 export const REPORT_CATEGORIES: { value: BugCategory; label: string }[] = [
   { value: "bug", label: "Something is broken" },

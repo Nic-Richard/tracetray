@@ -10,15 +10,14 @@ const { PRICE_KEYS, planForPrice } = require("../lib/plans");
 const { refuseDemo } = require("../lib/demo");
 
 const TRIAL_DAYS = 30;
-const DATA_HOLD_DAYS = 30;
 const ENDED = ["canceled", "unpaid", "incomplete_expired"];
 
 // Keeps the account's plan, subscription details and data hold in step with Stripe.
-// past_due keeps the plan while Stripe retries the payment.
+// past_due keeps the plan while Stripe retries the payment; an ended subscription drops to Free.
 async function syncSubscription(filter, sub, extra = {}) {
     const item = sub.items?.data?.[0];
     const ended = ENDED.includes(sub.status);
-    const plan = ended ? "none" : planForPrice(item?.price);
+    const plan = ended ? "free" : planForPrice(item?.price);
     const subscription = {
         id: sub.id,
         status: sub.status,
@@ -27,9 +26,7 @@ async function syncSubscription(filter, sub, extra = {}) {
         current_period_end: item?.current_period_end ? new Date(item.current_period_end * 1000) : null,
         cancel_at_period_end: !!sub.cancel_at_period_end
     };
-    const update = ended
-        ? [{ $set: { ...extra, plan, subscription, delete_after: { $ifNull: ["$delete_after", new Date(Date.now() + DATA_HOLD_DAYS * 86400000)] } } }]
-        : [{ $set: { ...extra, plan, subscription } }, { $unset: ["delete_after", "deletion_notice_sent_at"] }];
+    const update = [{ $set: { ...extra, plan, subscription } }, { $unset: ["delete_after", "deletion_notice_sent_at"] }];
     const result = await Account.updateOne({ ...filter, deletion_requested_at: null }, update, { updatePipeline: true });
     return { plan, matched: result.matchedCount };
 }

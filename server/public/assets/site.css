@@ -94,6 +94,10 @@ p, li, dd, td, th, summary { text-wrap: pretty; }
 .meter i::before { content: ""; display: block; height: 100%; width: var(--fill); min-width: 6px; border-radius: 6px; background: var(--heat); background-size: calc(100% / var(--share, 1)) 100%; }
 .meter.open i { background: repeating-linear-gradient(90deg, var(--line) 0 8px, transparent 8px 13px); }
 .meter.open i::before { width: 100%; background: linear-gradient(90deg, var(--cool), var(--warm) 55%, var(--hot) 85%, transparent); }
+.free-plan { margin-top: 16px; border: 1px dashed var(--line); border-radius: 18px; padding: 20px 24px; display: flex; gap: 8px 24px; align-items: baseline; flex-wrap: wrap; }
+.free-plan h2 { font-size: 20px; letter-spacing: -0.02em; }
+.free-plan p { flex: 1 1 420px; color: var(--ink-2); font-size: 15.5px; }
+.free-plan a { font-weight: 600; white-space: nowrap; }
 .pricing-error { display: none; margin-top: 16px; color: var(--danger); text-align: center; }
 .enterprise-line { margin-top: 20px; color: var(--muted); font-size: 15.5px; text-align: center; }
 

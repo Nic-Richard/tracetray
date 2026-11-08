@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/site.css?v=5">
+<link rel="stylesheet" href="/assets/site.css?v=6">
 <script>try { const t = localStorage.getItem("tt-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body>
@@ -64,9 +64,13 @@
 
     async function initClerk() {
       const params = new URLSearchParams(location.search);
-      const destination = params.get("returnTo") === "/app/delete-account" ? "/app/delete-account" : "/app/";
+      const plan = ["starter", "pro", "ultra"].includes(params.get("plan")) ? params.get("plan") : null;
+      const interval = params.get("interval") === "year" ? "year" : "month";
+      const destination = params.get("returnTo") === "/app/delete-account" ? "/app/delete-account"
+        : plan ? `/app/?plan=${plan}&interval=${interval}` : "/app/";
       const signingUp = params.get("mode") === "sign-up";
-      const returnTo = destination === "/app/delete-account" ? "returnTo=%2Fapp%2Fdelete-account" : "";
+      const returnTo = destination === "/app/delete-account" ? "returnTo=%2Fapp%2Fdelete-account"
+        : plan ? `plan=${plan}&interval=${interval}` : "";
       const response = await fetch("/api/config");
 
       if (!response.ok) {

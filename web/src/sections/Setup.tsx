@@ -345,7 +345,8 @@ function Plan() {
   const api = useApi();
   const { account } = useSite();
   const usage = useLoad(() => api.usage(), [api]);
-  const name = PLAN_NAMES[usage.data?.plan ?? account.plan];
+  const plan = usage.data?.plan ?? account.plan;
+  const name = PLAN_NAMES[plan];
   const limits = usage.data?.limits;
   const used = usage.data?.usage;
   const month = used ? new Date(`${used.month}-01T00:00:00Z`).toLocaleDateString(undefined, { month: "long", timeZone: "UTC" }) : "";
@@ -353,7 +354,8 @@ function Plan() {
     <section className="panel">
       <div className="panel-head"><h2>Plan and usage</h2>{month && <div className="end"><span className="ask-note">{month} so far</span></div>}</div>
       <div className="panel-body setup-copy">
-        <p>{(usage.data?.plan ?? account.plan) === "none" ? "No active plan. Choose one under Manage billing to keep collecting." : `You're on ${name}.`}</p>
+        <p>{plan === "none" ? "No active plan. Choose one under See plans to keep collecting."
+          : plan === "free" ? "You're on Free. A paid plan adds more visits, pages and history, and weekly automatic analysis." : `You're on ${name}.`}</p>
         {usage.error && <p className="page-status error" style={{ padding: 0 }}>{usage.error}</p>}
         {used && (!limits ? (
           <div className="usage-figures">
@@ -375,7 +377,7 @@ function Plan() {
         ) && (
           <p className="note">Over a limit, TraceTray keeps collecting: extra pages are locked and extra visits keep their summary only. Both reset on the 1st, or right away on a bigger plan.</p>
         )}
-        <p><a className="link-button" href="/billing">Manage billing</a></p>
+        <p>{(plan === "free" || plan === "none") && <><a className="link-button" href="/pricing">See plans</a>{" · "}</>}<a className="link-button" href="/billing">Manage billing</a></p>
       </div>
     </section>
   );
