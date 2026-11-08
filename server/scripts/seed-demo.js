@@ -30,7 +30,7 @@ const SOURCES = [["https://www.google.com/", 42, 0], ["https://www.instagram.com
 // Pages without a layout in the demo store: a plain height, and the one button people use there.
 const PLAIN = { "/cart": [1300, "Checkout"], "/checkout": [1500, "Pay now"], "/journal": [3200, "Shop the gear"] };
 
-let seed = 7;
+let seed = 23;
 const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
 const pick = list => list[Math.floor(rand() * list.length)];
 const weighted = list => { let r = rand() * list.reduce((s, [, w]) => s + w, 0); for (const row of list) if ((r -= row[1]) <= 0) return row; return list[0]; };
@@ -103,10 +103,16 @@ function planView(page, layout, t, clearGuide) {
     if (photo && chance(0.06 + 0.12 * t.unsure)) steps.push({ click: { tag: "DIV", id: null, text: null, href: null, ...photo }, dead: true, rage: chance(0.3) });
     if (chance(0.35)) steps.push({ click: pick(elements.filter(e => e.text?.startsWith("Colour:"))) });
     let doubt = t.unsure;
-    if (chance(0.08 + 0.6 * t.unsure)) {
-        steps.push({ click: find(layout, "Size guide") });
-        steps.push({ read: [top.top, top.bottom], secs: 3 + 12 * t.unsure * t.patience });
-        doubt *= clearGuide ? 0.35 : 0.75;
+    // Some shoppers aren't sure of their size, whatever their mood, and that holds them back until they check.
+    // Ready buyers check more often. Checking settles the question and reassures a little beyond it, more so once
+    // the guide is clearer.
+    if (chance(0.45)) {
+        doubt += 0.4;
+        if (chance(0.25 + 0.5 * t.intent)) {
+            steps.push({ click: find(layout, "Size guide") });
+            steps.push({ read: [top.top, top.bottom], secs: 3 + 10 * t.patience });
+            doubt -= clearGuide ? 0.75 : 0.5;
+        }
     }
     if (details && chance(0.25 + 0.4 * t.unsure)) steps.push({ read: [details.top, details.bottom], secs: 3 + 8 * t.patience * rand() });
     if (reviews && chance(0.15 + 0.6 * t.unsure)) {
@@ -119,7 +125,7 @@ function planView(page, layout, t, clearGuide) {
         }
     }
     if (others && chance(0.12 + 0.4 * (1 - t.intent))) steps.push({ read: [others.top, others.bottom], secs: 3 + 8 * t.patience * rand() });
-    const bought = chance(sigmoid(-2.1 + 3.4 * t.intent - 3.2 * doubt));
+    const bought = chance(sigmoid(-1.6 + 3.4 * t.intent - 3.2 * doubt));
     if (bought) steps.push({ wait: 0.4 + 5 * doubt * lognormal(0.4), click: find(layout, "Add to cart") });
     else if (others && chance(0.3)) steps.push({ click: pick(elements.filter(e => e.top >= others.top && e.href)) });
     return { steps, height, bought };

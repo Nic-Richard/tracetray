@@ -131,13 +131,15 @@ function mainMover(impact: GoalImpact, groups: GroupShift[]) {
   return g && name ? { name, more: g.share_after > g.share_before, better: (g.rate_before + g.rate_after) / 2 > (impact.rate_before + impact.rate_after) / 2 } : null;
 }
 
-function impactSentences(impact: GoalImpact, goal: string, device: Device, groups: GroupShift[], note: string): string[] {
+// noteAt is called only when the line will mention a recorded change, so an inconclusive line leaves it to a group's.
+function impactSentences(impact: GoalImpact, goal: string, device: Device, groups: GroupShift[], noteAt: (at: number) => string): string[] {
   const { total, mix, behaviour } = impact;
-  const moved = `${goal}: ${pct(impact.rate_before)} → ${pct(impact.rate_after)} of ${device} visits since ${day(impact.since)}${note}`;
+  const change = `${goal}: ${pct(impact.rate_before)} → ${pct(impact.rate_after)} of ${device} visits since ${day(impact.since)}`;
   const mover = mainMover(impact, groups);
   const who = mover ? `${mover.more ? "more" : "fewer"} ${mover.name}, who reach it ${mover.better ? "more" : "less"} often` : "a change in who's visiting";
   const push = (v: number) => (v > 0 ? "up" : "down");
   if (real(total)) {
+    const moved = change + noteAt(impact.since);
     if (real(mix) && !real(behaviour)) return [`${moved}. Driven by who's visiting: ${who}.`];
     if (real(behaviour) && !real(mix)) return [`${moved}. Driven by how visitors behave, not who's visiting.`];
     if (real(mix) && real(behaviour)) {
@@ -148,9 +150,9 @@ function impactSentences(impact: GoalImpact, goal: string, device: Device, group
     return [`${moved}.`];
   }
   if (real(mix) && real(behaviour) && Math.sign(mix[0]) !== Math.sign(behaviour[0])) {
-    return [`${goal} held at about ${pct(impact.rate_after)} since ${day(impact.since)}${note}: who's visiting pushed it ${push(mix[0])}, how they behave pushed it back.`];
+    return [`${goal} held at about ${pct(impact.rate_after)} since ${day(impact.since)}${noteAt(impact.since)}: who's visiting pushed it ${push(mix[0])}, how they behave pushed it back.`];
   }
-  if (real(mix)) return [`${moved}, not conclusive yet. What holds up: ${who}, worth about ${points(mix[0])}.`];
+  if (real(mix)) return [`${change}, not conclusive yet. ${who.charAt(0).toUpperCase()}${who.slice(1)}, account for about ${points(mix[0])} of it.`];
   return [];
 }
 
@@ -175,7 +177,7 @@ export function shiftSentences(shifts: DeviceShifts | null, device: Device, cont
     if (text) noted = true;
     return text;
   };
-  const out: string[] = shifts.impact && context.goal ? impactSentences(shifts.impact, context.goal, device, shifts.groups, note(shifts.impact.since)) : [];
+  const out: string[] = shifts.impact && context.goal ? impactSentences(shifts.impact, context.goal, device, shifts.groups, note) : [];
   const firstWeek = day(shifts.bins[0].from);
   // With two groups, one growing is the other shrinking: say it once.
   const groups = shifts.groups.length === 2 && shifts.groups.every(g => g.event === "grew" || g.event === "shrank")

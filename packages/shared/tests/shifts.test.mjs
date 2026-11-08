@@ -44,7 +44,7 @@ test("the goal's change is explained by who's visiting or how they behave, only 
     "Added to cart: 24% → 21% of desktop visits since Oct 8, close to your change “Clearer size guide” on Oct 12. Driven by who's visiting: more Quick leavers, who reach it less often."
   ]);
   assert.deepEqual(shiftSentences(shifts({ total: [0.04, -0.01, 0.09], mix: [0.012, 0.003, 0.024], behaviour: [0.03, -0.03, 0.08], ...mixGroups }, leavers), "desktop", { goal: "Added to cart", changes }), [
-    "Added to cart: 24% → 21% of desktop visits since Oct 8, not conclusive yet. What holds up: more Quick leavers, who reach it less often, worth about 1.2 points."
+    "Added to cart: 24% → 21% of desktop visits since Oct 8, not conclusive yet. More Quick leavers, who reach it less often, account for about 1.2 points of it."
   ]);
   assert.match(shiftSentences(shifts({ total: [0.001, -0.02, 0.02], mix: [-0.03, -0.045, -0.015], behaviour: [0.031, 0.012, 0.05] }), "desktop", { goal: "Added to cart" })[0],
     /held at about 21% since Oct 8: who's visiting pushed it down, how they behave pushed it back/);
