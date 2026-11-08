@@ -145,9 +145,10 @@ function pageArg(input) {
     return typeof input.page === "string" && input.page.trim() ? input.page.trim().slice(0, 500) : null;
 }
 
-function visitorTypes(clusters, stories) {
-    const total = (clusters || []).reduce((s, c) => s + (c.n || 0), 0);
-    return (clusters || []).map(c => ({
+// Shares count visits without interaction too, the same total the dashboard's group cards use.
+function visitorTypes(clusters, stories, inactive = 0) {
+    const total = (clusters || []).reduce((s, c) => s + (c.n || 0), 0) + inactive;
+    const types = (clusters || []).map(c => ({
         label: stories?.[c.id]?.headline || c.label,
         share: total ? Math.round((c.n / total) * 100) / 100 : null,
         sessions: c.n,
@@ -157,6 +158,10 @@ function visitorTypes(clusters, stories) {
         // "above"/"below" only when the gap from the average is unlikely to be chance.
         goal: stories?.[c.id]?.goal ? { name: stories[c.id].goal.name, reached_share: stories[c.id].goal.rate, average: stories[c.id].goal.average, standing: stories[c.id].goal.standing } : null
     }));
+    if (inactive && total) {
+        types.push({ label: "Left without interacting", share: Math.round((inactive / total) * 100) / 100, sessions: inactive, description: "They left without moving the cursor, scrolling, clicking or tapping." });
+    }
+    return types;
 }
 
 function summariseAnalysis(result) {
@@ -165,8 +170,8 @@ function summariseAnalysis(result) {
     return {
         ran_at: result.ran_at,
         sessions_analyzed: result.session_count,
-        desktop_visitor_types: visitorTypes(result.clusters, interpretation.cluster_stories),
-        mobile_visitor_types: visitorTypes(result.mobile?.clusters, interpretation.mobile_cluster_stories),
+        desktop_visitor_types: visitorTypes(result.clusters, interpretation.cluster_stories, result.inactive_count || 0),
+        mobile_visitor_types: visitorTypes(result.mobile?.clusters, interpretation.mobile_cluster_stories, result.mobile?.inactive_count || 0),
         page_type: interpretation.page_type || null,
         summary: interpretation.site_summary || null,
         suggestions: interpretation.top_suggestions || [],
