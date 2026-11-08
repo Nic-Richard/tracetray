@@ -55,6 +55,25 @@ const CASES = [
         }
     },
     {
+        id: "this-month",
+        question: "How many visits has the site had this month?",
+        tools: ["get_traffic_trend"],
+        forbid: [{ label: "fall back to a rolling window", test: /last 30 days|30-day|calendar month isn'?t|doesn'?t (report|support|cover) (a )?calendar/i }],
+        checks: async ({ thisMonth }) => [{ label: `${thisMonth.total_sessions.toLocaleString("en-US")} visits`, test: count(thisMonth.total_sessions) }]
+    },
+    {
+        id: "last-month",
+        question: "How many visits did the site get last month, and where did they come from?",
+        tools: ["get_traffic_trend", "get_traffic_sources"],
+        checks: async ({ lastMonth, lastMonthSources }) => {
+            const external = lastMonthSources.sources.filter(s => !s.source.startsWith("internal"));
+            return [
+                { label: `${lastMonth.total_sessions.toLocaleString("en-US")} visits`, test: count(lastMonth.total_sessions) },
+                { label: `top source ${external[0].source}`, test: new RegExp(external[0].source.split(".")[0], "i") }
+            ];
+        }
+    },
+    {
         id: "landing",
         question: "Where do most visitors land first?",
         tools: ["get_visitor_journeys"],
@@ -120,7 +139,12 @@ async function groundTruth(siteKey, siteHost) {
     const pages = (await tool("list_pages", {})).sort((a, b) => b.sessions - a.sessions);
     const productPage = pages.find(p => p.page.includes("/products/"))?.page;
     const homePage = pages.find(p => pathOf(p.page) === "/")?.page;
+    const now = new Date();
+    const monthOf = offset => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1)).toISOString().slice(0, 7);
     return {
+        thisMonth: await tool("get_traffic_trend", { month: monthOf(0) }),
+        lastMonth: await tool("get_traffic_trend", { month: monthOf(1) }),
+        lastMonthSources: await tool("get_traffic_sources", { month: monthOf(1) }),
         pages,
         product: await tool("get_pages_in_group", { page: productPage }),
         goals: await tool("get_goals", { page: productPage, days: 30 }),

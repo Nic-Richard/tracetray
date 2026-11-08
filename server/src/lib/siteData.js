@@ -54,14 +54,17 @@ async function latestAnalysis(siteKey, page) {
     return result;
 }
 
-async function getTimeseries(siteKey, { days = 14, page = null } = {}) {
+// `from`/`to` (YYYY-MM-DD, `to` exclusive) chart a fixed range such as a calendar month instead of the last N days.
+async function getTimeseries(siteKey, { days = 14, page = null, from = null, to = null } = {}) {
     // Start at midnight UTC of the first charted day so the total matches the daily series.
-    const firstDay = new Date(Date.now() - (days - 1) * DAY_MS).toISOString().slice(0, 10);
+    const firstDay = from || new Date(Date.now() - (days - 1) * DAY_MS).toISOString().slice(0, 10);
     const cutoff = Date.parse(`${firstDay}T00:00:00Z`);
+    const end = to ? Date.parse(`${to}T00:00:00Z`) : null;
+    if (from) days = Math.max(1, Math.round((Math.min(end, Date.now()) - cutoff) / DAY_MS));
     const filter = {
         site_key: siteKey,
         end_time: { $ne: null },
-        start_time: { $gte: cutoff },
+        start_time: { $gte: cutoff, ...(end ? { $lt: end } : {}) },
         ...(page ? { page } : {})
     };
 
@@ -80,8 +83,8 @@ async function getTimeseries(siteKey, { days = 14, page = null } = {}) {
     const engagedTotal = rows.reduce((sum, r) => sum + r.engaged, 0);
 
     const series = [];
-    for (let i = days - 1; i >= 0; i--) {
-        const d = new Date(Date.now() - i * DAY_MS).toISOString().slice(0, 10);
+    for (let i = 0; i < days; i++) {
+        const d = new Date(cutoff + i * DAY_MS).toISOString().slice(0, 10);
         series.push(byDay[d] || { date: d, desktop: 0, mobile: 0, engaged: 0 });
     }
 
@@ -243,9 +246,11 @@ function referrerHost(referrer, ownHost = null) {
     } catch { return "other"; }
 }
 
-async function getReferrers(siteKey, { days = 30, page = null, limit = 15, ownHost = null } = {}) {
+async function getReferrers(siteKey, { days = 30, page = null, limit = 15, ownHost = null, from = null, to = null } = {}) {
+    const start = from ? Date.parse(`${from}T00:00:00Z`) : Date.now() - days * DAY_MS;
+    const end = to ? { $lt: Date.parse(`${to}T00:00:00Z`) } : {};
     const rows = await Session.aggregate([
-        { $match: { site_key: siteKey, end_time: { $ne: null }, start_time: { $gte: Date.now() - days * DAY_MS }, ...(page ? { page } : {}) } },
+        { $match: { site_key: siteKey, end_time: { $ne: null }, start_time: { $gte: start, ...end }, ...(page ? { page } : {}) } },
         { $group: { _id: "$referrer", n: { $sum: 1 } } }
     ]);
     const counts = {};

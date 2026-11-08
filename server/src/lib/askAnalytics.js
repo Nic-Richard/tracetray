@@ -5,13 +5,19 @@ const { computeAttentionProfile } = require("./attentionProfile");
 const pageDays = require("./pageDays");
 const { isGroup } = require("./pageGroups");
 const { Account } = require("../db/models");
-const { goalRate, goalWeeks, mainGoalFor } = require("./goalHits");
+const { goalRate, goalTotals, goalWeeks, mainGoalFor } = require("./goalHits");
 const logger = require("./logger");
 
 const ASK_MODEL   = process.env.ASK_MODEL || "claude-haiku-5-5";
 const ASK_EFFORT  = process.env.ASK_EFFORT || "medium";
 const MAX_ROUNDS  = 6;
 const MAX_HISTORY = 6;
+
+const monthProperty = {
+    type: "string",
+    pattern: "^\\d{4}-\\d{2}$",
+    description: "A calendar month as YYYY-MM, for questions like \"this month\" or \"in October\". Replaces days; the current month runs to today."
+};
 
 const pageProperty = {
     type: "string",
@@ -50,6 +56,7 @@ const TOOLS = [
             type: "object",
             properties: {
                 days: { type: "integer", minimum: 1, maximum: 90, description: "How many days back, 1 to 90. Defaults to 14." },
+                month: monthProperty,
                 page: pageProperty
             },
             additionalProperties: false
@@ -74,6 +81,7 @@ const TOOLS = [
             type: "object",
             properties: {
                 days: { type: "integer", minimum: 1, maximum: 90, description: "Defaults to 30." },
+                month: monthProperty,
                 page: pageProperty
             },
             additionalProperties: false
@@ -86,7 +94,8 @@ const TOOLS = [
             type: "object",
             properties: {
                 page: pageProperty,
-                days: { type: "integer", enum: [7, 30, 90], description: "Defaults to 30." }
+                days: { type: "integer", enum: [7, 30, 90], description: "Defaults to 30." },
+                month: monthProperty
             },
             additionalProperties: false
         }
@@ -117,7 +126,7 @@ const TOOLS = [
 
 const SYSTEM_PROMPT = `You answer questions from a website owner about their own site's visitor behaviour, using TraceTray's analytics.
 
-Use the tools to look up real numbers before answering, and only state figures the tools returned.
+Use the tools to look up real numbers before answering, and only state figures the tools returned. For a calendar month ("this month", "last month", "October"), pass month as YYYY-MM instead of days; the current month runs to today.
 
 TraceTray records cursor movement, clicks, scrolling and taps, and the goals the owner has set: a click on a button or link, a sent form, or reaching a page. Goal rates are real conversions for that goal. TraceTray doesn't know revenue or who visitors are, so don't guess at those. Call a goal by its name ("reach Added to cart"), never as a page.
 
@@ -140,6 +149,19 @@ How to answer:
 function clampInt(value, min, max, fallback) {
     const n = Number.isInteger(value) ? value : fallback;
     return Math.min(max, Math.max(min, n));
+}
+
+// A calendar month (UTC) as a day range, `to` exclusive. Null for anything malformed, in the future or past
+// the 13 months visits are kept.
+function monthArg(input, now = Date.now()) {
+    const match = typeof input.month === "string" && /^(\d{4})-(\d{2})$/.exec(input.month);
+    if (!match) return null;
+    const year = Number(match[1]), month = Number(match[2]);
+    const current = new Date(now);
+    const monthsBack = (current.getUTCFullYear() - year) * 12 + current.getUTCMonth() - (month - 1);
+    if (month < 1 || month > 12 || monthsBack < 0 || monthsBack > 12) return null;
+    const day = ms => new Date(ms).toISOString().slice(0, 10);
+    return { month: input.month, from: day(Date.UTC(year, month - 1, 1)), to: day(Date.UTC(year, month, 1)), through: monthsBack === 0 ? day(now) : null };
 }
 
 function pageArg(input) {
@@ -207,29 +229,40 @@ async function runTool(siteKey, name, input = {}, { siteHost = null } = {}) {
                 latest_analysis: summariseAnalysis(analysis) || "No analysis has been run for this page yet."
             };
         }
-        case "get_traffic_trend":
+        case "get_traffic_trend": {
+            const month = monthArg(input);
+            if (month) return { month: month.month, through: month.through, ...await siteData.getTimeseries(siteKey, { page, from: month.from, to: month.to }) };
             return siteData.getTimeseries(siteKey, { days: clampInt(input.days, 1, 90, 14), page });
+        }
         case "get_top_clicks":
             return getClickSummary(siteKey, page || "all", clampInt(input.limit, 1, 30, 15));
-        case "get_traffic_sources":
+        case "get_traffic_sources": {
+            const month = monthArg(input);
+            if (month) {
+                const { days, ...rest } = await siteData.getReferrers(siteKey, { page, ownHost: siteHost, from: month.from, to: month.to });
+                return { month: month.month, through: month.through, ...rest };
+            }
             return siteData.getReferrers(siteKey, { days: clampInt(input.days, 1, 90, 30), page, ownHost: siteHost });
+        }
         case "get_goals": {
             const account = await Account.findOne({ "sites.key": siteKey }, { sites: 1 }).lean();
             const goals = account?.sites?.find(site => site.key === siteKey)?.goals || [];
             if (!goals.length) return "This website has no goals yet. Goals are set in Setup or from a page's Clicks tab.";
+            const month = monthArg(input);
             const days = [7, 30, 90].includes(input.days) ? input.days : 30;
+            const period = month ? { month: month.month, through: month.through } : { days };
             const rates = await Promise.all(goals.map(async goal => ({
                 goal: goal.name,
                 kind: goal.type === "page" ? `goes on to ${goal.match.page}`
                     : goal.type === "attention" ? (goal.match.kind === "end" ? `reads to ${Math.round(goal.match.depth * 100)}% down and stays ${goal.match.seconds} s` : goal.match.kind === "section" ? `scrolls to the section "${goal.match.section}"` : `stays ${goal.match.seconds} s and scrolls, clicks or taps`)
                     : `clicks ${goal.match.href || goal.match.text || goal.match.id}`,
                 target: goal.target ?? null,
-                ...await goalRate(siteKey, goal, { page, days })
+                ...await (month ? goalTotals(siteKey, goal, { from: month.from, to: month.to, page }) : goalRate(siteKey, goal, { page, days }))
             })));
-            if (!page) return { days, goals: rates };
+            if (!page) return { ...period, goals: rates };
             const main = await mainGoalFor(siteKey, page);
             const trend = main ? await goalWeeks(siteKey, main, { page }) : null;
-            return { page, days, main_goal: main?.name || null, best_week: trend?.best || null, goals: rates.filter(r => r.visits > 0) };
+            return { page, ...period, main_goal: main?.name || null, best_week: trend?.best || null, goals: rates.filter(r => r.visits > 0) };
         }
         case "get_visitor_journeys":
             return siteData.getJourney(siteKey);
@@ -274,7 +307,7 @@ async function askAnalytics({ siteKey, siteName, siteHost, question, history, cl
 
     const messages = [
         ...cleanHistory(history),
-        { role: "user", content: `Website: ${siteName || "unnamed"}\n\n${question}` }
+        { role: "user", content: `Website: ${siteName || "unnamed"}\nToday: ${new Date().toISOString().slice(0, 10)} (UTC)\n\n${question}` }
     ];
     const toolsUsed = [];
     const usage = { input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
