@@ -2,7 +2,7 @@ import { useRef, type ComponentRef } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { compactNumber, isPageGroup, pageLabel, pagePath, percent, timeAgo, visitCount } from "@tracetray/shared";
+import { analysisPeriod, compactNumber, isPageGroup, pageLabel, pagePath, percent, timeAgo, visitCount } from "@tracetray/shared";
 import { useApi } from "../../../lib/api";
 import { useSite } from "../../../lib/site";
 import { useLoad } from "../../../lib/useLoad";
@@ -59,7 +59,7 @@ export default function PageScreen() {
         <View style={{ gap: 12 }}>
           <Text style={styles.muted}>
             {analysis
-              ? `Analysis updated ${timeAgo(analysis.ran_at)}. It uses its own period, shown with the findings below. Traffic covers the last 30 days. After a page change, collect new visits before refreshing; a refresh also includes older visits.`
+              ? `Analysed ${timeAgo(analysis.ran_at)}, covering ${analysisPeriod(analysis, "desktop")}.`
               : "No analysis yet. Refresh to find visitor groups and suggestions."}
           </Text>
           <View style={styles.row}>
